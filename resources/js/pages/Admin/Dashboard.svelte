@@ -33,8 +33,12 @@
     import { formatDate } from '@/lib/date';
 
     type ChartEntry = { date: string; orders: number; revenue: number };
+    type DashboardTotals = { revenue: number; orders: number };
 
-    let { chartData }: { chartData: ChartEntry[] } = $props();
+    let {
+        chartData,
+        totals,
+    }: { chartData: ChartEntry[]; totals: DashboardTotals } = $props();
 
     const allData = $derived(
         chartData.map((d) => ({ ...d, date: new Date(d.date) })),
@@ -160,6 +164,26 @@
 <AppHead title="Admin Dashboard" />
 
 <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+    <div class="grid gap-4 md:grid-cols-2">
+        <Card>
+            <CardHeader>
+                <CardDescription>Gesamtumsatz</CardDescription>
+                <CardTitle class="text-3xl tabular-nums">
+                    {formatPrice(totals.revenue)}
+                </CardTitle>
+            </CardHeader>
+        </Card>
+
+        <Card>
+            <CardHeader>
+                <CardDescription>Bestellungen gesamt</CardDescription>
+                <CardTitle class="text-3xl tabular-nums">
+                    {totals.orders.toLocaleString('de-DE')}
+                </CardTitle>
+            </CardHeader>
+        </Card>
+    </div>
+
     <Card>
         <CardHeader
             class="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row"

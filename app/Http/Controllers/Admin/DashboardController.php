@@ -45,8 +45,14 @@ class DashboardController extends Controller
                 ];
             });
 
+        $totals = [
+            'revenue' => (float) Order::query()->where('status', 'paid')->sum('total_amount'),
+            'orders' => Order::query()->count(),
+        ];
+
         return Inertia::render('Admin/Dashboard', [
             'chartData' => $chartData->values(),
+            'totals' => $totals,
         ]);
     }
 }

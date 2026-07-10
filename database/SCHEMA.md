@@ -13,6 +13,7 @@ Engine: **SQLite** (Entwicklung) — Produktionsumgebung: MySQL/MariaDB-kompatib
 | `users`               | Admin-Nutzer (internes Panel)              |
 | `customers`           | Shop-Kunden (Frontend-Auth via Fortify)    |
 | `products`            | Produkte                                   |
+| `product_variants`    | Produktvarianten mit absolutem Endpreis    |
 | `product_images`      | Produktbilder (max. 5, sortiert)           |
 | `shipping_methods`    | Versandarten mit Bezeichnung und Preis     |
 | `addresses`           | Adressen (Customer-Profil)                 |
@@ -125,13 +126,31 @@ Indexe:
 | Spalte            | Typ      | Nullable | Default | Hinweis                          |
 |-------------------|----------|----------|---------|----------------------------------|
 | `id`              | integer  | NO       | —       | PK, autoincrement                |
-| `manufacturer_id` | integer  | NO       | —       | FK → `manufacturers.id` CASCADE  |
+| `manufacturer_id` | integer  | YES      | —       | FK → `manufacturers.id` CASCADE  |
 | `category_id`     | integer  | YES      | —       | FK → `categories.id` SET NULL    |
 | `name`            | varchar  | NO       | —       |                                  |
 | `description`     | text     | YES      | —       |                                  |
-| `price`           | numeric  | NO       | —       | decimal(8,2)                     |
+| `price`           | numeric  | NO       | —       | decimal(10,2)                    |
+| `is_available`    | boolean  | NO       | `true`  | Shop-Verfügbarkeit               |
 | `created_at`      | datetime | YES      | —       |                                  |
 | `updated_at`      | datetime | YES      | —       |                                  |
+
+---
+
+## product_variants
+
+Produktvarianten. `price` ist ein absoluter Endpreis, kein Auf-/Abschlag zum Produktpreis.
+
+| Spalte       | Typ               | Nullable | Default | Hinweis                    |
+|--------------|-------------------|----------|---------|----------------------------|
+| `id`         | integer           | NO       | —       | PK, autoincrement          |
+| `product_id` | integer           | NO       | —       | FK → `products.id` CASCADE |
+| `label`      | varchar           | NO       | —       | Variantenbezeichnung       |
+| `price`      | numeric           | NO       | —       | decimal(10,2)              |
+| `sort_order` | smallint unsigned | NO       | `0`     | Sortierung im Frontend     |
+| `is_default` | boolean           | NO       | `false` | Standardvariante           |
+| `created_at` | datetime          | YES      | —       |                            |
+| `updated_at` | datetime          | YES      | —       |                            |
 
 ---
 
@@ -190,7 +209,7 @@ Bestellungen mit JSON-Adress-Snapshots (immutable zum Zeitpunkt der Bestellung).
 |-----------------------------|----------|----------|-------------|-------------------------------------|
 | `id`                        | integer  | NO       | —           | PK, autoincrement                   |
 | `customer_id`               | integer  | **YES**  | —           | FK → `customers.id` **SET NULL** — Historie überlebt Kontolöschung (GoBD) |
-| `status`                    | varchar  | NO       | `'pending'` | pending/paid/processing/completed/cancelled/failed/refunded |
+| `status`                    | varchar  | NO       | `'pending'` | pending/paid/cancelled/failed/refunded |
 | `payment_method`            | varchar  | YES      | —           | invoice / paypal                    |
 | `is_test`                   | boolean  | NO       | `false`     | true = Sandbox-/Testbestellung      |
 | `total_amount`              | numeric  | NO       | —           | decimal(10,2)                       |
@@ -328,6 +347,112 @@ Indexe:
 | `payload`       | text    | NO       |                |
 | `last_activity` | integer | NO       | Index          |
 
+Indexe:
+- `sessions_user_id_index` auf (`user_id`)
+- `sessions_last_activity_index` auf (`last_activity`)
+
+---
+
+## cache
+
+Laravel-Cache.
+
+| Spalte       | Typ        | Nullable | Hinweis |
+|--------------|------------|----------|---------|
+| `key`        | varchar    | NO       | PK      |
+| `value`      | mediumtext | NO       |         |
+| `expiration` | bigint     | NO       | Index   |
+
+---
+
+## cache_locks
+
+Laravel-Cache-Locks.
+
+| Spalte       | Typ     | Nullable | Hinweis |
+|--------------|---------|----------|---------|
+| `key`        | varchar | NO       | PK      |
+| `owner`      | varchar | NO       |         |
+| `expiration` | bigint  | NO       | Index   |
+
+---
+
+## jobs
+
+Laravel-Queue-Jobs.
+
+| Spalte         | Typ               | Nullable | Hinweis           |
+|----------------|-------------------|----------|-------------------|
+| `id`           | integer           | NO       | PK, autoincrement |
+| `queue`        | varchar           | NO       | Index             |
+| `payload`      | longtext          | NO       |                   |
+| `attempts`     | smallint unsigned | NO       |                   |
+| `reserved_at`  | integer unsigned  | YES      |                   |
+| `available_at` | integer unsigned  | NO       |                   |
+| `created_at`   | integer unsigned  | NO       |                   |
+
+---
+
+## job_batches
+
+Laravel-Queue-Batches.
+
+| Spalte           | Typ        | Nullable | Hinweis |
+|------------------|------------|----------|---------|
+| `id`             | varchar    | NO       | PK      |
+| `name`           | varchar    | NO       |         |
+| `total_jobs`     | integer    | NO       |         |
+| `pending_jobs`   | integer    | NO       |         |
+| `failed_jobs`    | integer    | NO       |         |
+| `failed_job_ids` | longtext   | NO       |         |
+| `options`        | mediumtext | YES      |         |
+| `cancelled_at`   | integer    | YES      |         |
+| `created_at`     | integer    | NO       |         |
+| `finished_at`    | integer    | YES      |         |
+
+---
+
+## failed_jobs
+
+Fehlgeschlagene Laravel-Queue-Jobs.
+
+| Spalte       | Typ      | Nullable | Hinweis           |
+|--------------|----------|----------|-------------------|
+| `id`         | integer  | NO       | PK, autoincrement |
+| `uuid`       | varchar  | NO       | UNIQUE            |
+| `connection` | varchar  | NO       |                   |
+| `queue`      | varchar  | NO       |                   |
+| `payload`    | longtext | NO       |                   |
+| `exception`  | longtext | NO       |                   |
+| `failed_at`  | datetime | NO       | Default: CURRENT_TIMESTAMP |
+
+Indexe:
+- `failed_jobs_connection_queue_failed_at_index` auf (`connection`, `queue`, `failed_at`)
+
+---
+
+## password_reset_tokens
+
+Passwort-Reset-Tokens für Shop-Kunden.
+
+| Spalte       | Typ      | Nullable | Hinweis |
+|--------------|----------|----------|---------|
+| `email`      | varchar  | NO       | PK      |
+| `token`      | varchar  | NO       |         |
+| `created_at` | datetime | YES      |         |
+
+---
+
+## migrations
+
+Laravel-Migrationsstatus.
+
+| Spalte      | Typ     | Nullable | Hinweis           |
+|-------------|---------|----------|-------------------|
+| `id`        | integer | NO       | PK, autoincrement |
+| `migration` | varchar | NO       | Dateiname/Klasse   |
+| `batch`     | integer | NO       | Migrations-Batch   |
+
 ---
 
 ## Fremdschlüssel-Übersicht
@@ -336,8 +461,9 @@ Indexe:
 |---------------|---------------------|------------------------|-----------|
 | `products`    | `manufacturer_id`   | `manufacturers.id`     | CASCADE   |
 | `products`    | `category_id`       | `categories.id`        | SET NULL  |
+| `product_variants` | `product_id`    | `products.id`          | CASCADE   |
 | `addresses`   | `customer_id`       | `customers.id`         | CASCADE   |
-| `orders`      | `customer_id`       | `customers.id`         | CASCADE   |
+| `orders`      | `customer_id`       | `customers.id`         | SET NULL  |
 | `order_items` | `order_id`          | `orders.id`            | CASCADE   |
 | `payments`    | `order_id`          | `orders.id`            | CASCADE   |
 | `product_images` | `product_id`     | `products.id`          | CASCADE   |
