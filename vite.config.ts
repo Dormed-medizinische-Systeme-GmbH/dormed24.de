@@ -43,6 +43,7 @@ export default defineConfig({
             ignored: [
                 '**/database/*.sqlite',
                 '**/database/*.sqlite-*',
+                '**/.npm/**',
                 '**/storage/framework/**',
                 '**/vendor/**',
             ],
