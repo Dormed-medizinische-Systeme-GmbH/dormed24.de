@@ -40,17 +40,11 @@ export default defineConfig({
     ],
     server: {
         watch: {
-            // Vite/chokidar only ignores node_modules/.git by default - the
-            // PHP vendor tree (tens of thousands of files), storage (logs/
-            // cache) and local tool dirs pushed past the OS inotify watch
-            // limit (ENOSPC: System limit for number of file watchers
-            // reached) since none of this is ever meant to trigger a
-            // frontend rebuild anyway.
             ignored: [
+                '**/database/*.sqlite',
+                '**/database/*.sqlite-*',
+                '**/storage/framework/**',
                 '**/vendor/**',
-                '**/storage/**',
-                '**/.codex/**',
-                '**/.claude/**',
             ],
         },
     },
