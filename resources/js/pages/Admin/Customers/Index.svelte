@@ -5,20 +5,14 @@
 </script>
 
 <script lang="ts">
+    import { router } from '@inertiajs/svelte';
     import ChevronDown from '@lucide/svelte/icons/chevron-down';
-    import {
-        
-        
-        
-        
-        
-        
-        getCoreRowModel,
-        getFilteredRowModel,
-        getPaginationRowModel,
-        getSortedRowModel
+    import { getCoreRowModel } from '@tanstack/table-core';
+    import type {
+        ColumnDef,
+        RowSelectionState,
+        VisibilityState,
     } from '@tanstack/table-core';
-import type {ColumnDef, ColumnFiltersState, PaginationState, RowSelectionState, SortingState, VisibilityState} from '@tanstack/table-core';
     import AppHead from '@/components/AppHead.svelte';
     import TableCellLink from '@/components/TableCellLink.svelte';
     import { Button } from '@/components/ui/button';
@@ -50,9 +44,44 @@ import type {ColumnDef, ColumnFiltersState, PaginationState, RowSelectionState, 
         total: number;
         current_page: number;
         last_page: number;
+        from: number | null;
+        to: number | null;
+        prev_page_url: string | null;
+        next_page_url: string | null;
     };
 
-    let { customers }: { customers: Paginator } = $props();
+    type Filters = {
+        search: string;
+    };
+
+    let { customers, filters }: { customers: Paginator; filters: Filters } =
+        $props();
+
+    let search = $state(filters.search);
+
+    $effect(() => {
+        search = filters.search;
+    });
+
+    function submitSearch(value = search) {
+        const term = value.trim();
+
+        router.get('/admin/customers', term === '' ? {} : { search: term }, {
+            preserveScroll: true,
+            replace: true,
+        });
+    }
+
+    function visitPage(url: string | null) {
+        if (!url) {
+            return;
+        }
+
+        router.visit(url, {
+            preserveScroll: true,
+            preserveState: true,
+        });
+    }
 
     const columns: ColumnDef<Customer>[] = [
         {
@@ -84,7 +113,6 @@ import type {ColumnDef, ColumnFiltersState, PaginationState, RowSelectionState, 
                     href: `/admin/customers/${row.original.id}`,
                     label: row.original.name,
                 }),
-            enableSorting: true,
         },
         { accessorKey: 'email', header: 'E-Mail' },
         {
@@ -92,7 +120,9 @@ import type {ColumnDef, ColumnFiltersState, PaginationState, RowSelectionState, 
             header: 'Verifiziert',
             cell: ({ row }) =>
                 row.original.email_verified_at
-                    ? new Date(row.original.email_verified_at).toLocaleDateString('de-DE')
+                    ? new Date(
+                          row.original.email_verified_at,
+                      ).toLocaleDateString('de-DE')
                     : '—',
         },
         {
@@ -103,10 +133,7 @@ import type {ColumnDef, ColumnFiltersState, PaginationState, RowSelectionState, 
         },
     ];
 
-    let sorting = $state<SortingState>([]);
-    let columnFilters = $state<ColumnFiltersState>([]);
     let rowSelection = $state<RowSelectionState>({});
-    let pagination = $state<PaginationState>({ pageIndex: 0, pageSize: 15 });
     let columnVisibility = $state<VisibilityState>({});
 
     const table = createSvelteTable({
@@ -115,36 +142,16 @@ import type {ColumnDef, ColumnFiltersState, PaginationState, RowSelectionState, 
         },
         columns,
         getCoreRowModel: getCoreRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
-        onSortingChange: (u) => {
-            sorting = typeof u === 'function' ? u(sorting) : u;
-        },
-        onColumnFiltersChange: (u) => {
-            columnFilters = typeof u === 'function' ? u(columnFilters) : u;
-        },
         onRowSelectionChange: (u) => {
             rowSelection = typeof u === 'function' ? u(rowSelection) : u;
         },
-        onPaginationChange: (u) => {
-            pagination = typeof u === 'function' ? u(pagination) : u;
-        },
         onColumnVisibilityChange: (u) => {
-            columnVisibility = typeof u === 'function' ? u(columnVisibility) : u;
+            columnVisibility =
+                typeof u === 'function' ? u(columnVisibility) : u;
         },
         state: {
-            get sorting() {
-                return sorting;
-            },
-            get columnFilters() {
-                return columnFilters;
-            },
             get rowSelection() {
                 return rowSelection;
-            },
-            get pagination() {
-                return pagination;
             },
             get columnVisibility() {
                 return columnVisibility;
@@ -158,17 +165,34 @@ import type {ColumnDef, ColumnFiltersState, PaginationState, RowSelectionState, 
 <div class="flex h-full flex-1 flex-col gap-4 p-4">
     <div class="flex items-center justify-between">
         <h1 class="text-xl font-semibold">Kunden</h1>
-        <span class="text-sm text-muted-foreground">{customers.total} gesamt</span>
+        <span class="text-sm text-muted-foreground"
+            >{customers.total} gesamt</span
+        >
     </div>
 
-    <div class="flex items-center gap-2">
+    <form
+        class="flex items-center gap-2"
+        onsubmit={(event) => {
+            event.preventDefault();
+            submitSearch();
+        }}
+    >
         <Input
             placeholder="Name oder E-Mail filtern…"
-            value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
-            oninput={(e) =>
-                table.getColumn('name')?.setFilterValue(e.currentTarget.value)}
+            bind:value={search}
             class="max-w-sm"
         />
+        <Button type="submit" variant="outline">Suchen</Button>
+        {#if filters.search !== ''}
+            <Button
+                type="button"
+                variant="ghost"
+                onclick={() => {
+                    search = '';
+                    submitSearch('');
+                }}>Zurücksetzen</Button
+            >
+        {/if}
 
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -179,17 +203,21 @@ import type {ColumnDef, ColumnFiltersState, PaginationState, RowSelectionState, 
                 {/snippet}
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-                {#each table.getAllColumns().filter((c) => c.getCanHide()) as column (column.id)}
+                {#each table
+                    .getAllColumns()
+                    .filter((c) => c.getCanHide()) as column (column.id)}
                     <DropdownMenuCheckboxItem
                         checked={column.getIsVisible()}
                         onCheckedChange={(v) => column.toggleVisibility(v)}
                     >
-                        {typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id}
+                        {typeof column.columnDef.header === 'string'
+                            ? column.columnDef.header
+                            : column.id}
                     </DropdownMenuCheckboxItem>
                 {/each}
             </DropdownMenuContent>
         </DropdownMenu>
-    </div>
+    </form>
 
     <div class="rounded-md border">
         <Table.Root>
@@ -243,19 +271,23 @@ import type {ColumnDef, ColumnFiltersState, PaginationState, RowSelectionState, 
         </span>
         <div class="flex items-center gap-2">
             <span class="text-sm text-muted-foreground">
-                Seite {table.getState().pagination.pageIndex + 1} von {table.getPageCount()}
+                {#if customers.from !== null && customers.to !== null}
+                    {customers.from}–{customers.to} von {customers.total}
+                {:else}
+                    0 von {customers.total}
+                {/if}
             </span>
             <Button
                 variant="outline"
                 size="sm"
-                onclick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}>Zurück</Button
+                onclick={() => visitPage(customers.prev_page_url)}
+                disabled={!customers.prev_page_url}>Zurück</Button
             >
             <Button
                 variant="outline"
                 size="sm"
-                onclick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}>Weiter</Button
+                onclick={() => visitPage(customers.next_page_url)}
+                disabled={!customers.next_page_url}>Weiter</Button
             >
         </div>
     </div>
