@@ -1,7 +1,8 @@
 <script module lang="ts">
     export const layout = {
-        title: 'Create an account',
-        description: 'Enter your details below to create your account',
+        title: 'Konto erstellen',
+        description:
+            'Geben Sie unten Ihre Daten ein, um Ihr Konto zu erstellen',
     };
 </script>
 
@@ -22,7 +23,7 @@
     let { passwordRules }: { passwordRules: string } = $props();
 </script>
 
-<AppHead title="Register" />
+<AppHead title="Registrieren" />
 
 <Form
     {...store.form()}
@@ -39,45 +40,45 @@
                     required
                     autocomplete="name"
                     name="name"
-                    placeholder="Full name"
+                    placeholder="Vor- und Nachname"
                 />
                 <InputError message={errors.name} />
             </div>
 
             <div class="grid gap-2">
-                <Label for="email">Email address</Label>
+                <Label for="email">E-Mail-Adresse</Label>
                 <Input
                     id="email"
                     type="email"
                     required
                     autocomplete="email"
                     name="email"
-                    placeholder="email@example.com"
+                    placeholder="email@beispiel.de"
                 />
                 <InputError message={errors.email} />
             </div>
 
             <div class="grid gap-2">
-                <Label for="password">Password</Label>
+                <Label for="password">Passwort</Label>
                 <PasswordInput
                     id="password"
                     required
                     autocomplete="new-password"
                     name="password"
-                    placeholder="Password"
+                    placeholder="Passwort"
                     passwordrules={passwordRules}
                 />
                 <InputError message={errors.password} />
             </div>
 
             <div class="grid gap-2">
-                <Label for="password_confirmation">Confirm password</Label>
+                <Label for="password_confirmation">Passwort bestätigen</Label>
                 <PasswordInput
                     id="password_confirmation"
                     required
                     autocomplete="new-password"
                     name="password_confirmation"
-                    placeholder="Confirm password"
+                    placeholder="Passwort bestätigen"
                     passwordrules={passwordRules}
                 />
                 <InputError message={errors.password_confirmation} />
@@ -114,14 +115,14 @@
                 data-test="register-user-button"
             >
                 {#if processing}<Spinner />{/if}
-                Create account
+                Konto erstellen
             </Button>
         </div>
 
         <div class="text-center text-sm text-muted-foreground">
-            Already have an account?
+            Bereits ein Konto?
             <TextLink href={login()} class="underline underline-offset-4">
-                Log in
+                Anmelden
             </TextLink>
         </div>
     {/snippet}
