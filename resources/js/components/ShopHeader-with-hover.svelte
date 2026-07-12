@@ -531,8 +531,11 @@
                             class={props.class}
                             onclick={closeMobileNav}
                         >
+                            <span class="mr-1 font-semibold">
+                                {cart.total}
+                            </span>
                             <ShoppingCart class="mr-2 size-4" />
-                            Warenkorb · {cart.total}*
+                            Warenkorb
                         </Link>
                     {/snippet}
                 </Button>
