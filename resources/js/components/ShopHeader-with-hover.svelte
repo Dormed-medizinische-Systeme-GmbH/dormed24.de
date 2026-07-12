@@ -10,6 +10,7 @@
     import User from '@lucide/svelte/icons/user';
     import UserPlus from '@lucide/svelte/icons/user-plus';
     import X from '@lucide/svelte/icons/x';
+    import { slide } from 'svelte/transition';
     import * as ProductController from '@/actions/App/Http/Controllers/ProductController';
     import CustomerInfo from '@/components/CustomerInfo.svelte';
     import { Button } from '@/components/ui/button';
@@ -89,7 +90,6 @@
     // Zurueck-Zeile.
     let mobileNavOpen = $state(false);
     let mobilePanel = $state<MegaMenuKey>(null);
-    let headerHeight = $state(0);
 
     function toggleMobileNav() {
         mobileNavOpen = !mobileNavOpen;
@@ -196,10 +196,7 @@
 
 <svelte:window onclick={handleClickOutside} onkeydown={handleKeydown} />
 
-<header
-    class="relative z-40 bg-white shadow-sm"
-    bind:clientHeight={headerHeight}
->
+<header class="relative z-40 bg-white shadow-sm">
     <!-- Top row: logo + search + icons -->
     <div class="border-b">
         <div
@@ -505,69 +502,75 @@
 
     <!--
         Mobile: eigenes Slide-down-Panel statt Sheet/Modal wie im Haupt-
-        ShopHeader. Bleibt immer im DOM (nicht {#if}), damit der Zu- und
-        Aufklapp-Uebergang in beide Richtungen animiert - sichtbar nur per
-        translate-y, dazu inert/aria-hidden im geschlossenen Zustand (blockt
-        Fokus und Klicks auf den unsichtbaren Inhalt). Hoehe = Rest des
-        Viewports unterhalb des Headers.
+        ShopHeader. Absolut zum <header> positioniert (top-full = exakt
+        Header-Unterkante, ohne JS-Hoehenmessung). Nur gemountet wenn offen
+        ({#if}, nicht dauerhaft im DOM mit Transform-Toggle) - ein
+        permanent vorhandenes, 100dvh hohes, transformiertes Element hat im
+        Browser dazu gefuehrt, dass der Header beim ersten Paint leer blieb,
+        bis eine Interaktion einen Repaint erzwang. transition:slide
+        uebernimmt die Auf-/Zuklapp-Animation.
+        h-[100dvh] ragt bewusst etwas ueber die Viewport-Unterkante hinaus;
+        das ist unsichtbar, da der Body-Scroll waehrend das Panel offen ist
+        gesperrt wird.
     -->
-    <div
-        class="fixed inset-x-0 bottom-0 z-30 overflow-y-auto bg-white transition-transform duration-300 ease-in-out md:hidden {mobileNavOpen
-            ? 'translate-y-0'
-            : '-translate-y-full'}"
-        style={`top: ${headerHeight}px`}
-        aria-hidden={!mobileNavOpen}
-        inert={!mobileNavOpen}
-    >
-        {#if mobilePanel === null}
-            <nav class="flex flex-col divide-y">
-                {#each navItems as item (item.label)}
-                    {#if item.menu}
-                        <button
-                            type="button"
-                            class="flex items-center justify-between px-4 py-4 text-left text-base font-medium text-foreground"
-                            onclick={() => (mobilePanel = item.menu)}
-                        >
-                            {item.label}
-                            <ChevronRight
-                                class="size-4 text-muted-foreground"
-                            />
-                        </button>
-                    {:else}
-                        <Link
-                            href={item.href}
-                            class="px-4 py-4 text-base font-medium text-foreground"
-                            onclick={closeMobileNav}
-                        >
-                            {item.label}
-                        </Link>
-                    {/if}
-                {/each}
-            </nav>
-        {:else}
-            <div class="flex flex-col">
-                <button
-                    type="button"
-                    class="flex items-center gap-2 border-b px-4 py-4 text-left"
-                    onclick={() => (mobilePanel = null)}
-                >
-                    <ArrowLeft class="size-4 shrink-0 text-muted-foreground" />
-                    <span class="text-base font-semibold text-foreground">
-                        {navItems.find((n) => n.menu === mobilePanel)?.label}
-                    </span>
-                </button>
+    {#if mobileNavOpen}
+        <div
+            class="absolute inset-x-0 top-full z-30 h-[100dvh] overflow-y-auto bg-white md:hidden"
+            transition:slide={{ duration: 200 }}
+        >
+            {#if mobilePanel === null}
                 <nav class="flex flex-col divide-y">
-                    {#each megaMenus[mobilePanel ?? ''] ?? [] as cat (cat.label)}
-                        <Link
-                            href={cat.href}
-                            class="px-4 py-4 text-base text-foreground"
-                            onclick={closeMobileNav}
-                        >
-                            {cat.label}
-                        </Link>
+                    {#each navItems as item (item.label)}
+                        {#if item.menu}
+                            <button
+                                type="button"
+                                class="flex items-center justify-between px-4 py-4 text-left text-base font-medium text-foreground"
+                                onclick={() => (mobilePanel = item.menu)}
+                            >
+                                {item.label}
+                                <ChevronRight
+                                    class="size-4 text-muted-foreground"
+                                />
+                            </button>
+                        {:else}
+                            <Link
+                                href={item.href}
+                                class="px-4 py-4 text-base font-medium text-foreground"
+                                onclick={closeMobileNav}
+                            >
+                                {item.label}
+                            </Link>
+                        {/if}
                     {/each}
                 </nav>
-            </div>
-        {/if}
-    </div>
+            {:else}
+                <div class="flex flex-col">
+                    <button
+                        type="button"
+                        class="flex items-center gap-2 border-b px-4 py-4 text-left"
+                        onclick={() => (mobilePanel = null)}
+                    >
+                        <ArrowLeft
+                            class="size-4 shrink-0 text-muted-foreground"
+                        />
+                        <span class="text-base font-semibold text-foreground">
+                            {navItems.find((n) => n.menu === mobilePanel)
+                                ?.label}
+                        </span>
+                    </button>
+                    <nav class="flex flex-col divide-y">
+                        {#each megaMenus[mobilePanel ?? ''] ?? [] as cat (cat.label)}
+                            <Link
+                                href={cat.href}
+                                class="px-4 py-4 text-base text-foreground"
+                                onclick={closeMobileNav}
+                            >
+                                {cat.label}
+                            </Link>
+                        {/each}
+                    </nav>
+                </div>
+            {/if}
+        </div>
+    {/if}
 </header>
