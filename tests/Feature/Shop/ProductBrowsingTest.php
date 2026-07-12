@@ -24,6 +24,17 @@ class ProductBrowsingTest extends TestCase
             );
     }
 
+    public function test_app_url_is_shared_for_absolute_canonical_tags(): void
+    {
+        // Basis für Canonical-/og:url in AppHead.svelte — im SSR gibt es
+        // kein window.location, og:url verlangt absolute URLs (V4 SEO-1).
+        $this->get(route('products.index'))
+            ->assertOk()
+            ->assertInertia(
+                fn ($page) => $page->where('appUrl', config('app.url'))->etc()
+            );
+    }
+
     public function test_index_filters_by_search_query(): void
     {
         Product::factory()->create(['name' => 'Beatmungsgerät Pro']);

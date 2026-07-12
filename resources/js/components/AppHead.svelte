@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { page } from '@inertiajs/svelte';
     import type { Snippet } from 'svelte';
 
     let {
@@ -27,9 +28,14 @@
             return null;
         }
 
-        return typeof window === 'undefined'
-            ? canonical
-            : new URL(canonical, window.location.origin).href;
+        // APP_URL als kanonische Basis (auch clientseitig — normalisiert
+        // z. B. www vs. non-www); og:url verlangt absolute URLs, und im SSR
+        // gibt es kein window.location (V4 SEO-1).
+        const base =
+            page.props.appUrl ||
+            (typeof window !== 'undefined' ? window.location.origin : null);
+
+        return base ? new URL(canonical, base).href : canonical;
     });
 </script>
 

@@ -310,7 +310,15 @@ Grundgerüst weiterhin gut (AppHead überall, Product-/FAQ-/Organization-JSON-LD
 mit `<`-Escaping, Sitemap mit Cache, robots.txt mit Sitemap-Zeile, SSR
 aktivierbar und Bundle baut). Konkrete Lücken:
 
-### SEO-1. SSR liefert relative Canonical- und og:url-Tags (NEU)
+### SEO-1. SSR liefert relative Canonical- und og:url-Tags (NEU) ✅ (10.07.2026)
+
+**Erledigt:** `appUrl` (= `config('app.url')`) als Shared Prop; `AppHead`
+baut Canonical/og:url in beiden Zweigen absolut gegen diese Basis
+(Client-Fallback: `window.location.origin`) — APP_URL normalisiert damit auch
+www vs. non-www. Verifiziert produktionsnah: SSR-Server + `curl` gegen
+`/products` und `/products/1` liefern absolute `<link rel="canonical">` +
+`og:url` in der rohen HTML-Antwort (`data-server-rendered="true"`). Test:
+`appUrl`-Shared-Prop; svelte-check/ESLint/Build grün.
 
 `resources/js/components/AppHead.svelte:30-32`:
 
@@ -379,10 +387,11 @@ Thumbnail-Pipeline mit `srcset`. Für 1.0 reicht (a). ~2–4 h.
    Betragsabgleich, confirmPayment vereinheitlichen) — ein zusammenhängender
    OrderManager/Webhook-Commit mit Tests.~~ ✅ (10.07.2026)
 3. ~~**S-2** (afterPayment-Ownership, eine Zeile) + **S-4-Kleinkram**.~~ ✅ (10.07.2026)
-4. **SEO-1** (absolute Canonical im SSR) → **SEO-3** (Produkt-Cover) — vor dem
-   ersten Indexieren billiger als danach. **Auf Wunsch zurückgestellt (10.07.2026).**
+4. ~~**SEO-1** (absolute Canonical im SSR)~~ ✅ (10.07.2026) → **SEO-3**
+   (Produkt-Cover) — vor dem ersten Indexieren billiger als danach.
+   **SEO-3 auf Wunsch zurückgestellt (10.07.2026).**
 5. ~~**D-1** (SCHEMA.md nachziehen) + Q-1/Q-2 nach Gelegenheit.~~ ✅ (10.07.2026)
 
-**Damit offen:** SEO-1/SEO-3 (zurückgestellt), B-4 (Doppel-Submit, bewusst kein
-Blocker), Q-3/Q-4 (Kosmetik/npm-audit-low), Launch-Checkliste 1–3 (CI-Gate,
-Backup, Webhook-ID) und der manuelle PayPal-Sandbox-Browsertest.
+**Damit offen:** SEO-3 (Produkt-Cover, zurückgestellt), B-4 (Doppel-Submit,
+bewusst kein Blocker), Q-3/Q-4 (Kosmetik/npm-audit-low), Launch-Checkliste 1–3
+(CI-Gate, Backup, Webhook-ID) und der manuelle PayPal-Sandbox-Browsertest.

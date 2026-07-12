@@ -53,6 +53,9 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'name' => config('app.name'),
+            // Absolute Basis für Canonical-/og:url-Tags: im SSR gibt es kein
+            // window.location, und og:url verlangt absolute URLs (V4 SEO-1).
+            'appUrl' => config('app.url'),
             'auth' => [
                 'user' => $request->user(),
                 'admin' => $request->user('admin'),
