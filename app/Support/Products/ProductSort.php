@@ -12,7 +12,7 @@ use Illuminate\Http\Request;
 class ProductSort
 {
     /**
-     * @return array{0: string, 1: string, 2: string} [sortKey, column, direction]
+     * @return array{0: string, 1: string, 2: 'asc'|'desc'} [sortKey, column, direction]
      */
     public static function fromRequest(Request $request): array
     {
