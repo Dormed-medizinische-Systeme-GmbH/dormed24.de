@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Support\Products\ProductSort;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -31,14 +32,7 @@ class ProductController extends Controller
     public function index(Request $request): Response
     {
         $query = $request->string('q')->trim();
-        $sort = $request->input('sort', 'name_asc');
-
-        [$column, $direction] = match ($sort) {
-            'name_desc' => ['name', 'desc'],
-            'price_asc' => ['price', 'asc'],
-            'price_desc' => ['price', 'desc'],
-            default => ['name', 'asc'],
-        };
+        [$sort, $column, $direction] = ProductSort::fromRequest($request);
 
         $baseQuery = Product::available()
             ->with(['manufacturer', 'images' => fn ($q) => $q->where('sort_order', 0)])

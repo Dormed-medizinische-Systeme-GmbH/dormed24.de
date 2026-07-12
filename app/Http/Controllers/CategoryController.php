@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Support\Products\ProductSort;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -11,14 +12,7 @@ class CategoryController extends Controller
 {
     public function show(Request $request, Category $category): Response
     {
-        $sort = $request->input('sort', 'name_asc');
-
-        [$column, $direction] = match ($sort) {
-            'name_desc' => ['name', 'desc'],
-            'price_asc' => ['price', 'asc'],
-            'price_desc' => ['price', 'desc'],
-            default => ['name', 'asc'],
-        };
+        [$sort, $column, $direction] = ProductSort::fromRequest($request);
 
         $baseQuery = $category->products()
             ->available()
