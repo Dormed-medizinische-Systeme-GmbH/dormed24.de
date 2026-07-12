@@ -1,33 +1,20 @@
 <script lang="ts">
-    import { Link, page, router } from '@inertiajs/svelte';
+    import { Link, page } from '@inertiajs/svelte';
     import ArrowLeft from '@lucide/svelte/icons/arrow-left';
     import ChevronRight from '@lucide/svelte/icons/chevron-right';
-    import LogOut from '@lucide/svelte/icons/log-out';
     import Menu from '@lucide/svelte/icons/menu';
     import Search from '@lucide/svelte/icons/search';
-    import Settings from '@lucide/svelte/icons/settings';
     import ShoppingCart from '@lucide/svelte/icons/shopping-cart';
     import User from '@lucide/svelte/icons/user';
-    import UserPlus from '@lucide/svelte/icons/user-plus';
     import X from '@lucide/svelte/icons/x';
     import { slide } from 'svelte/transition';
     import * as ProductController from '@/actions/App/Http/Controllers/ProductController';
-    import CustomerInfo from '@/components/CustomerInfo.svelte';
     import { Button } from '@/components/ui/button';
-    import {
-        DropdownMenu,
-        DropdownMenuContent,
-        DropdownMenuGroup,
-        DropdownMenuItem,
-        DropdownMenuLabel,
-        DropdownMenuSeparator,
-        DropdownMenuTrigger,
-    } from '@/components/ui/dropdown-menu';
     import { Input } from '@/components/ui/input';
     import { toUrl } from '@/lib/utils';
-    import { logout } from '@/routes';
+    import cartRoutes from '@/routes/cart';
     import { edit as editProfile } from '@/routes/profile';
-    import type { Cart, Customer } from '@/types';
+    import type { Cart } from '@/types';
 
     type MegaMenuKey = 'artikelgruppen' | 'verbrauchsartikel' | null;
     type NavCategory = { id: number; name: string; slug: string };
@@ -196,7 +183,7 @@
 
 <svelte:window onclick={handleClickOutside} onkeydown={handleKeydown} />
 
-<header class="relative z-40 bg-white shadow-sm">
+<header class="sticky top-0 z-40 bg-white shadow-sm">
     <!-- Top row: logo + search + icons -->
     <div class="border-b">
         <div
@@ -303,108 +290,30 @@
             </div>
 
             <!-- Actions -->
-            <div class="flex shrink-0 items-center gap-1">
+            <div class="ml-auto flex shrink-0 items-center gap-1">
+                <!--
+                    TEST-SIMPLIFIZIERUNG: kein Dropdown mehr - Klick geht
+                    direkt zu Login bzw. Profil. Registrieren ist nur noch
+                    ueber den Link im Login-Formular oder per URL erreichbar.
+                -->
                 <Button
                     variant="ghost"
                     size="icon"
-                    class="md:hidden"
-                    onclick={toggleMobileNav}
-                    aria-expanded={mobileNavOpen}
-                    aria-label={mobileNavOpen
-                        ? 'Menü schließen'
-                        : 'Menü öffnen'}
+                    class="hidden md:inline-flex"
+                    asChild
                 >
-                    {#if mobileNavOpen}
-                        <X class="h-5 w-5" />
-                    {:else}
-                        <Menu class="h-5 w-5" />
-                    {/if}
+                    {#snippet children(props)}
+                        <Link
+                            href={auth?.user ? toUrl(editProfile()) : '/login'}
+                            class={props.class}
+                        >
+                            <User class="h-5 w-5" />
+                            <span class="sr-only">
+                                {auth?.user ? 'Profil' : 'Anmelden'}
+                            </span>
+                        </Link>
+                    {/snippet}
                 </Button>
-
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        {#snippet children(props)}
-                            <Button variant="ghost" size="icon" {...props}>
-                                <User class="h-5 w-5" />
-                                <span class="sr-only">Konto</span>
-                            </Button>
-                        {/snippet}
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent class="w-56" align="end">
-                        {#if auth?.user}
-                            <DropdownMenuLabel class="p-0 font-normal">
-                                <div
-                                    class="flex items-center gap-2 px-1 py-1.5 text-left text-sm"
-                                >
-                                    <CustomerInfo
-                                        user={auth.user as Customer}
-                                        showEmail={true}
-                                    />
-                                </div>
-                            </DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuGroup>
-                                <DropdownMenuItem asChild>
-                                    {#snippet children(props)}
-                                        <Link
-                                            class={props.class}
-                                            href={toUrl(editProfile())}
-                                            prefetch
-                                            onclick={props.onClick}
-                                        >
-                                            <Settings class="mr-2 h-4 w-4" />
-                                            Einstellungen
-                                        </Link>
-                                    {/snippet}
-                                </DropdownMenuItem>
-                            </DropdownMenuGroup>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem asChild>
-                                {#snippet children(props)}
-                                    <Link
-                                        class={props.class}
-                                        href={logout()}
-                                        as="button"
-                                        onclick={() => {
-                                            props.onClick?.();
-                                            router.flushAll();
-                                        }}
-                                    >
-                                        <LogOut class="mr-2 h-4 w-4" />
-                                        Abmelden
-                                    </Link>
-                                {/snippet}
-                            </DropdownMenuItem>
-                        {:else}
-                            <DropdownMenuGroup>
-                                <DropdownMenuItem asChild>
-                                    {#snippet children(props)}
-                                        <Link
-                                            class={props.class}
-                                            href="/login"
-                                            onclick={props.onClick}
-                                        >
-                                            <User class="mr-2 h-4 w-4" />
-                                            Anmelden
-                                        </Link>
-                                    {/snippet}
-                                </DropdownMenuItem>
-                                <DropdownMenuItem asChild>
-                                    {#snippet children(props)}
-                                        <Link
-                                            class={props.class}
-                                            href="/register"
-                                            onclick={props.onClick}
-                                        >
-                                            <UserPlus class="mr-2 h-4 w-4" />
-                                            Registrieren
-                                        </Link>
-                                    {/snippet}
-                                </DropdownMenuItem>
-                            </DropdownMenuGroup>
-                        {/if}
-                    </DropdownMenuContent>
-                </DropdownMenu>
 
                 <Button variant="ghost" class="gap-2 px-3">
                     <div class="relative">
@@ -420,6 +329,23 @@
                     <span class="text-sm font-medium text-[#1a3a5c]">
                         {cart.total}*
                     </span>
+                </Button>
+
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    class="md:hidden"
+                    onclick={toggleMobileNav}
+                    aria-expanded={mobileNavOpen}
+                    aria-label={mobileNavOpen
+                        ? 'Menü schließen'
+                        : 'Menü öffnen'}
+                >
+                    {#if mobileNavOpen}
+                        <X class="h-5 w-5" />
+                    {:else}
+                        <Menu class="h-5 w-5" />
+                    {/if}
                 </Button>
             </div>
         </div>
@@ -505,75 +431,112 @@
 
     <!--
         Mobile: eigenes Slide-down-Panel statt Sheet/Modal wie im Haupt-
-        ShopHeader. Absolut zum <header> positioniert (top-full = exakt
-        Header-Unterkante, ohne JS-Hoehenmessung). Nur gemountet wenn offen
-        ({#if}, nicht dauerhaft im DOM mit Transform-Toggle) - ein
-        permanent vorhandenes, 100dvh hohes, transformiertes Element hat im
+        ShopHeader. position:fixed (viewport-relativ) mit top-16, da die
+        Header-Hoehe auf Mobile immer h-16 ist (Such-/Nav-Zeile sind dort
+        per hidden ausgeblendet) - kein absolute+top-full mehr, das hatte
+        seine Containing-Block-Hoehe vom <header> geerbt und liess sich
+        deshalb nicht sauber bis zur Viewport-Unterkante ausdehnen (bottom-0
+        waere relativ zum Header gewesen, nicht zum Viewport). Nur
+        gemountet wenn offen ({#if}, nicht dauerhaft im DOM mit Transform-
+        Toggle) - ein permanent vorhandenes, transformiertes Element hat im
         Browser dazu gefuehrt, dass der Header beim ersten Paint leer blieb,
         bis eine Interaktion einen Repaint erzwang. transition:slide
         uebernimmt die Auf-/Zuklapp-Animation.
-        h-[100dvh] ragt bewusst etwas ueber die Viewport-Unterkante hinaus;
-        das ist unsichtbar, da der Body-Scroll waehrend das Panel offen ist
-        gesperrt wird.
     -->
     {#if mobileNavOpen}
         <div
-            class="absolute inset-x-0 top-full z-30 h-[100dvh] overflow-y-auto bg-white md:hidden"
+            class="fixed inset-x-0 top-16 bottom-0 z-30 flex flex-col bg-white md:hidden"
             transition:slide={{ duration: 200 }}
         >
-            {#if mobilePanel === null}
-                <nav class="flex flex-col divide-y">
-                    {#each navItems as item (item.label)}
-                        {#if item.menu}
-                            <button
-                                type="button"
-                                class="flex items-center justify-between px-4 py-4 text-left text-base font-medium text-foreground"
-                                onclick={() => (mobilePanel = item.menu)}
-                            >
-                                {item.label}
-                                <ChevronRight
-                                    class="size-4 text-muted-foreground"
-                                />
-                            </button>
-                        {:else}
-                            <Link
-                                href={item.href}
-                                class="px-4 py-4 text-base font-medium text-foreground"
-                                onclick={closeMobileNav}
-                            >
-                                {item.label}
-                            </Link>
-                        {/if}
-                    {/each}
-                </nav>
-            {:else}
-                <div class="flex flex-col">
-                    <button
-                        type="button"
-                        class="flex items-center gap-2 border-b px-4 py-4 text-left"
-                        onclick={() => (mobilePanel = null)}
-                    >
-                        <ArrowLeft
-                            class="size-4 shrink-0 text-muted-foreground"
-                        />
-                        <span class="text-base font-semibold text-foreground">
-                            {navItems.find((n) => n.menu === mobilePanel)
-                                ?.label}
-                        </span>
-                    </button>
+            <div class="flex-1 overflow-y-auto">
+                {#if mobilePanel === null}
                     <nav class="flex flex-col divide-y">
-                        {#each megaMenus[mobilePanel ?? ''] ?? [] as cat (cat.label)}
-                            <Link
-                                href={cat.href}
-                                class="px-4 py-4 text-base text-foreground"
-                                onclick={closeMobileNav}
-                            >
-                                {cat.label}
-                            </Link>
+                        {#each navItems as item (item.label)}
+                            {#if item.menu}
+                                <button
+                                    type="button"
+                                    class="flex items-center justify-between px-4 py-4 text-left text-base font-medium text-foreground"
+                                    onclick={() => (mobilePanel = item.menu)}
+                                >
+                                    {item.label}
+                                    <ChevronRight
+                                        class="size-4 text-muted-foreground"
+                                    />
+                                </button>
+                            {:else}
+                                <Link
+                                    href={item.href}
+                                    class="px-4 py-4 text-base font-medium text-foreground"
+                                    onclick={closeMobileNav}
+                                >
+                                    {item.label}
+                                </Link>
+                            {/if}
                         {/each}
                     </nav>
-                </div>
-            {/if}
+                {:else}
+                    <div class="flex flex-col">
+                        <button
+                            type="button"
+                            class="flex items-center gap-2 border-b px-4 py-4 text-left"
+                            onclick={() => (mobilePanel = null)}
+                        >
+                            <ArrowLeft
+                                class="size-4 shrink-0 text-muted-foreground"
+                            />
+                            <span
+                                class="text-base font-semibold text-foreground"
+                            >
+                                {navItems.find((n) => n.menu === mobilePanel)
+                                    ?.label}
+                            </span>
+                        </button>
+                        <nav class="flex flex-col divide-y">
+                            {#each megaMenus[mobilePanel ?? ''] ?? [] as cat (cat.label)}
+                                <Link
+                                    href={cat.href}
+                                    class="px-4 py-4 text-base text-foreground"
+                                    onclick={closeMobileNav}
+                                >
+                                    {cat.label}
+                                </Link>
+                            {/each}
+                        </nav>
+                    </div>
+                {/if}
+            </div>
+
+            <!-- Warenkorb + Login/Profil, immer unten (mt-auto) -->
+            <div class="mt-auto flex flex-col gap-2 border-t p-4">
+                <Button
+                    variant="secondary"
+                    class="w-full justify-center"
+                    asChild
+                >
+                    {#snippet children(props)}
+                        <Link
+                            href={auth?.user ? toUrl(editProfile()) : '/login'}
+                            class={props.class}
+                            onclick={closeMobileNav}
+                        >
+                            <User class="mr-2 size-4" />
+                            {auth?.user ? 'Profil anzeigen' : 'Einloggen'}
+                        </Link>
+                    {/snippet}
+                </Button>
+                <Button class="w-full justify-center" asChild>
+                    {#snippet children(props)}
+                        <Link
+                            href={cartRoutes.index.url()}
+                            class={props.class}
+                            onclick={closeMobileNav}
+                        >
+                            <ShoppingCart class="mr-2 size-4" />
+                            Warenkorb · {cart.total}*
+                        </Link>
+                    {/snippet}
+                </Button>
+            </div>
         </div>
     {/if}
 </header>
