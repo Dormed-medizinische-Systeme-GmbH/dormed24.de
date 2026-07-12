@@ -97,7 +97,7 @@ class OrderController extends Controller
             // generic order-confirmation, which still asks to transfer money).
             $orderManager->confirmInvoicePayment($order);
         } else {
-            $order->update(['status' => 'paid']);
+            $orderManager->transitionToPaid($order);
         }
 
         return response()->json([

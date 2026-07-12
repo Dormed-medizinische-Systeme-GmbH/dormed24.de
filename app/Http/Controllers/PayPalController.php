@@ -354,6 +354,7 @@ class PayPalController extends Controller
         $payment = Payment::query()
             ->where('paypal_capture_id', $captureId)
             ->orWhere('response_data->purchase_units[0]->payments->captures[0]->id', $captureId)
+            ->with('order')
             ->first();
 
         if (! $payment) {
@@ -365,18 +366,57 @@ class PayPalController extends Controller
             if ($orderId) {
                 $payment = Payment::query()
                     ->where('paypal_order_id', $orderId)
+                    ->with('order')
                     ->first();
             }
         }
 
-        if ($payment) {
+        if (! $payment) {
+            return;
+        }
+
+        // Ein Refund ist final: ein verspätet/erneut zugestelltes
+        // CAPTURE.COMPLETED (PayPal liefert at-least-once, unsortiert) darf
+        // Payment und Order nicht zurück auf COMPLETED/paid drehen (V4 S-1).
+        if ($payment->status === 'REFUNDED') {
+            Log::info('PayPal webhook: ignoring late capture for refunded payment', [
+                'capture_id' => $captureId,
+                'payment_id' => $payment->id,
+            ]);
+
+            return;
+        }
+
+        // Betragsabgleich wie im Capture-/Return-Pfad (V4 S-3). Signatur ist
+        // verifiziert, die Capture stammt aus der eigenen Order - trotzdem
+        // gilt dieselbe Defense-in-Depth-Regel für alle drei Pfade.
+        $capturedAmount = $resource['amount']['value'] ?? null;
+
+        if ($capturedAmount !== null && number_format((float) $capturedAmount, 2, '.', '') !== number_format((float) $payment->order->total_amount, 2, '.', '')) {
+            Log::error('PayPal webhook capture amount mismatch', [
+                'capture_id' => $captureId,
+                'captured' => $capturedAmount,
+                'expected' => $payment->order->total_amount,
+            ]);
+
+            $this->notifyAmountMismatch($payment, (string) $capturedAmount);
+
+            return;
+        }
+
+        // Bereits abgeschlossen (Normalfall: JS-Capture war schneller als der
+        // Webhook): response_data nicht mit der Capture-Resource überschreiben
+        // (der volle Order-Response ist der bessere Audit-Trail), nur den
+        // idempotenten markPaid-Pfad sicherstellen.
+        if ($payment->status !== 'COMPLETED') {
             $payment->update([
                 'status' => 'COMPLETED',
                 'paypal_capture_id' => $captureId,
                 'response_data' => $resource,
             ]);
-            $this->orderManager->markPaid($payment->order);
         }
+
+        $this->orderManager->markPaid($payment->order);
     }
 
     /**

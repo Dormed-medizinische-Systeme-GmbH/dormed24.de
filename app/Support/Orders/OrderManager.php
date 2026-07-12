@@ -115,17 +115,25 @@ class OrderManager
     }
 
     /**
-     * Atomic pending -> paid transition, shared by markPaid() and
-     * confirmInvoicePayment(). The webhook and the PayPal return URL can
-     * both call markPaid() for the same order at nearly the same time; a
-     * plain read-then-write would let both pass the "already paid" check
-     * before either update lands, sending confirmation mails twice.
+     * Atomic transition to paid, shared by markPaid(),
+     * confirmInvoicePayment() and the admin's silent payment confirmation.
+     * The webhook and the PayPal return URL can both call markPaid() for the
+     * same order at nearly the same time; a plain read-then-write would let
+     * both pass the "already paid" check before either update lands, sending
+     * confirmation mails twice.
+     *
+     * "refunded" is terminal: PayPal delivers webhooks at-least-once and
+     * unordered, so a re-delivered CAPTURE.COMPLETED arriving after a refund
+     * must never flip the order back to paid (and re-send the mails).
+     * "pending" and "failed" may transition (failed = retryable capture);
+     * "cancelled" too - if money actually arrives for a click-cancelled
+     * PayPal order, paid is the state consistent with the money.
      */
-    private function transitionToPaid(Order $order): bool
+    public function transitionToPaid(Order $order): bool
     {
         $affected = Order::query()
             ->whereKey($order->getKey())
-            ->where('status', '!=', 'paid')
+            ->whereNotIn('status', ['paid', 'refunded'])
             ->update(['status' => 'paid']);
 
         if ($affected === 0) {
@@ -192,7 +200,7 @@ class OrderManager
         return [
             'items' => $order->items->map(fn ($item): array => [
                 'name' => $item->product_name,
-                'product_number' => $item->product_id ?? $item->id,
+                'product_number' => $item->product_id ?? '—',
                 'quantity' => $item->quantity,
                 'unit_price' => number_format((float) $item->unit_price, 2, '.', ''),
                 'line_total' => number_format((float) $item->unit_price * $item->quantity, 2, '.', ''),

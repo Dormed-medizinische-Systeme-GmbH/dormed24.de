@@ -47,6 +47,31 @@ class OrderManagerTest extends TestCase
         Mail::assertSent(NewOrderMail::class, 1);
     }
 
+    public function test_mark_paid_refuses_refunded_orders(): void
+    {
+        Mail::fake();
+
+        $order = Order::factory()->create(['status' => 'refunded']);
+
+        $result = app(OrderManager::class)->markPaid($order);
+
+        $this->assertFalse($result);
+        $this->assertSame('refunded', $order->fresh()->status);
+        Mail::assertNothingSent();
+    }
+
+    public function test_mark_paid_allows_retry_after_failed_capture(): void
+    {
+        Mail::fake();
+
+        $order = Order::factory()->create(['status' => 'failed']);
+
+        $result = app(OrderManager::class)->markPaid($order);
+
+        $this->assertTrue($result);
+        $this->assertSame('paid', $order->fresh()->status);
+    }
+
     public function test_confirm_invoice_payment_transitions_order_and_notifies_customer_only(): void
     {
         Mail::fake();
