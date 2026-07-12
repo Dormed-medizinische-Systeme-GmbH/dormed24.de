@@ -426,7 +426,7 @@
     {#if mobileNavOpen}
         <div
             class="fixed inset-x-0 top-16 bottom-0 z-30 flex flex-col bg-white md:hidden"
-            transition:slide={{ duration: 200 }}
+            transition:slide={{ duration: 420 }}
         >
             <div class="flex-1 overflow-y-auto">
                 {#if mobilePanel === null}
