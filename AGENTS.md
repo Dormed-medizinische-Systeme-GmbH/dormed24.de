@@ -270,7 +270,7 @@ Der Shop deckt **ausschließlich** Bestellannahme + Zahlungsabwicklungsschicht a
 ### Deploy-Modell (Server)
 
 - **SSH-User: `deploy`** — niemals `root`, niemals `www-data`. Kein `sudo -u www-data`.
-- **Webserver läuft weiter als `www-data`**; der braucht nur Lese-/Ausführrechte auf die App und **Schreibrechte auf `storage/` + `bootstrap/cache/`**.
+- **Webserver läuft weiter als `www-data`**; der braucht nur Lese-/Ausführrechte auf die App und **Schreibrechte auf `storage/`, `bootstrap/cache/` + `database/`**. Das `database/`-Verzeichnis ist kein Versehen: `SESSION_DRIVER=database` + `CACHE_STORE=database` heißt, **jeder einzelne Request schreibt in die SQLite-Datei** — fehlt hier Schreibrecht, gibt's einen sofortigen HTTP 500 auf jeder Seite (schon einmal passiert). `deploy.yml` erzwingt das bei jedem Lauf per `chmod -R g+w storage bootstrap/cache database` — läuft als `deploy` (Dateibesitzer), kein `sudo` nötig.
 - **App-Pfad:** `/var/www/test.dormed24.de`
 - Der Deploy führt aus: `git pull --ff-only` → `composer install --no-dev` → `npm ci` → **`npm run build:ssr`** → `optimize:clear` → **`migrate --force`** → `optimize` → **`inertia:stop-ssr`** (SSR-Reload).
 - **`migrate --force` spielt nur NEUE Migrationen ein und löscht nie Daten.** Ein **`migrate:fresh --seed` (Sandbox-Reset) passiert ausschließlich manuell auf dem Server** — bewusst nie im Deploy.
@@ -282,7 +282,7 @@ Der Shop deckt **ausschließlich** Bestellannahme + Zahlungsabwicklungsschicht a
 - Der Deploy baut deshalb **`npm run build:ssr`** (Client **+** `bootstrap/ssr/app.js`).
 - Ein **systemd-Dienst** (`inertia-ssr-test.service`, `Restart=always`) hält `php artisan inertia:start-ssr` dauerhaft am Laufen.
 - **Reload nach dem Deploy:** `php artisan inertia:stop-ssr` fährt den Prozess per HTTP herunter, systemd startet ihn dank `Restart=always` sofort mit dem **neuen Bundle** neu. Kein `sudo` nötig. Ohne diesen Schritt würde SSR nach dem Deploy weiter den **alten** Code ausliefern.
-- Setup-Details: `todo-server-setup.md`, Schritt 7b.
+- Die systemd-Unit läuft als **`deploy`**, nicht `www-data`: Node liegt unter `/home/deploy/.local/node-v22/` (Symlink `/usr/local/bin/node`), `www-data` kommt in ein Home mit Modus `750` typischerweise nicht hinein — mit `User=www-data` stirbt der Dienst mit „node not found" in einer Restart-Schleife (schon einmal passiert). Nebeneffekt: least privilege, der SSR-Prozess braucht ohnehin keine Webserver-Rechte.
 
 ### GitHub-Konfiguration
 
@@ -307,7 +307,7 @@ Der Shop deckt **ausschließlich** Bestellannahme + Zahlungsabwicklungsschicht a
 
 - **PHP 8.4** (Projekt-Constraint).
 - **Node ≥ 20.19** — Vite 8 crasht auf Node 18 (`CustomEvent is not defined`). Node muss im **PATH des `deploy`-Users bei nicht-interaktiver SSH-Session** liegen (nvm in `~/.bashrc` reicht dafür oft **nicht**!). Der Workflow prüft das explizit und bricht mit klarer Meldung ab.
-- **Node muss auch für den SSR-Dienst auffindbar sein** — die systemd-Unit läuft als `www-data` und startet den Node-Prozess; deshalb Node **systemweit** installieren (`/usr/bin/node`), nicht per nvm im Home eines Users.
+- **Node muss auch für den SSR-Dienst auffindbar sein** — Node **systemweit** installieren bzw. per Symlink in `/usr/local/bin/node` erreichbar machen (nicht ausschließlich per nvm im Home eines einzelnen Users), sonst findet die systemd-Unit ihn nicht.
 - **SSR-Dienst muss laufen** (`inertia-ssr-test.service`) — sonst läuft `INERTIA_SSR_ENABLED=true` ins Leere. Siehe SSR-Abschnitt oben.
 
 ### ⚠️ `lint.yml` ist derzeit ein weiches Gate
@@ -315,9 +315,9 @@ Der Shop deckt **ausschließlich** Bestellannahme + Zahlungsabwicklungsschicht a
 `lint.yml` ruft `npm run format` (`prettier --write`) und `npm run lint` (`eslint --fix`) — **mutierende** Varianten. Es scheitert nur an *nicht* auto-fixbaren Fehlern, nicht an Formatierungs-Drift. Das echte Gate ist damit `tests.yml` (PHPStan + PHPUnit).
 **Um es scharf zu machen:** einmal `npm run format` + `vendor/bin/pint` laufen lassen und committen (räumt ~29 Dateien Prettier-Drift + Pint-Drift auf), dann in `lint.yml` auf `composer lint:check`, `npm run lint:check`, `npm run format:check` umstellen. `composer ci:check` bündelt bereits das komplette Gate.
 
-### Nicht verwechseln: `update.sh`
+### `update.sh` — nur noch der Sandbox-Reset, kein Deploy
 
-`update.sh` im Repo-Root ist **das Dev-/Staging-Reset-Skript** (enthält `migrate:fresh --seed`) — **nicht** der Produktions-Deploy. Der Deploy lebt ausschließlich in `deploy.yml`.
+`update.sh` im Repo-Root zieht **bewusst keinen Code, installiert keine Dependencies und baut nichts** — das macht `deploy.yml` bei jedem Push zuverlässig, eine zweite Build-Quelle würde nur Drift-Risiko schaffen. Die Datei macht ausschließlich das, was der automatische Deploy **nie** tut: `optimize:clear` → **`migrate:fresh --seed --force`** → `optimize` → SSR-Reload. Manuell auf dem Server ausführen, wenn der Katalog auf einen sauberen Demo-Stand zurückgesetzt werden soll.
 
 ---
 

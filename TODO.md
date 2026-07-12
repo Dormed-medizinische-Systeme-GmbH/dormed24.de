@@ -7,6 +7,16 @@
 
 ---
 
+## Deployment (test.dormed24.de) — offene Punkte
+
+- **Zertifikat/Domain-Übergang zurückstellen:** `APP_URL` läuft aktuell übergangsweise auf `https://test.dormed.de` (gültiges TLS-Zertifikat), eigentliche Zieldomain ist `test.dormed24.de`. Sobald dafür ein echtes Zertifikat existiert: `APP_URL` in der Server-`.env` zurückstellen, danach `php artisan optimize:clear && php artisan optimize` (sonst bleibt der alte Wert gecacht — ist uns schon einmal passiert).
+- **Admin-Account prüfen/anlegen:** `php artisan add:admin` auf dem Server — Status nicht verifiziert.
+- **DB-Backup-Strategie klären** (SQLite-Datei, keine Automatisierung vorhanden).
+- `lint.yml` ist aktuell ein weiches Gate (nutzt `--fix`/`--write`, scheitert nicht an Formatierungs-Drift). Scharf machen: einmal `npm run format` + `vendor/bin/pint` committen, dann in `lint.yml` auf die `:check`-Varianten umstellen (`composer ci:check` bündelt das Gate schon).
+- SSH-Deploy-Key ist aktuell ein Account-Key (Zugriff auf alle Repos von `DormedGmbH`). Auf einen repo-gebundenen, read-only **Deploy Key** umstellen (least privilege).
+
+---
+
 ## Sicherheit (Backlog aus Code-Audit 2026-06-25)
 
 ### 🟢 FormRequest authorize() gibt überall true zurück
