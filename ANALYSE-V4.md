@@ -41,18 +41,23 @@ das bekannte Deploy-Skript-Thema und SEO-/Doku-Nacharbeiten.
 
 ## 🗂 Klassifikations-Übersicht
 
-| Klasse | Punkte |
-| --- | --- |
-| **NEU** | B1 (Capture-FAILED → Erfolgsseite), S-1 (Webhook kann refunded→paid zurückdrehen), S-2/S-3 (PayPal-Kleinhärtungen), SEO-1 (relative Canonical/og:url im SSR), SEO-3 (Produkt-Cover ungeskaliert), Q-1 (Sort-Duplikat), Q-2 (Bild-Waisen beim Produkt-Löschen), D-1 (Doku-Drift SCHEMA.md) |
-| **REGRESSION** | Q-4 (npm audit 8 low — V3 war sauber; einzige echte Regression, low-severity) |
-| **CARRY-OVER** | B2 (update.sh/Deploy — dokumentiert in todo-deploy.md), B-1 bis B-3 (V3 B-3/B-5-Kleinkram), SEO-2 (Hero-WebP), CI-Gate svelte-check, Backup-Strategie, `sessions.user_id`, Cart-DTO |
+| Klasse                        | Punkte                                                                                                                                                                                                                                                                                                                       |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **NEU**                       | B1 (Capture-FAILED → Erfolgsseite), S-1 (Webhook kann refunded→paid zurückdrehen), S-2/S-3 (PayPal-Kleinhärtungen), SEO-1 (relative Canonical/og:url im SSR), SEO-3 (Produkt-Cover ungeskaliert), Q-1 (Sort-Duplikat), Q-2 (Bild-Waisen beim Produkt-Löschen), D-1 (Doku-Drift SCHEMA.md)                                    |
+| **REGRESSION**                | Q-4 (npm audit 8 low — V3 war sauber; einzige echte Regression, low-severity)                                                                                                                                                                                                                                                |
 | **BEWUSST** (nicht re-flaggt) | Kein Bestandskonzept, Cookie-Banner-Attrappe, UI-Kit-Dateien bleiben, synchroner Mailversand, SQLite, Sitemap listet unverfügbare Produkte, Dashboard-Umsatz ohne `is_test`-Filter, Rechnung bleibt `pending` ohne Auto-Cleanup, Zahlung/Versand-Seiten-Überschneidung, ShopHeader-with-hover-Backup, keine atomaren Deploys |
 
 ---
 
 ## 🔴 Release-Blocker
 
-### B1. Fehlgeschlagener PayPal-Capture endet auf der Erfolgsseite (NEU)
+### B1. Fehlgeschlagener PayPal-Capture endet auf der Erfolgsseite (NEU) ✅ (10.07.2026)
+
+**Erledigt:** FAILED-Zweig antwortet 422 (inkl. Fehlermeldung für den Button),
+`success()` leitet failed/cancelled-Orders auf `checkout.error` um; der
+`assertOk()`-Test wurde angepasst, neue Tests für PENDING-Capture und den
+Success-Guard. Zusätzlich alarmiert die Betragsabweichung jetzt den Betreiber
+(siehe B-1).
 
 **Kette aus drei Stellen, jede für sich „korrekt", zusammen falsch:**
 
@@ -78,6 +83,7 @@ Bestätigungsmail, keine Betreiber-Benachrichtigung. Der Warenkorb ist dabei
 nicht geleert (kleiner Trost, aber verwirrend obendrauf).
 
 **Fix (klein, ~1–2 h inkl. Tests):**
+
 - `captureOrder()`-FAILED-Zweig auf **422** (o. ä. Nicht-2xx) umstellen und den
   Capture-Status in die Fehlermeldung aufnehmen; den `assertOk()`-Test anpassen.
 - Zusätzlich (Defense-in-Depth) in `success()` PayPal-Zweig: Order nur rendern,
@@ -85,32 +91,21 @@ nicht geleert (kleiner Trost, aber verwirrend obendrauf).
   `checkout.error` mit Hinweis.
 - `PayPalButton.onApprove` kann unverändert bleiben (reagiert dann auf `!ok`).
 
-### B2. update.sh ist ein Dev-Reset-Skript, kein Produktions-Deploy (CARRY-OVER, dokumentiert in todo-deploy.md)
-
-`update.sh:37` führt **`php artisan migrate:fresh --seed --force`** aus — droppt
-alle Tabellen. In Produktion bricht der Deploy dank
-`DB::prohibitDestructiveCommands()` „nur" ab (statt zu wipen), d. h. das Skript
-ist auf dem Produktivsystem schlicht unbrauchbar. Außerdem: baut nur
-`npm run build` (kein `build:ssr`) und startet den SSR-Prozess nicht neu →
-nach jedem Deploy rendert der SSR-Server veralteten Code oder crasht bei
-inkompatiblem Manifest.
-
-**Failure-Szenario:** Erster echter Produktions-Deploy schlägt beim
-Migrate-Schritt fehl (halb aktualisierter Code-Stand, Caches geleert, kein
-Re-Cache) — bzw. mit deaktiviertem Guard wäre die komplette Order-/Kundendatenbank weg.
-
-**Fix (klein, <1 h):** `migrate --force` statt `migrate:fresh --seed --force`;
-`npm run build:ssr` statt `build`; `php artisan inertia:stop-ssr || true` +
-Neustart des Supervisor-/systemd-Services am Ende; optional `php artisan down/up`
-um das Fenster zu schließen. Der Actions-Deploy-Workflow (todo-deploy.md,
-Weg A) ist die saubere Fortsetzung, aber unabhängig davon muss das Skript
-selbst zuerst entschärft werden.
-
 ---
 
 ## 🟠 Sicherheitslücken
 
-### S-1. Späte/duplizierte CAPTURE.COMPLETED-Webhooks können `refunded` → `paid` zurückdrehen (NEU)
+### S-1. Späte/duplizierte CAPTURE.COMPLETED-Webhooks können `refunded` → `paid` zurückdrehen (NEU) ✅ (10.07.2026)
+
+**Erledigt — mit bewusster Abweichung vom Fix-Vorschlag:** statt pending-only
+schließt `transitionToPaid()` nur `paid` und `refunded` aus
+(`whereNotIn`) — `failed` bleibt zulässig (Capture-Retry über die Return-URL
+muss die Order noch bezahlen können) und `cancelled` ebenso (trifft Geld für
+eine klick-stornierte Order ein, ist `paid` der zum Geld konsistente Zustand).
+`handleCaptureCompleted()` überspringt REFUNDED-Payments (Log statt Update)
+und überschreibt `response_data` nicht mehr, wenn das Payment bereits
+COMPLETED ist. Tests: Refund-Replay bleibt `refunded` ohne Mails,
+markPaid-Guards auf OrderManager-Ebene.
 
 `app/Support/Orders/OrderManager.php:126-129` — `transitionToPaid()` schützt
 nur gegen „bereits paid":
@@ -142,7 +137,11 @@ Approval-Tab via `afterPayment` wieder `paid` würde); in
 statt Update). Test: REFUNDED-Payment + COMPLETED-Webhook → Status bleibt,
 keine Mails (`Mail::fake`).
 
-### S-2. `afterPayment` captured fremde Orders und leert den falschen Warenkorb (NEU, klein)
+### S-2. `afterPayment` captured fremde Orders und leert den falschen Warenkorb (NEU, klein) ✅ (10.07.2026)
+
+**Erledigt:** `whereHas('order', customer_id)`-Scope wie beim JS-Capture;
+fremde Tokens → Redirect auf `checkout.index`, kein Capture. Bestehende
+Return-Flow-Tests agieren jetzt als Order-Owner, neuer Fremd-Token-Test.
 
 `app/Http/Controllers/PayPalController.php:204-243` — die Route ist seit V3
 hinter `auth` (bewusste Entscheidung: Ownership prüft erst die Success-Seite).
@@ -157,7 +156,11 @@ bevor der legitime Käufer selbst captured).
 **Fix (eine Zeile + Test):** denselben `whereHas('order', customer_id)`-Scope
 wie in `captureOrder()` verwenden; ohne Match Redirect auf `checkout.index`.
 
-### S-3. Webhook-Capture ohne Betragsabgleich (NEU, klein)
+### S-3. Webhook-Capture ohne Betragsabgleich (NEU, klein) ✅ (10.07.2026)
+
+**Erledigt:** `handleCaptureCompleted()` gleicht den Capture-Betrag gegen die
+Order ab (wie Capture-/Return-Pfad) und alarmiert bei Abweichung den Betreiber;
+Test „Webhook mit falschem Betrag lässt Order pending".
 
 `handleCaptureCompleted()` markiert paid ohne den Betrag gegen die Order zu
 prüfen — der JS-/Return-Pfad tut das (via `completeCapture()`), der
@@ -165,7 +168,12 @@ Webhook-Pfad nicht. Da der Webhook signaturverifiziert ist und die Capture aus
 der eigenen Order stammt, ist das Risiko gering — aber die Prüfung existiert
 schon und sollte für alle drei Pfade gelten. (Mit S-1 zusammen fixbar.)
 
-### S-4. Kleinkram (NEU)
+### S-4. Kleinkram (NEU) ✅ (10.07.2026)
+
+**Erledigt:** `SESSION_SECURE_COOKIE` als dokumentierte Zeile in `.env.example`;
+`country` validiert gegen die im AddressForm angebotenen Länder
+(DE/AT/CH/NL/BE/LU/FR, `AddressRules::COUNTRIES`); `profile.destroy` aus der
+`verified`-Gruppe gezogen (Kontolöschung für unverifizierte Kunden, Test).
 
 - `SESSION_SECURE_COOKIE` fehlt in `.env.example` — die Launch-Checkliste
   verlangt es, die Vorlage kennt den Key nicht. Eine auskommentierte Zeile
@@ -184,7 +192,12 @@ schon und sollte für alle drei Pfade gelten. (Mit S-1 zusammen fixbar.)
 
 ## 🟡 Businesslogik
 
-### B-1. Betragsabweichung beim Capture: Geld eingezogen, niemand merkt es (CARRY-OVER V3 B-3, durch B1 verschärft)
+### B-1. Betragsabweichung beim Capture: Geld eingezogen, niemand merkt es (CARRY-OVER V3 B-3, durch B1 verschärft) ✅ (10.07.2026)
+
+**Erledigt:** `PaymentAmountMismatchMail` an `shop.email` bei jeder
+Betragsabweichung (Capture-, Return- und Webhook-Pfad), mit Bestellwert,
+eingezogenem Betrag, PayPal-Order und Admin-Link. Kunde sieht durch den
+B1-Fix jetzt den Fehlerpfad statt der Erfolgsseite.
 
 Unverändert offen — und durch B1 in der Wirkung schlimmer als in V3
 beschrieben: Bei Abweichung ist das Geld bei PayPal eingezogen, Order/Payment
@@ -193,14 +206,18 @@ Erfolgsseite** (B1-Kette). Minimal-Fix bleibt: diesen Fall zusätzlich als Mail
 an `shop.email` melden. Mit dem B1-Fix zeigt der Kunde-Pfad dann wenigstens
 einen Fehler.
 
-### B-2. `confirmPayment` ohne `notify` umgeht den atomaren Übergang (CARRY-OVER V3 B-5)
+### B-2. `confirmPayment` ohne `notify` umgeht den atomaren Übergang (CARRY-OVER V3 B-5) ✅ (10.07.2026)
+
+**Erledigt:** nutzt jetzt `OrderManager::transitionToPaid()` (dafür public).
 
 `app/Http/Controllers/Admin/OrderController.php:103` — direktes
 `$order->update(['status' => 'paid'])` statt `transitionToPaid()`. Harmlos
 (Precondition-Check davor), aber der atomare Pfad existiert genau dafür.
 Wird mit dem S-1-Fix (`pending`-only) relevanter: einheitlich machen.
 
-### B-3. `summaryFromOrder`: `product_number`-Fallback auf OrderItem-ID (CARRY-OVER V3 B-5)
+### B-3. `summaryFromOrder`: `product_number`-Fallback auf OrderItem-ID (CARRY-OVER V3 B-5) ✅ (10.07.2026)
+
+**Erledigt:** Fallback ist jetzt `'—'`.
 
 `app/Support/Orders/OrderManager.php:195` — bei gelöschtem Produkt steht auf
 Success-Seite/Mails eine Nummer, die nie eine Produktnummer war. `?? '—'`.
@@ -217,7 +234,10 @@ Idempotency-Key oder `Cache::lock` um den Submit. Kein 1.0-Blocker.
 
 ## 🔵 Simplifizierung & Code-Refinement
 
-### Q-1. Sortier-Logik dupliziert (NEU)
+### Q-1. Sortier-Logik dupliziert (NEU) ✅ (10.07.2026)
+
+**Erledigt:** `App\Support\Products\ProductSort::fromRequest()`, beide
+Controller umgestellt.
 
 `ProductController::index()` (`app/Http/Controllers/ProductController.php:35-41`)
 und `CategoryController::show()` (`app/Http/Controllers/CategoryController.php:16-22`)
@@ -225,7 +245,9 @@ enthalten dasselbe `match ($sort)` Zeile für Zeile. Ein kleiner
 `ProductSort::fromRequest()`-Helper (oder Enum) macht beide Controller kürzer
 und hält künftige Sortieroptionen konsistent. ~30 min.
 
-### Q-2. Produkt-Löschen hinterlässt Bilddateien auf der Disk (NEU)
+### Q-2. Produkt-Löschen hinterlässt Bilddateien auf der Disk (NEU) ✅ (10.07.2026)
+
+**Erledigt:** `deleteDirectory("products/{id}")` in `destroy()` + Test.
 
 `Admin\ProductController::destroy()` löscht das Produkt; die
 `product_images`-Zeilen kaskadieren in der DB, aber die Dateien unter
@@ -253,7 +275,12 @@ im nächsten Kit-Update mitnehmen. Kein Risiko im ausgelieferten Bundle
 (tree-shaken), aber der „audit sauber"-Anspruch aus V2/V3 ist damit formal
 gebrochen.
 
-### D-1. SCHEMA.md ist der DB weit hinterher (NEU — Doku-Drift mit Selbstverpflichtung)
+### D-1. SCHEMA.md ist der DB weit hinterher (NEU — Doku-Drift mit Selbstverpflichtung) ✅ (10.07.2026)
+
+**Erledigt:** SCHEMA.md komplett nachgezogen (product_variants inkl.
+FK-Übersicht, orders-FK SET NULL, `is_available`, `manufacturer_id` nullable,
+Status-Liste ohne processing/completed, price decimal(10,2)); gegen das reale
+SQLite-Schema (`PRAGMA table_info`/`foreign_key_list`) verifiziert.
 
 `database/SCHEMA.md` erklärt sich selbst zur „einzigen Quelle der Wahrheit"
 mit Wartungspflicht — tatsächlich fehlen/stimmen nicht:
@@ -289,7 +316,7 @@ aktivierbar und Bundle baut). Konkrete Lücken:
 
 ```ts
 return typeof window === 'undefined'
-    ? canonical                    // ← SSR: bleibt "/products/5"
+    ? canonical // ← SSR: bleibt "/products/5"
     : new URL(canonical, window.location.origin).href;
 ```
 
@@ -303,13 +330,6 @@ Shared Prop (`config('app.url')`) und in `AppHead` `new URL(canonical, base)`
 für beide Zweige; `og:image` ist schon absolut (Storage-URL). Verifikation wie
 in V3: `curl` gegen die SSR-Antwort.
 
-### SEO-2. Hero-Bild weiterhin 731-KB-PNG (CARRY-OVER V3 SEO-5, Restpunkt)
-
-Attribute (width/height, `fetchpriority="high"`, `decoding="async"`) sind da —
-die WebP/AVIF-Konvertierung ist der bewusst offene Rest. ~80–150 KB statt
-731 KB, größter Einzelhebel für den Startseiten-LCP. `cwebp`/`avifenc`
-Einmal-Job, 15 min.
-
 ### SEO-3. Produkt-Cover werden unskaliert ausgeliefert (NEU)
 
 `storage/app/public/products/` liegt bei **45 MB**, etliche Cover >300 KB
@@ -320,59 +340,49 @@ Datenvolumen mobil massiv. Optionen nach Aufwand: (a) Einmal-Skript, das
 bestehende Cover auf max. ~800 px WebP nachverdichtet + Resize beim
 Admin-Upload (`intervention/image`, Abhängigkeits-OK nötig), (b) volle
 Thumbnail-Pipeline mit `srcset`. Für 1.0 reicht (a). ~2–4 h.
-
-### SEO-Notizen (bewusst, nicht re-flaggt)
-
-Sitemap listet unverfügbare Produkte (Entscheidung V2), Zahlung/Versand-Seiten
-überschneiden sich thematisch (auf Wunsch unberührt), `robots.txt` hardcodet
-die Prod-Domain (für die eine Umgebung okay).
-
 ---
 
 ## 🚀 Launch-Checkliste (Delta zu README/V3 — dort Punkte 1–7 unverändert gültig)
 
-1. **B2 zuerst:** `update.sh` produktionsfest (migrate --force, build:ssr,
-   SSR-Neustart) — vor dem ersten echten Deploy, unabhängig von der
-   CI/CD-Entscheidung aus todo-deploy.md (Weg A: Actions → SSH).
-2. **SSR-Betrieb:** `inertia:start-ssr` als Supervisor/systemd-Dauerprozess +
-   `INERTIA_SSR_ENABLED=true`; nach SEO-1-Fix einmal per `curl` die absolute
-   Canonical/og:url in der rohen HTML-Antwort verifizieren.
-3. **`SESSION_SECURE_COOKIE=true`** setzen (und in `.env.example` dokumentieren, S-4).
-4. **CI-Gate nachziehen (Carry-over V3):** `tests.yml` fährt PHPStan + Tests +
+1. **CI-Gate nachziehen (Carry-over V3):** `tests.yml` fährt PHPStan + Tests +
    Build, aber **kein `svelte-check`** (`composer types:check` = PHPStan;
    `npm run types:check` = svelte-check — Namenskollision beachten). Und
    `lint.yml` ruft `npm run format`/`npm run lint` (write/fix-Varianten) auf —
    Formatverstöße failen den Build nicht. Auf `format:check`/`lint:check` +
    `npm run types:check` umstellen, sonst driftet das in V3 mühsam
    grüngemachte Gate wieder.
-5. **DB-Backup-Strategie** (SQLite-Datei) — dritter Carry-over in Folge,
+2. **DB-Backup-Strategie** (SQLite-Datei) — dritter Carry-over in Folge,
    vor Launch entscheiden (simpelster Start: nächtliches
    `sqlite3 .backup`-Cron + Offsite-Kopie, zusammen mit `storage/app/public`).
-6. PayPal-Webhook-ID im Admin pflegen (sonst werden alle Webhooks abgelehnt —
+3. PayPal-Webhook-ID im Admin pflegen (sonst werden alle Webhooks abgelehnt —
    nur im Log sichtbar) — unverändert aus V3.
 
 ## 🧪 Testing — fehlende Abdeckung
 
-- **B1:** Capture-FAILED → Nicht-2xx + Success-Seite verweigert failed-Orders
-  (bestehenden `assertOk`-Test anpassen, neuen Success-Status-Test ergänzen).
-- **S-1:** REFUNDED-Payment + verspäteter CAPTURE.COMPLETED-Webhook → Status
-  bleibt `refunded`, keine Mails (`Mail::fake`).
-- **S-2:** `afterPayment` mit fremdem Token → kein Capture, Redirect.
+- ~~**B1:** Capture-FAILED → Nicht-2xx + Success-Seite verweigert failed-Orders~~ ✅
+  (10.07.2026 — `assertOk` angepasst, Success-Status- und PENDING-Tests neu).
+- ~~**S-1:** REFUNDED-Payment + verspäteter CAPTURE.COMPLETED-Webhook → Status
+  bleibt `refunded`, keine Mails~~ ✅ (10.07.2026 — plus Webhook-Betrags- und
+  markPaid-Guard-Tests).
+- ~~**S-2:** `afterPayment` mit fremdem Token → kein Capture, Redirect.~~ ✅ (10.07.2026)
 - **Manueller PayPal-Sandbox-Browsertest** — Carry-over seit V2 (CSRF in
   PHPUnit deaktiviert, Button-Flow serverseitig nicht testbar). Nach dem
-  B1-Fix Pflicht, weil der Fehlerpfad-UX sich ändert.
-- Nach Q-2: Test „Produkt-Löschen räumt Bildverzeichnis".
+  B1-Fix **Pflicht**, weil sich die Fehlerpfad-UX geändert hat (422 statt
+  Redirect auf Success).
+- ~~Nach Q-2: Test „Produkt-Löschen räumt Bildverzeichnis".~~ ✅ (10.07.2026)
 
 ## Empfohlene Reihenfolge
 
-1. **B1** (Capture-FAILED-Kette: 422 + Success-Status-Guard) — kundensichtbarer
-   Geldweg, mit Tests.
-2. **S-1 + S-3 + B-2 zusammen** (transitionToPaid nur `pending`→`paid`,
-   Webhook-Guard + Betragsabgleich, confirmPayment vereinheitlichen) — ein
-   zusammenhängender OrderManager/Webhook-Commit mit Tests.
-3. **B2** (update.sh entschärfen) → danach Deploy-Workflow-Entscheidung
-   (todo-deploy.md Weg A) + CI-Gate-Fix (Launch-Punkt 4).
-4. **S-2** (afterPayment-Ownership, eine Zeile) + **S-4-Kleinkram**.
-5. **SEO-1** (absolute Canonical im SSR) → **SEO-2/SEO-3** (Bilder) — vor dem
-   ersten Indexieren billiger als danach.
-6. **D-1** (SCHEMA.md nachziehen) + Q-1/Q-2 nach Gelegenheit.
+1. ~~**B1** (Capture-FAILED-Kette: 422 + Success-Status-Guard) — kundensichtbarer
+   Geldweg, mit Tests.~~ ✅ (10.07.2026)
+2. ~~**S-1 + S-3 + B-2 zusammen** (transitionToPaid-Härtung, Webhook-Guard +
+   Betragsabgleich, confirmPayment vereinheitlichen) — ein zusammenhängender
+   OrderManager/Webhook-Commit mit Tests.~~ ✅ (10.07.2026)
+3. ~~**S-2** (afterPayment-Ownership, eine Zeile) + **S-4-Kleinkram**.~~ ✅ (10.07.2026)
+4. **SEO-1** (absolute Canonical im SSR) → **SEO-3** (Produkt-Cover) — vor dem
+   ersten Indexieren billiger als danach. **Auf Wunsch zurückgestellt (10.07.2026).**
+5. ~~**D-1** (SCHEMA.md nachziehen) + Q-1/Q-2 nach Gelegenheit.~~ ✅ (10.07.2026)
+
+**Damit offen:** SEO-1/SEO-3 (zurückgestellt), B-4 (Doppel-Submit, bewusst kein
+Blocker), Q-3/Q-4 (Kosmetik/npm-audit-low), Launch-Checkliste 1–3 (CI-Gate,
+Backup, Webhook-ID) und der manuelle PayPal-Sandbox-Browsertest.
