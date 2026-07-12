@@ -38,16 +38,16 @@ Route::get('/test', function () {
 })->name('test.hover-header');
 
 Route::prefix('informationen')->group(function () {
-    Route::inertia('/versand', 'VersandUndZahlung')->name('versand');
-    Route::inertia('/zahlung', 'Zahlung')->name('zahlung');
-    Route::inertia('/faq', 'FAQ')->name('faq');
-    Route::inertia('/widerrufsbelehrung', 'Widerrufsbelehrung')->name('widerrufsbelehrung');
+    Route::inertia('/versand', 'Informationen/VersandUndZahlung')->name('versand');
+    Route::inertia('/zahlung', 'Informationen/Zahlung')->name('zahlung');
+    Route::inertia('/faq', 'Informationen/FAQ')->name('faq');
+    Route::inertia('/widerrufsbelehrung', 'Informationen/Widerrufsbelehrung')->name('widerrufsbelehrung');
 });
 
 Route::prefix('unternehmen')->group(function () {
-    Route::inertia('/impressum', 'Impressum')->name('impressum');
-    Route::inertia('/agb', 'AGB')->name('agb');
-    Route::inertia('/datenschutz', 'Datenschutz')->name('datenschutz');
+    Route::inertia('/impressum', 'Unternehmen/Impressum')->name('impressum');
+    Route::inertia('/agb', 'Unternehmen/AGB')->name('agb');
+    Route::inertia('/datenschutz', 'Unternehmen/Datenschutz')->name('datenschutz');
 });
 
 require __DIR__.'/admin.php';
