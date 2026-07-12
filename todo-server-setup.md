@@ -253,7 +253,13 @@ After=network.target
 
 [Service]
 Type=simple
-User=www-data
+# WICHTIG: als "deploy" laufen lassen, NICHT als www-data!
+# Node liegt unter /home/deploy/.local/node-v22/ (Symlink /usr/local/bin/node).
+# www-data kommt in der Regel nicht in /home/deploy hinein (Modus 750) und
+# wuerde mit "node not found / permission denied" scheitern.
+# Ausserdem least privilege: der SSR-Prozess muss nur den Code LESEN und auf
+# 127.0.0.1:13714 lauschen - er braucht keinerlei Webserver-Rechte.
+User=deploy
 Group=www-data
 WorkingDirectory=/var/www/test.dormed24.de
 ExecStart=/usr/bin/php artisan inertia:start-ssr
@@ -262,7 +268,7 @@ ExecStart=/usr/bin/php artisan inertia:start-ssr
 # startet. Ohne Restart=always bliebe er nach jedem Deploy tot.
 Restart=always
 RestartSec=2
-# Node muss auffindbar sein (systemwerte Installation -> /usr/bin/node)
+# /usr/local/bin enthaelt den node-Symlink
 Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 [Install]
@@ -313,6 +319,60 @@ sudo apt-get install -y nodejs
 - Läuft als `www-data`.
 - PHP-FPM mit **PHP 8.4**.
 - HTTPS für `test.dormed24.de`.
+
+---
+
+## 9b. ❗ Vor dem ERSTEN Deploy aufräumen (sonst schlägt er fehl)
+
+Diese drei Punkte stammen aus dem Setup-Bericht und **blockieren den Deploy**:
+
+### a) Geänderte `package-lock.json` zurücksetzen
+
+Der Server-Checkout hat `M package-lock.json` (vermutlich durch ein früheres
+`npm install`). **`git pull --ff-only` bricht ab**, sobald der Pull diese Datei
+ebenfalls anfasst („Your local changes would be overwritten").
+
+```bash
+sudo -u deploy git -C /var/www/test.dormed24.de restore package-lock.json
+sudo -u deploy git -C /var/www/test.dormed24.de status --short   # muss sauber sein
+```
+
+> Der Deploy nutzt bewusst `npm ci` (nicht `npm install`) — das **verändert die
+> Lockfile nie**. Das Problem tritt also nur einmalig auf.
+
+### b) Ownership normalisieren
+
+Aktuell gemischt: App-Root `www-data:www-data`, `vendor/` + `node_modules/` `root:root`.
+**Der `deploy`-User kann so weder pullen noch `composer install`/`npm ci` ausführen.**
+
+```bash
+sudo chown -R deploy:www-data /var/www/test.dormed24.de
+sudo find /var/www/test.dormed24.de -type d -exec chmod 2755 {} \;
+sudo find /var/www/test.dormed24.de -type f -exec chmod 644 {} \;
+sudo chmod -R 2775 /var/www/test.dormed24.de/storage /var/www/test.dormed24.de/bootstrap/cache
+```
+
+### c) `.env`-Sicherungen aus dem App-Verzeichnis schaffen
+
+Im App-Root liegen `.env.before-codex-setup` und `.env.save` — **Klartext-Zugangsdaten**.
+
+```bash
+sudo mkdir -p /root/dormed24-env-backups
+sudo mv /var/www/test.dormed24.de/.env.before-codex-setup \
+        /var/www/test.dormed24.de/.env.save \
+        /root/dormed24-env-backups/
+```
+
+**Und unbedingt prüfen, dass der vHost auf `public/` zeigt** — sonst wären solche
+Dateien aus dem Netz abrufbar:
+
+```bash
+grep -ri "root\s" /etc/nginx/sites-enabled/ /etc/apache2/sites-enabled/ 2>/dev/null | grep -i dormed
+# MUSS auf /var/www/test.dormed24.de/public enden - NICHT auf den App-Root!
+
+# Gegenprobe von außen (muss 403/404 liefern, NIEMALS den Inhalt):
+curl -sI https://test.dormed24.de/.env | head -1
+```
 
 ---
 
