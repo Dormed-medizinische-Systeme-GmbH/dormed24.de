@@ -7,31 +7,35 @@
     import ImageIcon from '@lucide/svelte/icons/image';
     import PackageCheck from '@lucide/svelte/icons/package-check';
     import Phone from '@lucide/svelte/icons/phone';
-    import Rocket from '@lucide/svelte/icons/rocket';
     import ShieldCheck from '@lucide/svelte/icons/shield-check';
     import Truck from '@lucide/svelte/icons/truck';
     import * as ProductController from '@/actions/App/Http/Controllers/ProductController';
     import AppHead from '@/components/AppHead.svelte';
     import ShopHeaderWithHover from '@/components/ShopHeader-with-hover.svelte';
     import TestAppFooter from '@/components/TestAppFooter.svelte';
+    import { Card, CardContent } from '@/components/ui/card';
     import { formatPrice } from '@/lib/currency';
 
     const trustItems = [
         {
             icon: PackageCheck,
             label: 'Einfach direkt bestellen',
+            text: 'Bestellung direkt im Shop – ohne Angebotsschleifen, mit klaren Preisen.',
         },
         {
             icon: Truck,
             label: 'Lieferung oder Abholung',
+            text: 'Per DPD zugestellt oder persönlich bei uns abgeholt – wie es passt.',
         },
         {
             icon: FileCheck,
             label: 'inkl. GWE und Einweisung',
+            text: 'Video-Einweisung oder Einweisung vor Ort – Sie starten nicht bei null.',
         },
         {
             icon: ShieldCheck,
             label: 'Gewährleistung und geprüfte Qualität',
+            text: 'Jedes Gerät mit Gewährleistung – geprüfte Qualität statt Blindkauf.',
         },
     ] as const;
 
@@ -57,11 +61,6 @@
             text: 'Vom Verbrauchsmaterial bis zur Medizintechnik bestellen Sie mit wenigen Klicks und klarer Betreuung.',
         },
     ] as const;
-
-    const featureSectionItems = Array.from({ length: 4 }, () => ({
-        title: 'Benefit driven feature title',
-        text: 'Shortly describe how this feature solves a specific user problem.',
-    }));
 
     const highlightProducts = [
         {
@@ -313,100 +312,114 @@
         </div>
     </section>
 
-    <section class="bg-white px-2 py-2">
-        <div
-            class="rounded-2xl border border-border bg-white px-6 py-20 text-center sm:px-8 lg:px-12 lg:py-28"
-        >
-            <p class="text-sm font-semibold text-muted-foreground lg:text-base">
-                Feature Section
-            </p>
-            <h2
-                class="mx-auto mt-6 max-w-3xl text-4xl font-bold leading-tight text-foreground sm:text-5xl lg:text-6xl"
-            >
-                Show your solution's impact on user success
-            </h2>
-            <p
-                class="mx-auto mt-7 max-w-2xl text-lg leading-8 text-muted-foreground sm:text-xl"
-            >
-                Explain in one or two concise sentences how your solution
-                transforms users' challenges into positive outcomes.
-            </p>
+    <!--
+        TEST-DESIGN: ersetzt die generische Lorem-Feature-Section
+        ("Show your solution's impact on user success") und zieht die
+        Trust-Bar-Inhalte (Lieferung/GWE/Gewaehrleistung) hier mit rein,
+        wie vom User gewuenscht - eine Sektion statt zwei getrennte.
+        Linksbuendig statt zentriert, damit es nicht wie eine generische
+        Marketing-Hero-Kachel wirkt.
+    -->
+    <section class="bg-background">
+        <div class="mx-auto max-w-7xl px-4 py-16 lg:px-8 lg:py-24">
+            <div class="max-w-2xl">
+                <p
+                    class="text-xs font-bold uppercase tracking-[0.14em] text-brand-accent"
+                >
+                    Rundum-Service
+                </p>
+                <h2
+                    class="mt-3 text-3xl font-bold leading-tight text-foreground lg:text-4xl"
+                >
+                    Nicht nur verkauft — eingerichtet, eingewiesen, betreut.
+                </h2>
+                <p class="mt-4 text-base leading-7 text-muted-foreground">
+                    Jede Bestellung endet nicht an der Haustür: Lieferung oder
+                    Abholung, Gewährleistung und Einweisung gehören für uns zum
+                    Gerät dazu.
+                </p>
+            </div>
 
-            <div class="mt-16 grid gap-14 md:grid-cols-2 lg:grid-cols-4">
-                {#each featureSectionItems as item, index (index)}
-                    <article class="mx-auto max-w-xs">
-                        <div
-                            class="mx-auto grid size-12 place-items-center rounded-lg border border-border bg-white shadow-sm"
-                        >
-                            <Rocket class="size-5 text-foreground" />
-                        </div>
-                        <h3 class="mt-8 text-base font-bold text-foreground">
-                            {item.title}
-                        </h3>
-                        <p
-                            class="mt-4 text-base leading-7 text-muted-foreground"
-                        >
-                            {item.text}
-                        </p>
-                    </article>
+            <div class="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                {#each trustItems as item (item.label)}
+                    <Card class="border-border">
+                        <CardContent class="flex flex-col gap-3">
+                            <div
+                                class="grid size-11 place-items-center rounded-lg bg-brand-accent/10"
+                            >
+                                <item.icon
+                                    class="size-5 text-brand-accent"
+                                    strokeWidth={1.75}
+                                />
+                            </div>
+                            <h3 class="text-base font-bold text-foreground">
+                                {item.label}
+                            </h3>
+                            <p class="text-sm leading-6 text-muted-foreground">
+                                {item.text}
+                            </p>
+                        </CardContent>
+                    </Card>
                 {/each}
             </div>
         </div>
     </section>
 
-    <!-- Trust bar -->
-    <div class="border-b border-t bg-white">
-        <div class="mx-auto max-w-7xl px-4 lg:px-8">
-            <div
-                class="grid grid-cols-2 divide-x divide-y lg:grid-cols-4 lg:divide-y-0"
-            >
-                {#each trustItems as item (item.label)}
-                    <div class="flex items-center gap-3 px-6 py-5">
-                        <item.icon
-                            class="size-8 shrink-0 text-brand-accent"
-                            strokeWidth={1.5}
-                        />
-                        <span
-                            class="text-sm font-semibold leading-snug text-primary"
-                        >
-                            {item.label}
-                        </span>
-                    </div>
-                {/each}
-            </div>
-        </div>
-    </div>
-
+    <!--
+        Onboarding: echte Reihenfolge (registrieren -> freischalten ->
+        bestellen), deshalb sind Nummern hier inhaltlich gerechtfertigt.
+        Auf Desktop verbindet eine Linie die Stationen wie in einem
+        Beschaffungs-Workflow, auf Mobile reicht "Schritt N" in der Card.
+    -->
     <section class="bg-muted">
-        <div class="mx-auto max-w-7xl px-4 py-12 lg:px-8 lg:py-16">
-            <div class="max-w-3xl">
-                <h2 class="text-2xl font-bold text-foreground lg:text-3xl">
+        <div class="mx-auto max-w-7xl px-4 py-16 lg:px-8 lg:py-24">
+            <div class="max-w-2xl">
+                <p
+                    class="text-xs font-bold uppercase tracking-[0.14em] text-brand-accent"
+                >
+                    So einfach geht's
+                </p>
+                <h2 class="mt-3 text-2xl font-bold text-foreground lg:text-3xl">
                     Einfach registrieren, freischalten lassen und direkt
                     bestellen
                 </h2>
-                <p
-                    class="mt-3 text-sm leading-6 text-muted-foreground lg:text-base"
-                >
-                    Der bisherige Auftritt von dormed24 lebt stark davon, dass
-                    neue Kunden schnell verstehen, wie sie ins Sortiment kommen.
-                    Genau dieses Prinzip soll die Startseite auch unterhalb des
-                    Headers sauber fortführen.
-                </p>
             </div>
 
-            <div class="mt-8 grid gap-4 md:grid-cols-3">
-                {#each onboardingSteps as step, index (index)}
-                    <article class="rounded-xl border bg-white p-6 shadow-sm">
-                        <p class="text-sm font-semibold text-brand-accent">
-                            Schritt {index + 1}
-                        </p>
-                        <h3 class="mt-2 text-lg font-semibold text-foreground">
-                            {step.title}
-                        </h3>
-                        <p class="mt-3 text-sm leading-6 text-muted-foreground">
-                            {step.text}
-                        </p>
-                    </article>
+            <div
+                class="mt-12 hidden items-center gap-3 md:flex"
+                aria-hidden="true"
+            >
+                {#each onboardingSteps as step, index (step.title)}
+                    <div class="flex flex-1 items-center gap-3 last:flex-none">
+                        <div
+                            class="grid size-10 shrink-0 place-items-center rounded-full bg-primary text-sm font-bold text-white"
+                        >
+                            {index + 1}
+                        </div>
+                        {#if index < onboardingSteps.length - 1}
+                            <div class="h-px flex-1 bg-border"></div>
+                        {/if}
+                    </div>
+                {/each}
+            </div>
+
+            <div class="mt-6 grid gap-4 md:mt-4 md:grid-cols-3">
+                {#each onboardingSteps as step, index (step.title)}
+                    <Card class="border-border">
+                        <CardContent class="flex flex-col gap-2">
+                            <p
+                                class="text-sm font-semibold text-brand-accent md:hidden"
+                            >
+                                Schritt {index + 1}
+                            </p>
+                            <h3 class="text-lg font-semibold text-foreground">
+                                {step.title}
+                            </h3>
+                            <p class="text-sm leading-6 text-muted-foreground">
+                                {step.text}
+                            </p>
+                        </CardContent>
+                    </Card>
                 {/each}
             </div>
         </div>
