@@ -2,9 +2,10 @@ name: tests
 
 on:
   push:
+    # "main" fehlt hier bewusst: dort ruft deploy.yml diesen Workflow per
+  # workflow_call als Deploy-Gate auf (sonst liefe er doppelt).
     branches:
       - develop
-      - main
       - master
       - workos
   pull_request:
@@ -13,6 +14,8 @@ on:
       - main
       - master
       - workos
+  # Erlaubt deploy.yml, diesen Workflow als wiederverwendbares Gate aufzurufen.
+  workflow_call:
 
 permissions:
   contents: read
@@ -22,7 +25,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        php-version: ['8.3', '8.4', '8.5']
+        # composer.json verlangt "php": "^8.4" -> 8.3 KANN nicht funktionieren
+        # (schlug bisher immer fehl). 8.4 ist auch die Produktionsversion.
+        php-version: ['8.4']
 
     steps:
       - name: Checkout code
