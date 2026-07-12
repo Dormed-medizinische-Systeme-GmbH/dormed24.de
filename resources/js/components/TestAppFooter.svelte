@@ -26,8 +26,8 @@
             class="flex flex-wrap justify-between gap-10 border-b border-white/10 pb-10"
         >
             <div class="max-w-xs">
-                <div class="inline-block rounded-lg bg-white px-3 py-2">
-                    <img src="/logo.svg" alt="dormed 24" class="h-7 w-auto" />
+                <div class="inline-block rounded-lg bg-white px-4 py-3">
+                    <img src="/logo.svg" alt="dormed 24" class="h-10 w-auto" />
                 </div>
                 <p class="mt-4 text-sm text-white/55">
                     ein Angebot der Dormed medizinische Systeme GmbH
@@ -231,7 +231,7 @@
         <div
             class="mt-6 flex flex-wrap items-center justify-between gap-2 text-xs text-white/40"
         >
-            <span>dormed24.de</span>
+            <span>© dormed24.de</span>
             <span>ein Angebot der Dormed medizinische Systeme GmbH</span>
         </div>
     </div>
