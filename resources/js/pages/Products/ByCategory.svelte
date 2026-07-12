@@ -59,13 +59,13 @@
         `${category.name} – Medizintechnik im dormed24-Sortiment direkt online bestellen.`}
 />
 
-<div class="flex min-h-screen flex-col bg-gray-50">
+<div class="flex min-h-screen flex-col bg-muted">
     <ShopHeader />
 
     <main class="mx-auto flex-1 max-w-7xl px-4 py-8 lg:px-8">
         <div class="mb-6 flex items-center justify-between gap-4">
             <div>
-                <h1 class="text-xl font-semibold text-gray-900">
+                <h1 class="text-xl font-semibold text-foreground">
                     {category.name}
                 </h1>
                 {#if category.description}
@@ -81,7 +81,7 @@
             <select
                 value={sort}
                 onchange={(e) => onSortChange(e.currentTarget.value)}
-                class="rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-primary focus:outline-none"
+                class="rounded border border-border bg-white px-3 py-2 text-sm text-muted-foreground shadow-sm focus:border-primary focus:outline-none"
             >
                 {#each sortOptions as option (option.value)}
                     <option value={option.value}>{option.label}</option>

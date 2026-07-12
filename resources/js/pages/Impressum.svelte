@@ -30,7 +30,9 @@
             <h2 class="mb-3 text-base font-bold text-brand-secondary">
                 Angaben zum Dienstanbieter
             </h2>
-            <address class="not-italic text-sm leading-relaxed text-gray-700">
+            <address
+                class="not-italic text-sm leading-relaxed text-muted-foreground"
+            >
                 DORMED medizinische Systeme GmbH<br />
                 Wilhelm-Röntgen-Straße 4<br />
                 59439 Holzwickede<br /><br />
@@ -56,7 +58,7 @@
             <h2 class="mb-3 text-base font-bold text-brand-secondary">
                 Vertreten durch den Geschäftsführer
             </h2>
-            <p class="text-sm text-gray-700">
+            <p class="text-sm text-muted-foreground">
                 Thomas Stücker-Everding, Andreas Draheim
             </p>
         </section>
@@ -65,26 +67,28 @@
             <h2 class="mb-3 text-base font-bold text-brand-secondary">
                 Registereintragung (§ 5 Abs. 1, Nr. 4 TMG)
             </h2>
-            <p class="text-sm text-gray-700">Registergericht Hamm, HRB 4337</p>
+            <p class="text-sm text-muted-foreground">
+                Registergericht Hamm, HRB 4337
+            </p>
         </section>
 
         <section class="mb-8">
             <h2 class="mb-3 text-base font-bold text-brand-secondary">
                 USt-ID gemäß UStG § 27a
             </h2>
-            <p class="text-sm text-gray-700">DE 125221841</p>
+            <p class="text-sm text-muted-foreground">DE 125221841</p>
         </section>
 
-        <hr class="my-8 border-gray-200" />
+        <hr class="my-8 border-border" />
 
         <section class="mb-8">
             <h2 class="mb-4 text-base font-bold text-brand-secondary">
                 Haftungsausschluss
             </h2>
 
-            <div class="space-y-6 text-sm text-gray-700">
+            <div class="space-y-6 text-sm text-muted-foreground">
                 <div>
-                    <h3 class="mb-2 font-semibold text-gray-900">
+                    <h3 class="mb-2 font-semibold text-foreground">
                         1. Inhalt des Onlineangebotes
                     </h3>
                     <p>
@@ -103,7 +107,7 @@
                 </div>
 
                 <div>
-                    <h3 class="mb-2 font-semibold text-gray-900">
+                    <h3 class="mb-2 font-semibold text-foreground">
                         2. Verweise und Links
                     </h3>
                     <p>
@@ -128,7 +132,7 @@
                 </div>
 
                 <div>
-                    <h3 class="mb-2 font-semibold text-gray-900">
+                    <h3 class="mb-2 font-semibold text-foreground">
                         3. Urheber- und Kennzeichenrecht
                     </h3>
                     <p>
@@ -150,7 +154,7 @@
                 </div>
 
                 <div>
-                    <h3 class="mb-2 font-semibold text-gray-900">
+                    <h3 class="mb-2 font-semibold text-foreground">
                         4. Datenschutz
                     </h3>
                     <p>
@@ -167,7 +171,7 @@
                 </div>
 
                 <div>
-                    <h3 class="mb-2 font-semibold text-gray-900">
+                    <h3 class="mb-2 font-semibold text-foreground">
                         5. Rechtswirksamkeit dieses Haftungsausschlusses
                     </h3>
                     <p>

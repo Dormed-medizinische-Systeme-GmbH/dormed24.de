@@ -141,7 +141,9 @@
 
 <div class="paypal-button-wrapper">
     {#if errorMessage}
-        <div class="mb-3 rounded-md bg-red-50 p-3 text-sm text-red-700">
+        <div
+            class="mb-3 rounded-md bg-destructive/10 p-3 text-sm text-destructive"
+        >
             {errorMessage}
         </div>
     {/if}
@@ -173,7 +175,9 @@
             <div
                 class="size-4 animate-spin rounded-full border-2 border-brand-accent border-t-transparent"
             ></div>
-            <span class="text-sm text-gray-600">Zahlung wird verarbeitet…</span>
+            <span class="text-sm text-muted-foreground"
+                >Zahlung wird verarbeitet…</span
+            >
         </div>
     {/if}
 </div>

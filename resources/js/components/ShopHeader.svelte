@@ -218,7 +218,7 @@
                                                 (activeResultIndex = index)}
                                         >
                                             <div
-                                                class="size-9 shrink-0 overflow-hidden rounded bg-gray-100"
+                                                class="size-9 shrink-0 overflow-hidden rounded bg-muted"
                                             >
                                                 {#if product.image_url}
                                                     <img
@@ -289,7 +289,7 @@
                             {#each staticNavStart as item (item.label)}
                                 <Link
                                     href={item.href}
-                                    class="rounded-md px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-accent hover:text-brand-secondary"
+                                    class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-brand-secondary"
                                 >
                                     {item.label}
                                 </Link>
@@ -297,7 +297,7 @@
                             {#each navCategories as cat (cat.id)}
                                 <Link
                                     href={`/${cat.slug}`}
-                                    class="rounded-md px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-accent hover:text-brand-secondary"
+                                    class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-brand-secondary"
                                 >
                                     {cat.name}
                                 </Link>
@@ -364,7 +364,7 @@
                 {#each staticNavStart as item (item.label)}
                     <Link
                         href={item.href}
-                        class="border-b-2 border-transparent px-4 py-3 text-sm font-medium text-gray-600 transition-colors hover:border-brand-accent hover:text-brand-secondary"
+                        class="border-b-2 border-transparent px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:border-brand-accent hover:text-brand-secondary"
                     >
                         {item.label}
                     </Link>
@@ -372,7 +372,7 @@
                 {#each navCategories as cat (cat.id)}
                     <Link
                         href={`/${cat.slug}`}
-                        class="border-b-2 border-transparent px-4 py-3 text-sm font-medium text-gray-600 transition-colors hover:border-brand-accent hover:text-brand-secondary"
+                        class="border-b-2 border-transparent px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:border-brand-accent hover:text-brand-secondary"
                     >
                         {cat.name}
                     </Link>

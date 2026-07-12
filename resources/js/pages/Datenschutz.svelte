@@ -28,12 +28,12 @@
             Datenschutzerklärung
         </h1>
 
-        <p class="mb-8 text-sm text-gray-700">
+        <p class="mb-8 text-sm text-muted-foreground">
             Wir freuen uns über Ihren Besuch auf unserer Webseite und Ihr
             Interesse an unserem Unternehmen und unseren Angeboten.
         </p>
 
-        <div class="space-y-10 text-sm text-gray-700">
+        <div class="space-y-10 text-sm text-muted-foreground">
             <!-- 1 -->
             <section>
                 <h2 class="mb-4 text-base font-bold text-brand-secondary">
@@ -42,7 +42,7 @@
 
                 <div class="space-y-6">
                     <div>
-                        <h3 class="mb-2 font-semibold text-gray-900">
+                        <h3 class="mb-2 font-semibold text-foreground">
                             a) Beim Besuch unserer Webseite
                         </h3>
                         <p class="mb-3">
@@ -94,7 +94,7 @@
                     </div>
 
                     <div>
-                        <h3 class="mb-2 font-semibold text-gray-900">
+                        <h3 class="mb-2 font-semibold text-foreground">
                             b) Bei Nutzung unseres Kontaktformulars
                         </h3>
                         <p class="mb-3">
@@ -118,7 +118,7 @@
                     </div>
 
                     <div>
-                        <h3 class="mb-2 font-semibold text-gray-900">
+                        <h3 class="mb-2 font-semibold text-foreground">
                             c) Bei Abschluss eines Vertragsverhältnisses
                         </h3>
                         <p class="mb-3">
@@ -162,7 +162,7 @@
                     </div>
 
                     <div>
-                        <h3 class="mb-2 font-semibold text-gray-900">
+                        <h3 class="mb-2 font-semibold text-foreground">
                             d) Zahlungsdienstleister
                         </h3>
                         <p>
@@ -177,7 +177,7 @@
                     </div>
 
                     <div>
-                        <h3 class="mb-2 font-semibold text-gray-900">
+                        <h3 class="mb-2 font-semibold text-foreground">
                             e) Newsletter
                         </h3>
                         <p>
@@ -378,7 +378,7 @@
 
                 <div class="space-y-6">
                     <div>
-                        <h3 class="mb-2 font-semibold text-gray-900">
+                        <h3 class="mb-2 font-semibold text-foreground">
                             Google Analytics
                         </h3>
                         <p class="mb-2">
@@ -418,7 +418,7 @@
                     </div>
 
                     <div>
-                        <h3 class="mb-2 font-semibold text-gray-900">
+                        <h3 class="mb-2 font-semibold text-foreground">
                             Google AdWords / Conversion-Tracking
                         </h3>
                         <p>
@@ -437,7 +437,7 @@
                     </div>
 
                     <div>
-                        <h3 class="mb-2 font-semibold text-gray-900">
+                        <h3 class="mb-2 font-semibold text-foreground">
                             Google Remarketing
                         </h3>
                         <p>
@@ -459,7 +459,7 @@
                     </div>
 
                     <div>
-                        <h3 class="mb-2 font-semibold text-gray-900">
+                        <h3 class="mb-2 font-semibold text-foreground">
                             Social Plugins (Facebook, Instagram, XING, LinkedIn,
                             YouTube)
                         </h3>
@@ -488,7 +488,9 @@
 
                 <div class="space-y-6">
                     <div>
-                        <h3 class="mb-2 font-semibold text-gray-900">Klarna</h3>
+                        <h3 class="mb-2 font-semibold text-foreground">
+                            Klarna
+                        </h3>
                         <p>
                             Bei Auswahl einer Klarna-Zahlungsdienstleistung
                             erfolgt die Zahlungsabwicklung über die Klarna Bank
@@ -505,7 +507,9 @@
                     </div>
 
                     <div>
-                        <h3 class="mb-2 font-semibold text-gray-900">PayPal</h3>
+                        <h3 class="mb-2 font-semibold text-foreground">
+                            PayPal
+                        </h3>
                         <p>
                             Bei Zahlung via PayPal geben wir Ihre Zahlungsdaten
                             im Rahmen der Zahlungsabwicklung an die PayPal
@@ -526,7 +530,9 @@
                     </div>
 
                     <div>
-                        <h3 class="mb-2 font-semibold text-gray-900">SOFORT</h3>
+                        <h3 class="mb-2 font-semibold text-foreground">
+                            SOFORT
+                        </h3>
                         <p>
                             Bei Auswahl der Zahlungsart „SOFORT" erfolgt die
                             Zahlungsabwicklung über die SOFORT GmbH,

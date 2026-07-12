@@ -20,21 +20,21 @@
 
 <AppHead title="Fehler bei der Bestellung" />
 
-<div class="flex min-h-screen flex-col bg-gray-50">
+<div class="flex min-h-screen flex-col bg-muted">
     <ShopHeader />
 
     <main class="flex-1 mx-auto max-w-2xl px-4 py-16 text-center lg:px-8">
         <div class="mb-5 flex justify-center">
             <div
-                class="flex size-16 items-center justify-center rounded-full bg-red-100"
+                class="flex size-16 items-center justify-center rounded-full bg-destructive/10"
             >
-                <AlertCircle class="size-8 text-red-600" />
+                <AlertCircle class="size-8 text-destructive" />
             </div>
         </div>
-        <h1 class="text-2xl font-bold text-gray-900">
+        <h1 class="text-2xl font-bold text-foreground">
             Bei Ihrer Bestellung ist ein Fehler aufgetreten.
         </h1>
-        <p class="mt-3 text-sm text-gray-500">
+        <p class="mt-3 text-sm text-muted-foreground">
             Bitte versuchen Sie es erneut oder kontaktieren Sie uns unter
             <a
                 href={contact.phone_href}

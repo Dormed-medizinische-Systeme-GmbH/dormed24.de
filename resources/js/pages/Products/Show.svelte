@@ -288,7 +288,9 @@
     <ShopHeader />
 
     <main class="mx-auto flex-1 max-w-7xl px-4 py-6 lg:px-8">
-        <nav class="mb-8 flex items-center gap-1.5 text-sm text-gray-500">
+        <nav
+            class="mb-8 flex items-center gap-1.5 text-sm text-muted-foreground"
+        >
             <Link
                 href={ProductController.index.url()}
                 class="hover:text-brand-accent"
@@ -299,13 +301,13 @@
                 <ChevronRight class="size-3.5 shrink-0" />
                 <Link
                     href={CategoryController.show.url(product.category.slug)}
-                    class="text-gray-600 hover:text-brand-accent"
+                    class="text-muted-foreground hover:text-brand-accent"
                 >
                     {product.category.name}
                 </Link>
             {/if}
             <ChevronRight class="size-3.5 shrink-0" />
-            <span class="truncate text-gray-800">{product.name}</span>
+            <span class="truncate text-foreground">{product.name}</span>
         </nav>
 
         <div class="grid gap-12 lg:grid-cols-2 lg:items-start">
@@ -322,7 +324,7 @@
                                 {#each product.images as image (image.id)}
                                     <Carousel.Item class="ps-0">
                                         <div
-                                            class="aspect-square w-full cursor-crosshair overflow-hidden rounded-[1.75rem] border border-gray-200 bg-[#f6f7f8]"
+                                            class="aspect-square w-full cursor-crosshair overflow-hidden rounded-[1.75rem] border border-border bg-[#f6f7f8]"
                                             onmouseenter={handleZoomMouseEnter}
                                             onmouseleave={handleZoomMouseLeave}
                                             onmousemove={handleZoomMouseMove}
@@ -349,7 +351,7 @@
                                             'aspect-square overflow-hidden rounded-2xl border bg-[#f6f7f8] transition-colors',
                                             activeImageIndex === i
                                                 ? 'border-primary'
-                                                : 'border-gray-200 hover:border-gray-300',
+                                                : 'border-border hover:border-border',
                                         )}
                                         aria-label={`Bild ${i + 1}`}
                                     >
@@ -365,10 +367,10 @@
                     </div>
                 {:else}
                     <div
-                        class="flex aspect-square items-center justify-center rounded-[1.75rem] border border-gray-200 bg-[#f6f7f8]"
+                        class="flex aspect-square items-center justify-center rounded-[1.75rem] border border-border bg-[#f6f7f8]"
                     >
                         <ShoppingCart
-                            class="size-20 text-gray-200"
+                            class="size-20 text-border"
                             strokeWidth={1}
                         />
                     </div>
@@ -393,7 +395,7 @@
                     </div>
 
                     <div
-                        class="flex flex-wrap items-center gap-3 text-sm text-gray-600"
+                        class="flex flex-wrap items-center gap-3 text-sm text-muted-foreground"
                     >
                         <div class="flex items-center gap-1 text-[#111827]">
                             {#each Array.from({ length: 5 }, (_, index) => index + 1) as star (star)}
@@ -404,7 +406,7 @@
                                             star <=
                                                 Math.round(ratingAverageValue)
                                             ? 'fill-current'
-                                            : 'text-gray-300',
+                                            : 'text-muted-foreground',
                                     )}
                                 />
                             {/each}
@@ -418,7 +420,7 @@
 
                     {#if product.description}
                         <p
-                            class="max-w-2xl whitespace-pre-line text-base leading-8 text-gray-600"
+                            class="max-w-2xl whitespace-pre-line text-base leading-8 text-muted-foreground"
                         >
                             {product.description}
                         </p>
@@ -450,7 +452,7 @@
                                 bind:value={selectedVariantValue}
                             >
                                 <Select.Trigger
-                                    class="h-12 w-full rounded-xl border-gray-300 text-left text-[15px]"
+                                    class="h-12 w-full rounded-xl border-input text-left text-[15px]"
                                 >
                                     {variantSelectLabel}
                                 </Select.Trigger>
@@ -471,7 +473,7 @@
                                 ? 'bg-emerald-500'
                                 : 'bg-red-400'}"
                         ></span>
-                        <span class="text-sm text-gray-700">
+                        <span class="text-sm text-muted-foreground">
                             {product.is_available
                                 ? 'Sofort verfügbar, Lieferzeit: 1-2 Wochen'
                                 : 'Derzeit nicht verfügbar'}
@@ -482,10 +484,10 @@
                         class="flex flex-col gap-3 sm:flex-row sm:items-center"
                     >
                         <div
-                            class="flex h-12 items-center rounded-xl border border-gray-300 bg-white"
+                            class="flex h-12 items-center rounded-xl border border-input bg-white"
                         >
                             <button
-                                class="flex h-full w-12 items-center justify-center text-gray-500 hover:bg-gray-50 disabled:opacity-40"
+                                class="flex h-full w-12 items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-40"
                                 onclick={() =>
                                     (quantity = Math.max(1, quantity - 1))}
                                 disabled={quantity <= 1}
@@ -497,7 +499,7 @@
                                 >{quantity}</span
                             >
                             <button
-                                class="flex h-full w-12 items-center justify-center text-gray-500 hover:bg-gray-50"
+                                class="flex h-full w-12 items-center justify-center text-muted-foreground hover:bg-muted"
                                 onclick={() => quantity++}
                                 aria-label="Menge erhöhen"
                             >
@@ -527,7 +529,7 @@
                         'px-6 py-3 text-sm font-semibold transition-colors',
                         activeTab === 'beschreibung'
                             ? 'border-b-2 border-brand-accent text-brand-accent'
-                            : 'text-gray-500 hover:text-gray-800',
+                            : 'text-muted-foreground hover:text-foreground',
                     )}
                     onclick={() => (activeTab = 'beschreibung')}
                 >
@@ -538,7 +540,7 @@
                         'px-6 py-3 text-sm font-semibold transition-colors',
                         activeTab === 'bewertungen'
                             ? 'border-b-2 border-brand-accent text-brand-accent'
-                            : 'text-gray-500 hover:text-gray-800',
+                            : 'text-muted-foreground hover:text-foreground',
                     )}
                     onclick={() => (activeTab = 'bewertungen')}
                 >
@@ -551,17 +553,17 @@
             <div class="py-8">
                 {#if activeTab === 'beschreibung'}
                     <div class="max-w-3xl">
-                        <h2 class="mb-4 text-lg font-bold text-gray-900">
+                        <h2 class="mb-4 text-lg font-bold text-foreground">
                             Produktinformationen "{product.name}"
                         </h2>
                         {#if product.description}
                             <p
-                                class="whitespace-pre-line text-sm leading-relaxed text-gray-700"
+                                class="whitespace-pre-line text-sm leading-relaxed text-muted-foreground"
                             >
                                 {product.description}
                             </p>
                         {:else}
-                            <p class="text-sm text-gray-400">
+                            <p class="text-sm text-muted-foreground">
                                 Keine Beschreibung vorhanden.
                             </p>
                         {/if}
@@ -569,19 +571,21 @@
                 {:else}
                     <div>
                         <div
-                            class="rounded-xl border border-gray-200 bg-white p-6"
+                            class="rounded-xl border border-border bg-white p-6"
                         >
                             <div
                                 class="flex flex-wrap items-start justify-between gap-4"
                             >
                                 <div>
                                     <h2
-                                        class="text-lg font-bold text-gray-900 sm:text-xl"
+                                        class="text-lg font-bold text-foreground sm:text-xl"
                                     >
                                         Bewertungen
                                     </h2>
                                     {#if ratingSummary.count > 0}
-                                        <p class="mt-1 text-sm text-gray-500">
+                                        <p
+                                            class="mt-1 text-sm text-muted-foreground"
+                                        >
                                             {ratingSummary.count} Bewertung{ratingSummary.count ===
                                             1
                                                 ? ''
@@ -592,7 +596,7 @@
                                 {#if ratingSummary.count > 0}
                                     <div class="flex items-center gap-2">
                                         <span
-                                            class="text-lg font-bold text-gray-900 sm:text-xl"
+                                            class="text-lg font-bold text-foreground sm:text-xl"
                                         >
                                             {ratingSummary.average}
                                         </span>
@@ -610,7 +614,7 @@
                                                                     ratingAverageValue,
                                                                 )
                                                             ? 'fill-current'
-                                                            : 'text-gray-300',
+                                                            : 'text-muted-foreground',
                                                     )}
                                                 />
                                             {/each}
@@ -628,7 +632,7 @@
                                             >
                                                 {#if rating.created_at}
                                                     <span
-                                                        class="text-sm text-gray-500"
+                                                        class="text-sm text-muted-foreground"
                                                         >{rating.created_at}</span
                                                     >
                                                 {/if}
@@ -642,14 +646,14 @@
                                                                 star <=
                                                                     rating.stars
                                                                     ? 'fill-current'
-                                                                    : 'text-gray-300',
+                                                                    : 'text-muted-foreground',
                                                             )}
                                                         />
                                                     {/each}
                                                 </div>
                                             </div>
                                             <p
-                                                class="mt-2 text-sm leading-6 text-gray-700"
+                                                class="mt-2 text-sm leading-6 text-muted-foreground"
                                             >
                                                 {rating.content}
                                             </p>
@@ -659,7 +663,7 @@
 
                                 {#if ratings.length > RATINGS_PREVIEW_LIMIT}
                                     <div
-                                        class="mt-4 border-t border-gray-100 pt-4"
+                                        class="mt-4 border-t border-border pt-4"
                                     >
                                         <Button
                                             variant="outline"
@@ -706,12 +710,12 @@
                         -->
                         {#if false}
                             <div
-                                class="rounded-xl border border-gray-200 bg-white p-6"
+                                class="rounded-xl border border-border bg-white p-6"
                             >
-                                <h2 class="text-lg font-bold text-gray-900">
+                                <h2 class="text-lg font-bold text-foreground">
                                     Bewertung abgeben
                                 </h2>
-                                <p class="mt-2 text-sm text-gray-500">
+                                <p class="mt-2 text-sm text-muted-foreground">
                                     Ohne Login. Später kann die Moderation oder
                                     Verknüpfung zu Kunden ergänzt werden.
                                 </p>
@@ -759,7 +763,9 @@
                                                     </button>
                                                 {/each}
                                             </div>
-                                            <p class="text-sm text-gray-500">
+                                            <p
+                                                class="text-sm text-muted-foreground"
+                                            >
                                                 {starLabel(ratingStars)}
                                             </p>
                                             <InputError
@@ -805,7 +811,7 @@
 
 {#if zoomActive && zoomPanel && product.images[activeImageIndex]}
     <div
-        class="pointer-events-none fixed z-50 hidden overflow-hidden rounded-xl border bg-gray-50 shadow-2xl lg:block"
+        class="pointer-events-none fixed z-50 hidden overflow-hidden rounded-xl border bg-muted shadow-2xl lg:block"
         style="left: {zoomPanel.left}px; top: {zoomPanel.top}px; width: {zoomPanel.width}px; height: {zoomPanel.height}px; background-image: url('{product
             .images[activeImageIndex]
             .url}'); background-size: 280%; background-position: {cursorPct.x *

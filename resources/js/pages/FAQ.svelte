@@ -120,7 +120,7 @@
             <h1 class="mb-2 text-2xl font-bold text-brand-secondary">
                 Häufige Fragen
             </h1>
-            <p class="mb-10 text-sm text-gray-500">
+            <p class="mb-10 text-sm text-muted-foreground">
                 Sie finden hier Antworten auf die häufigsten Fragen zu
                 Bestellung, Lieferung, Zahlung und unseren Serviceleistungen.
                 Bei weiteren Fragen erreichen Sie uns unter
@@ -137,7 +137,7 @@
 
             <Accordion.Root
                 type="single"
-                class="divide-y divide-gray-100 border-y border-gray-100"
+                class="divide-y divide-gray-100 border-y border-border"
             >
                 {#each faqItems as item (item.id)}
                     <Accordion.Item value={item.id} class="group">
@@ -147,7 +147,7 @@
                             {item.question}
                         </Accordion.Trigger>
                         <Accordion.Content
-                            class="pb-5 text-sm leading-relaxed text-gray-600"
+                            class="pb-5 text-sm leading-relaxed text-muted-foreground"
                         >
                             {item.answer}
                         </Accordion.Content>
@@ -161,7 +161,7 @@
                 <p class="text-sm font-semibold text-brand-secondary">
                     Ihre Frage ist nicht dabei?
                 </p>
-                <p class="mt-1 text-sm text-gray-600">
+                <p class="mt-1 text-sm text-muted-foreground">
                     Unser Team hilft Ihnen gerne persönlich weiter.
                 </p>
                 <div class="mt-4 flex flex-wrap gap-3">

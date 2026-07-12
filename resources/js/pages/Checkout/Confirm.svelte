@@ -200,20 +200,20 @@
 
 <AppHead title="Bestellung abschließen" />
 
-<div class="flex min-h-screen flex-col bg-gray-50">
+<div class="flex min-h-screen flex-col bg-muted">
     <ShopHeader />
 
     <main class="flex-1">
         <div class="mx-auto max-w-7xl px-4 py-8 lg:px-8">
             <Link
                 href={checkout.index.url()}
-                class="mb-6 inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800"
+                class="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
             >
                 <ChevronLeft class="size-4" />
                 Zurück zur Bearbeitung
             </Link>
 
-            <h1 class="mb-8 text-3xl font-bold text-gray-900">
+            <h1 class="mb-8 text-3xl font-bold text-foreground">
                 Bestellung abschließen
             </h1>
 
@@ -221,11 +221,11 @@
                 <div class="flex flex-1 flex-col gap-6">
                     <!-- AGB -->
                     <div class="rounded-lg border bg-white p-5">
-                        <h2 class="mb-2 font-bold text-gray-900">
+                        <h2 class="mb-2 font-bold text-foreground">
                             AGB und Widerrufsbelehrung
                         </h2>
                         <Separator class="mb-4" />
-                        <p class="mb-3 text-sm text-gray-600">
+                        <p class="mb-3 text-sm text-muted-foreground">
                             Bitte beachten Sie die
                             <Link
                                 href="/informationen/widerrufsbelehrung"
@@ -239,7 +239,7 @@
                                 bind:checked={agreedToTerms}
                                 class="mt-0.5"
                             />
-                            <span class="text-sm text-gray-700">
+                            <span class="text-sm text-muted-foreground">
                                 Ich habe die
                                 <Link
                                     href="/unternehmen/agb"
@@ -254,7 +254,7 @@
                     <!-- Lieferadresse -->
                     <div class="rounded-lg border bg-white p-5">
                         <div class="mb-2 flex items-center justify-between">
-                            <h2 class="font-bold text-gray-900">
+                            <h2 class="font-bold text-foreground">
                                 Lieferadresse
                             </h2>
                             <Button
@@ -280,12 +280,12 @@
 
                     <!-- Rechnungsadresse -->
                     <div class="rounded-lg border bg-white p-5">
-                        <h2 class="mb-2 font-bold text-gray-900">
+                        <h2 class="mb-2 font-bold text-foreground">
                             Rechnungsadresse
                         </h2>
                         <Separator class="mb-4" />
                         {#if billingSameAsShipping}
-                            <p class="text-sm text-gray-600">
+                            <p class="text-sm text-muted-foreground">
                                 Identisch mit Lieferadresse.
                             </p>
                             <button
@@ -314,38 +314,46 @@
 
                 <div class="w-full lg:w-80 xl:w-88">
                     <div class="rounded-lg border bg-white p-5">
-                        <h2 class="mb-4 text-xl font-bold text-gray-900">
+                        <h2 class="mb-4 text-xl font-bold text-foreground">
                             Zusammenfassung
                         </h2>
 
                         <div class="flex flex-col gap-2 text-sm">
                             <div class="flex justify-between">
-                                <span class="text-gray-600">Zwischensumme</span>
+                                <span class="text-muted-foreground"
+                                    >Zwischensumme</span
+                                >
                                 <span class="font-medium"
                                     >{formatPrice(cart.subtotal)}*</span
                                 >
                             </div>
                             <div class="flex justify-between">
-                                <span class="text-gray-600">Versandkosten</span>
+                                <span class="text-muted-foreground"
+                                    >Versandkosten</span
+                                >
                                 <span class="font-medium"
                                     >{formatPrice(cart.shipping_total)}*</span
                                 >
                             </div>
                             <div class="my-2 border-t pt-2">
                                 <div class="flex justify-between">
-                                    <span class="font-bold text-gray-900"
+                                    <span class="font-bold text-foreground"
                                         >Gesamtsumme</span
                                     >
-                                    <span class="font-bold text-gray-900"
+                                    <span class="font-bold text-foreground"
                                         >{formatPrice(cart.total)}*</span
                                     >
                                 </div>
                             </div>
-                            <div class="flex justify-between text-gray-500">
+                            <div
+                                class="flex justify-between text-muted-foreground"
+                            >
                                 <span>Gesamtnettosumme</span>
                                 <span>{formatPrice(cart.net_total)}</span>
                             </div>
-                            <div class="flex justify-between text-gray-500">
+                            <div
+                                class="flex justify-between text-muted-foreground"
+                            >
                                 <span>zzgl. {cart.vat_rate} % MwSt.</span>
                                 <span>{formatPrice(cart.vat_amount)}</span>
                             </div>
@@ -354,7 +362,7 @@
                         {#if cart.payment_methods.length > 1}
                             <div class="mt-4 border-t pt-4">
                                 <h3
-                                    class="mb-3 text-sm font-bold text-gray-900"
+                                    class="mb-3 text-sm font-bold text-foreground"
                                 >
                                     Zahlungsart
                                 </h3>
@@ -374,12 +382,13 @@
                                             />
                                             <span class="text-sm">
                                                 <span
-                                                    class="font-semibold text-gray-900"
+                                                    class="font-semibold text-foreground"
                                                     >{method.label}</span
                                                 >
                                                 {#if method.description}
                                                     <br />
-                                                    <span class="text-gray-500"
+                                                    <span
+                                                        class="text-muted-foreground"
                                                         >{method.description}</span
                                                     >
                                                 {/if}
@@ -425,7 +434,7 @@
                                         </span>
                                     </button>
                                 </div>
-                                <p class="mt-3 text-sm text-gray-500">
+                                <p class="mt-3 text-sm text-muted-foreground">
                                     Halten Sie den Button gedrückt, um
                                     verbindlich zu bestellen. Sie erhalten eine
                                     Bestätigungsmail mit Bankverbindung.
@@ -439,7 +448,7 @@
                                     />
                                 </div>
                             {:else}
-                                <p class="mt-3 text-sm text-gray-500">
+                                <p class="mt-3 text-sm text-muted-foreground">
                                     Kein aktiver Zahlungsanbieter ausgewählt.
                                 </p>
                             {/if}
@@ -462,14 +471,14 @@
                                     </Link>
                                 {/snippet}
                             </Button>
-                            <p class="mt-3 text-sm text-gray-500">
+                            <p class="mt-3 text-sm text-muted-foreground">
                                 Für den Bestellabschluss ist aktuell ein
                                 Kundenkonto erforderlich.
                             </p>
                         {/if}
                     </div>
 
-                    <p class="mt-3 text-center text-xs text-gray-400">
+                    <p class="mt-3 text-center text-xs text-muted-foreground">
                         * Preise inkl. MwSt. zzgl. Versandkosten
                     </p>
                 </div>

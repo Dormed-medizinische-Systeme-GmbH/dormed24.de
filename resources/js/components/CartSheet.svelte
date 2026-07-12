@@ -75,7 +75,7 @@
             {#snippet children(props)}
                 <button
                     onclick={props.onClick as () => void}
-                    class="flex w-full items-center gap-2 border-b bg-gray-100 px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gray-200 hover:text-gray-900"
+                    class="flex w-full items-center gap-2 border-b bg-muted px-4 py-3 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
                 >
                     <ChevronLeft class="size-4" />
                     Weiter einkaufen
@@ -85,13 +85,15 @@
 
         <div class="flex-1 overflow-y-auto px-5 py-4">
             <div class="mb-5 flex items-baseline justify-between">
-                <h2 class="text-xl font-bold text-gray-900">Warenkorb</h2>
-                <span class="text-sm text-gray-500">{cart.count} Artikel</span>
+                <h2 class="text-xl font-bold text-foreground">Warenkorb</h2>
+                <span class="text-sm text-muted-foreground"
+                    >{cart.count} Artikel</span
+                >
             </div>
 
             {#if cart.is_empty}
                 <div
-                    class="rounded-lg border bg-white px-6 py-10 text-center text-sm text-gray-500"
+                    class="rounded-lg border bg-white px-6 py-10 text-center text-sm text-muted-foreground"
                 >
                     Ihr Warenkorb ist leer.
                 </div>
@@ -100,7 +102,7 @@
                     <div class="mb-4 rounded-lg border bg-white p-3">
                         <div class="flex gap-3">
                             <div
-                                class="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded border bg-gray-50"
+                                class="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded border bg-muted"
                             >
                                 {#if item.image_url}
                                     <img
@@ -110,7 +112,7 @@
                                     />
                                 {:else}
                                     <ShoppingCart
-                                        class="size-6 text-gray-300"
+                                        class="size-6 text-muted-foreground"
                                     />
                                 {/if}
                             </div>
@@ -121,12 +123,12 @@
                                 >
                                     <Link
                                         href={item.product_url}
-                                        class="text-sm font-semibold leading-snug text-gray-900 hover:text-brand-accent"
+                                        class="text-sm font-semibold leading-snug text-foreground hover:text-brand-accent"
                                     >
                                         {item.name}
                                     </Link>
                                     <button
-                                        class="shrink-0 rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                                        class="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-muted-foreground"
                                         aria-label="Entfernen"
                                         onclick={() => removeItem(item)}
                                     >
@@ -134,7 +136,9 @@
                                     </button>
                                 </div>
                                 {#if item.manufacturer_name}
-                                    <p class="mt-0.5 text-xs text-gray-400">
+                                    <p
+                                        class="mt-0.5 text-xs text-muted-foreground"
+                                    >
                                         {item.manufacturer_name}
                                     </p>
                                 {/if}
@@ -144,7 +148,7 @@
                         <div class="mt-3 flex items-center justify-between">
                             <div class="flex items-center rounded border">
                                 <button
-                                    class="flex size-8 items-center justify-center text-gray-500 hover:bg-gray-50 hover:text-gray-800 disabled:opacity-40"
+                                    class="flex size-8 items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40"
                                     onclick={() =>
                                         updateQuantity(item, item.quantity - 1)}
                                     disabled={item.quantity <= 1}
@@ -157,14 +161,14 @@
                                     {item.quantity}
                                 </span>
                                 <button
-                                    class="flex size-8 items-center justify-center text-gray-500 hover:bg-gray-50 hover:text-gray-800"
+                                    class="flex size-8 items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground"
                                     onclick={() =>
                                         updateQuantity(item, item.quantity + 1)}
                                 >
                                     <Plus class="size-3.5" />
                                 </button>
                             </div>
-                            <span class="text-sm font-semibold text-gray-900">
+                            <span class="text-sm font-semibold text-foreground">
                                 {formatPrice(item.line_total)}*
                             </span>
                         </div>
@@ -174,15 +178,15 @@
 
             <div class="mt-4 flex flex-col gap-2 border-t pt-4 text-sm">
                 <div class="flex justify-between">
-                    <span class="text-gray-600">Zwischensumme</span>
+                    <span class="text-muted-foreground">Zwischensumme</span>
                     <span class="font-semibold"
                         >{formatPrice(cart.subtotal)}*</span
                     >
                 </div>
                 <div class="flex justify-between">
                     <div>
-                        <span class="text-gray-600">Versandkosten</span>
-                        <p class="text-xs text-gray-400">
+                        <span class="text-muted-foreground">Versandkosten</span>
+                        <p class="text-xs text-muted-foreground">
                             {cart.selected_shipping_method?.label}
                         </p>
                     </div>
@@ -211,7 +215,7 @@
                             </Link>
                         {/snippet}
                     </Button>
-                    <p class="mt-3 text-xs text-gray-400">
+                    <p class="mt-3 text-xs text-muted-foreground">
                         * Preise inkl. MwSt. zzgl. Versandkosten
                     </p>
                 {/snippet}

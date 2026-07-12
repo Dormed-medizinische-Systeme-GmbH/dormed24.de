@@ -48,12 +48,12 @@
 
 <AppHead title="Warenkorb" />
 
-<div class="flex min-h-screen flex-col bg-gray-50">
+<div class="flex min-h-screen flex-col bg-muted">
     <ShopHeader />
 
     <main class="flex-1">
         <div class="mx-auto max-w-7xl px-4 py-8 lg:px-8">
-            <h1 class="mb-6 text-3xl font-bold text-gray-900">Warenkorb</h1>
+            <h1 class="mb-6 text-3xl font-bold text-foreground">Warenkorb</h1>
 
             <div class="flex flex-col gap-6 lg:flex-row lg:items-stretch">
                 <div class="flex flex-1 flex-col">
@@ -92,25 +92,25 @@
                             </div>
                         {:else}
                             <table class="w-full text-sm">
-                                <thead class="border-b bg-gray-50">
+                                <thead class="border-b bg-muted">
                                     <tr>
                                         <th
-                                            class="px-5 py-3 text-left font-semibold text-gray-700"
+                                            class="px-5 py-3 text-left font-semibold text-muted-foreground"
                                         >
                                             Produkt
                                         </th>
                                         <th
-                                            class="px-4 py-3 text-center font-semibold text-gray-700"
+                                            class="px-4 py-3 text-center font-semibold text-muted-foreground"
                                         >
                                             Anzahl
                                         </th>
                                         <th
-                                            class="px-4 py-3 text-right font-semibold text-gray-700"
+                                            class="px-4 py-3 text-right font-semibold text-muted-foreground"
                                         >
                                             Stückpreis
                                         </th>
                                         <th
-                                            class="px-5 py-3 text-right font-semibold text-gray-700"
+                                            class="px-5 py-3 text-right font-semibold text-muted-foreground"
                                         >
                                             Summe
                                         </th>
@@ -125,7 +125,7 @@
                                                     class="flex items-center gap-3"
                                                 >
                                                     <div
-                                                        class="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded border bg-gray-50"
+                                                        class="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded border bg-muted"
                                                     >
                                                         {#if item.image_url}
                                                             <img
@@ -135,14 +135,14 @@
                                                             />
                                                         {:else}
                                                             <div
-                                                                class="size-8 rounded bg-gray-200"
+                                                                class="size-8 rounded bg-muted"
                                                             ></div>
                                                         {/if}
                                                     </div>
                                                     <div>
                                                         <Link
                                                             href={item.product_url}
-                                                            class="font-semibold text-gray-900 hover:text-brand-accent"
+                                                            class="font-semibold text-foreground hover:text-brand-accent"
                                                         >
                                                             {item.name}
                                                         </Link>
@@ -161,7 +161,7 @@
                                                     class="mx-auto flex w-fit items-center rounded border"
                                                 >
                                                     <button
-                                                        class="flex size-8 items-center justify-center text-gray-500 hover:bg-gray-50 disabled:opacity-40"
+                                                        class="flex size-8 items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-40"
                                                         onclick={() =>
                                                             updateQuantity(
                                                                 item,
@@ -181,7 +181,7 @@
                                                         {item.quantity}
                                                     </span>
                                                     <button
-                                                        class="flex size-8 items-center justify-center text-gray-500 hover:bg-gray-50"
+                                                        class="flex size-8 items-center justify-center text-muted-foreground hover:bg-muted"
                                                         onclick={() =>
                                                             updateQuantity(
                                                                 item,
@@ -196,12 +196,12 @@
                                                 </div>
                                             </td>
                                             <td
-                                                class="px-4 py-4 text-right text-sm text-gray-700"
+                                                class="px-4 py-4 text-right text-sm text-muted-foreground"
                                             >
                                                 {formatPrice(item.unit_price)}*
                                             </td>
                                             <td
-                                                class="px-5 py-4 text-right text-sm font-semibold text-gray-900"
+                                                class="px-5 py-4 text-right text-sm font-semibold text-foreground"
                                             >
                                                 {formatPrice(item.line_total)}*
                                             </td>
@@ -209,7 +209,7 @@
                                                 <button
                                                     onclick={() =>
                                                         removeItem(item)}
-                                                    class="rounded border p-1.5 text-gray-400 hover:border-gray-300 hover:text-gray-600"
+                                                    class="rounded border p-1.5 text-muted-foreground hover:border-border hover:text-muted-foreground"
                                                     aria-label="Entfernen"
                                                 >
                                                     <X class="size-4" />
@@ -225,38 +225,46 @@
 
                 <div class="w-full lg:w-80 xl:w-88">
                     <div class="rounded-lg border bg-white p-5">
-                        <h2 class="mb-4 text-xl font-bold text-gray-900">
+                        <h2 class="mb-4 text-xl font-bold text-foreground">
                             Zusammenfassung
                         </h2>
 
                         <div class="flex flex-col gap-2 text-sm">
                             <div class="flex justify-between">
-                                <span class="text-gray-600">Zwischensumme</span>
+                                <span class="text-muted-foreground"
+                                    >Zwischensumme</span
+                                >
                                 <span class="font-medium"
                                     >{formatPrice(cart.subtotal)}*</span
                                 >
                             </div>
                             <div class="flex justify-between">
-                                <span class="text-gray-600">Versandkosten</span>
+                                <span class="text-muted-foreground"
+                                    >Versandkosten</span
+                                >
                                 <span class="font-medium"
                                     >{formatPrice(cart.shipping_total)}*</span
                                 >
                             </div>
                             <div class="my-2 border-t pt-2">
                                 <div class="flex justify-between">
-                                    <span class="font-bold text-gray-900"
+                                    <span class="font-bold text-foreground"
                                         >Gesamtsumme</span
                                     >
-                                    <span class="font-bold text-gray-900"
+                                    <span class="font-bold text-foreground"
                                         >{formatPrice(cart.total)}*</span
                                     >
                                 </div>
                             </div>
-                            <div class="flex justify-between text-gray-500">
+                            <div
+                                class="flex justify-between text-muted-foreground"
+                            >
                                 <span>Gesamtnettosumme</span>
                                 <span>{formatPrice(cart.net_total)}</span>
                             </div>
-                            <div class="flex justify-between text-gray-500">
+                            <div
+                                class="flex justify-between text-muted-foreground"
+                            >
                                 <span>zzgl. {cart.vat_rate} % MwSt.</span>
                                 <span>{formatPrice(cart.vat_amount)}</span>
                             </div>
@@ -279,7 +287,7 @@
                     </div>
 
                     <div class="mt-4 rounded-lg border bg-white p-5">
-                        <h2 class="mb-4 text-lg font-bold text-gray-900">
+                        <h2 class="mb-4 text-lg font-bold text-foreground">
                             Versandart
                         </h2>
                         <div class="flex flex-col gap-3">
@@ -298,16 +306,16 @@
                                     />
                                     <span class="text-sm">
                                         <span
-                                            class="font-semibold text-gray-900"
+                                            class="font-semibold text-foreground"
                                         >
                                             {method.label}
                                         </span>
-                                        <span class="text-gray-500">
+                                        <span class="text-muted-foreground">
                                             — {formatPrice(method.price ?? 0)}*
                                         </span>
                                         {#if method.description}
                                             <br />
-                                            <span class="text-gray-500"
+                                            <span class="text-muted-foreground"
                                                 >{method.description}</span
                                             >
                                         {/if}
@@ -317,7 +325,7 @@
                         </div>
                     </div>
 
-                    <p class="mt-3 text-center text-xs text-gray-400">
+                    <p class="mt-3 text-center text-xs text-muted-foreground">
                         * Preise inkl. MwSt. zzgl. Versandkosten
                     </p>
                 </div>

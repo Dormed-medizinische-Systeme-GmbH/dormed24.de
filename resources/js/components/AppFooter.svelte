@@ -29,7 +29,7 @@
                 <p
                     class="mt-2 flex items-center gap-2 text-sm font-bold text-brand-secondary"
                 >
-                    <Phone class="size-4 shrink-0 text-gray-400" />
+                    <Phone class="size-4 shrink-0 text-muted-foreground" />
                     <a href={contact.phone_href} class="hover:text-brand-accent"
                         >{contact.phone}</a
                     >
@@ -37,7 +37,7 @@
                 <p
                     class="mt-1 flex items-center gap-2 text-sm font-bold text-brand-secondary"
                 >
-                    <Printer class="size-4 shrink-0 text-gray-400" />
+                    <Printer class="size-4 shrink-0 text-muted-foreground" />
                     <a href={contact.fax_href} class="hover:text-brand-accent"
                         >{contact.fax}</a
                     >
@@ -45,7 +45,7 @@
                 <p
                     class="mt-1 flex items-center gap-2 text-sm font-bold text-brand-secondary"
                 >
-                    <Mail class="size-4 shrink-0 text-gray-400" />
+                    <Mail class="size-4 shrink-0 text-muted-foreground" />
                     <a
                         href={`mailto:${contact.email}`}
                         class="hover:text-brand-accent">{contact.email}</a

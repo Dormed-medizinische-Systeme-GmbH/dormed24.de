@@ -300,18 +300,18 @@
 
     <section class="bg-white px-2 py-2">
         <div
-            class="rounded-2xl border border-gray-200 bg-white px-6 py-20 text-center sm:px-8 lg:px-12 lg:py-28"
+            class="rounded-2xl border border-border bg-white px-6 py-20 text-center sm:px-8 lg:px-12 lg:py-28"
         >
-            <p class="text-sm font-semibold text-gray-500 lg:text-base">
+            <p class="text-sm font-semibold text-muted-foreground lg:text-base">
                 Feature Section
             </p>
             <h2
-                class="mx-auto mt-6 max-w-3xl text-4xl font-bold leading-tight text-black sm:text-5xl lg:text-6xl"
+                class="mx-auto mt-6 max-w-3xl text-4xl font-bold leading-tight text-foreground sm:text-5xl lg:text-6xl"
             >
                 Show your solution's impact on user success
             </h2>
             <p
-                class="mx-auto mt-7 max-w-2xl text-lg leading-8 text-gray-500 sm:text-xl"
+                class="mx-auto mt-7 max-w-2xl text-lg leading-8 text-muted-foreground sm:text-xl"
             >
                 Explain in one or two concise sentences how your solution
                 transforms users' challenges into positive outcomes.
@@ -321,14 +321,16 @@
                 {#each featureSectionItems as item, index (index)}
                     <article class="mx-auto max-w-xs">
                         <div
-                            class="mx-auto grid size-12 place-items-center rounded-lg border border-gray-200 bg-white shadow-sm"
+                            class="mx-auto grid size-12 place-items-center rounded-lg border border-border bg-white shadow-sm"
                         >
-                            <Rocket class="size-5 text-black" />
+                            <Rocket class="size-5 text-foreground" />
                         </div>
-                        <h3 class="mt-8 text-base font-bold text-black">
+                        <h3 class="mt-8 text-base font-bold text-foreground">
                             {item.title}
                         </h3>
-                        <p class="mt-4 text-base leading-7 text-gray-500">
+                        <p
+                            class="mt-4 text-base leading-7 text-muted-foreground"
+                        >
                             {item.text}
                         </p>
                     </article>
@@ -360,10 +362,10 @@
         </div>
     </div>
 
-    <section class="bg-gray-50">
+    <section class="bg-muted">
         <div class="mx-auto max-w-7xl px-4 py-12 lg:px-8 lg:py-16">
             <div class="max-w-3xl">
-                <h2 class="text-2xl font-bold text-gray-900 lg:text-3xl">
+                <h2 class="text-2xl font-bold text-foreground lg:text-3xl">
                     Einfach registrieren, freischalten lassen und direkt
                     bestellen
                 </h2>
@@ -383,7 +385,7 @@
                         <p class="text-sm font-semibold text-brand-accent">
                             Schritt {index + 1}
                         </p>
-                        <h3 class="mt-2 text-lg font-semibold text-gray-900">
+                        <h3 class="mt-2 text-lg font-semibold text-foreground">
                             {step.title}
                         </h3>
                         <p class="mt-3 text-sm leading-6 text-muted-foreground">
@@ -399,7 +401,7 @@
         <section class="bg-white">
             <div class="mx-auto max-w-7xl px-4 py-12 lg:px-8 lg:py-16">
                 <h2
-                    class="text-4xl font-bold leading-tight text-black md:text-center lg:text-5xl"
+                    class="text-4xl font-bold leading-tight text-foreground md:text-center lg:text-5xl"
                 >
                     {randomProductsTitle}
                 </h2>
@@ -420,25 +422,25 @@
                                 />
                             {:else}
                                 <div
-                                    class="relative grid size-24 place-items-center rounded-full border border-gray-200 bg-[#ededed]"
+                                    class="relative grid size-24 place-items-center rounded-full border border-border bg-[#ededed]"
                                 >
                                     <span
-                                        class="absolute left-1/2 top-1/2 h-px w-36 -translate-x-1/2 -translate-y-1/2 rotate-45 bg-gray-200"
+                                        class="absolute left-1/2 top-1/2 h-px w-36 -translate-x-1/2 -translate-y-1/2 rotate-45 bg-muted"
                                     ></span>
                                     <span
-                                        class="absolute left-1/2 top-1/2 h-px w-36 -translate-x-1/2 -translate-y-1/2 -rotate-45 bg-gray-200"
+                                        class="absolute left-1/2 top-1/2 h-px w-36 -translate-x-1/2 -translate-y-1/2 -rotate-45 bg-muted"
                                     ></span>
                                     <ImageIcon
-                                        class="relative size-4 text-gray-400"
+                                        class="relative size-4 text-muted-foreground"
                                     />
                                 </div>
                             {/if}
                         </div>
 
-                        <h3 class="mt-5 text-base font-bold text-black">
+                        <h3 class="mt-5 text-base font-bold text-foreground">
                             {activeProduct.name}
                         </h3>
-                        <p class="mt-3 text-2xl font-bold text-black">
+                        <p class="mt-3 text-2xl font-bold text-foreground">
                             {displayProductPrice(activeProduct.price)}
                         </p>
                     </Link>
@@ -449,8 +451,8 @@
                                 <button
                                     type="button"
                                     class={index === activeProductIndex
-                                        ? 'h-2 w-10 rounded-full bg-black'
-                                        : 'size-2.5 rounded-full bg-gray-300'}
+                                        ? 'h-2 w-10 rounded-full bg-primary'
+                                        : 'size-2.5 rounded-full bg-muted'}
                                     aria-label={`${product.name} anzeigen`}
                                     aria-current={index === activeProductIndex}
                                     onclick={() => (activeProductIndex = index)}
@@ -461,7 +463,7 @@
                         <div class="flex shrink-0 items-center gap-3">
                             <button
                                 type="button"
-                                class="grid size-12 place-items-center rounded-full border bg-white text-black shadow-sm transition hover:bg-gray-50"
+                                class="grid size-12 place-items-center rounded-full border bg-white text-foreground shadow-sm transition hover:bg-muted"
                                 aria-label="Vorheriges Produkt"
                                 onclick={showPreviousProduct}
                             >
@@ -469,7 +471,7 @@
                             </button>
                             <button
                                 type="button"
-                                class="grid size-12 place-items-center rounded-full border bg-white text-black shadow-sm transition hover:bg-gray-50"
+                                class="grid size-12 place-items-center rounded-full border bg-white text-foreground shadow-sm transition hover:bg-muted"
                                 aria-label="Nächstes Produkt"
                                 onclick={showNextProduct}
                             >
@@ -498,25 +500,27 @@
                                     />
                                 {:else}
                                     <div
-                                        class="relative grid size-16 place-items-center rounded-full border border-gray-200 bg-[#ededed]"
+                                        class="relative grid size-16 place-items-center rounded-full border border-border bg-[#ededed]"
                                     >
                                         <span
-                                            class="absolute left-1/2 top-1/2 h-px w-24 -translate-x-1/2 -translate-y-1/2 rotate-45 bg-gray-200"
+                                            class="absolute left-1/2 top-1/2 h-px w-24 -translate-x-1/2 -translate-y-1/2 rotate-45 bg-muted"
                                         ></span>
                                         <span
-                                            class="absolute left-1/2 top-1/2 h-px w-24 -translate-x-1/2 -translate-y-1/2 -rotate-45 bg-gray-200"
+                                            class="absolute left-1/2 top-1/2 h-px w-24 -translate-x-1/2 -translate-y-1/2 -rotate-45 bg-muted"
                                         ></span>
                                         <ImageIcon
-                                            class="relative size-3.5 text-gray-400"
+                                            class="relative size-3.5 text-muted-foreground"
                                         />
                                     </div>
                                 {/if}
                             </div>
 
-                            <h3 class="mt-5 text-base font-bold text-black">
+                            <h3
+                                class="mt-5 text-base font-bold text-foreground"
+                            >
                                 {product.name}
                             </h3>
-                            <p class="mt-3 text-2xl font-bold text-black">
+                            <p class="mt-3 text-2xl font-bold text-foreground">
                                 {displayProductPrice(product.price)}
                             </p>
                         </Link>
@@ -530,7 +534,7 @@
         <div class="mx-auto max-w-7xl px-4 py-12 lg:px-8 lg:py-16">
             <div class="mb-8 flex items-end justify-between gap-6">
                 <div class="max-w-3xl">
-                    <h2 class="text-2xl font-bold text-gray-900 lg:text-3xl">
+                    <h2 class="text-2xl font-bold text-foreground lg:text-3xl">
                         Neu bei dormed24
                     </h2>
                     <p
@@ -561,7 +565,7 @@
                         >
                             Produkthighlight
                         </p>
-                        <h3 class="mt-3 text-lg font-semibold text-gray-900">
+                        <h3 class="mt-3 text-lg font-semibold text-foreground">
                             {product.title}
                         </h3>
                         <p class="mt-3 text-sm leading-6 text-muted-foreground">
@@ -597,13 +601,13 @@
         </div>
     </section>
 
-    <section class="bg-gray-50">
+    <section class="bg-muted">
         <div class="mx-auto max-w-7xl px-4 py-12 lg:px-8 lg:py-16">
             <div
                 class="grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]"
             >
                 <div>
-                    <h2 class="text-2xl font-bold text-gray-900 lg:text-3xl">
+                    <h2 class="text-2xl font-bold text-foreground lg:text-3xl">
                         Beschaffung für Praxis, MVZ und Klinik
                     </h2>
                     <p
@@ -618,7 +622,7 @@
                     <div class="mt-6 grid gap-3">
                         {#each assortmentPillars as pillar (pillar)}
                             <div
-                                class="rounded-lg border bg-white px-4 py-3 text-sm text-gray-700 shadow-sm"
+                                class="rounded-lg border bg-white px-4 py-3 text-sm text-muted-foreground shadow-sm"
                             >
                                 {pillar}
                             </div>
@@ -627,7 +631,7 @@
                 </div>
 
                 <div class="rounded-xl border bg-white p-6 shadow-sm">
-                    <h3 class="text-lg font-semibold text-gray-900">
+                    <h3 class="text-lg font-semibold text-foreground">
                         Beratung und schnelle Wege
                     </h3>
                     <div class="mt-5 space-y-5">

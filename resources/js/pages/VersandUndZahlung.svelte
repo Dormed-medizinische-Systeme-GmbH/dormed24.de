@@ -16,7 +16,7 @@
     <main class="flex-1 mx-auto max-w-7xl px-4 py-10 lg:px-8">
         <h1 class="mb-6 text-2xl font-bold text-brand-secondary">Versand</h1>
 
-        <p class="mb-8 text-sm text-gray-700">
+        <p class="mb-8 text-sm text-muted-foreground">
             <strong>Hinweis:</strong> Unsere Angebote richten sich an
             Privatpersonen und Unternehmen. Privatkunden steht ein
             Widerrufsrecht gemäß §355 BGB zu. Weitere Informationen finden Sie
@@ -34,95 +34,90 @@
         <div class="mb-8 overflow-x-auto">
             <table class="w-full border-collapse text-sm">
                 <thead>
-                    <tr class="bg-gray-100 text-left text-gray-700">
-                        <th
-                            class="border border-gray-300 px-3 py-2 font-semibold"
+                    <tr class="bg-muted text-left text-muted-foreground">
+                        <th class="border border-border px-3 py-2 font-semibold"
                             >Preisspanne (netto)</th
                         >
-                        <th
-                            class="border border-gray-300 px-3 py-2 font-semibold"
+                        <th class="border border-border px-3 py-2 font-semibold"
                             >Preisspanne (brutto)</th
                         >
-                        <th
-                            class="border border-gray-300 px-3 py-2 font-semibold"
+                        <th class="border border-border px-3 py-2 font-semibold"
                             >Lieferzeit</th
                         >
-                        <th
-                            class="border border-gray-300 px-3 py-2 font-semibold"
+                        <th class="border border-border px-3 py-2 font-semibold"
                             >Versandkosten (netto)</th
                         >
-                        <th
-                            class="border border-gray-300 px-3 py-2 font-semibold"
+                        <th class="border border-border px-3 py-2 font-semibold"
                             >Versandkosten (brutto)</th
                         >
                     </tr>
                 </thead>
-                <tbody class="text-gray-700">
+                <tbody class="text-muted-foreground">
                     <tr>
-                        <td class="border border-gray-300 px-3 py-2"
+                        <td class="border border-border px-3 py-2"
                             >0,01&nbsp;€ – 149,99&nbsp;€</td
                         >
-                        <td class="border border-gray-300 px-3 py-2"
+                        <td class="border border-border px-3 py-2"
                             >0,01&nbsp;€ – 178,49&nbsp;€</td
                         >
-                        <td class="border border-gray-300 px-3 py-2"
+                        <td class="border border-border px-3 py-2"
                             >7 – 14 Tage</td
                         >
-                        <td class="border border-gray-300 px-3 py-2"
+                        <td class="border border-border px-3 py-2"
                             >9,52&nbsp;€</td
                         >
-                        <td class="border border-gray-300 px-3 py-2"
+                        <td class="border border-border px-3 py-2"
                             >11,33&nbsp;€</td
                         >
                     </tr>
-                    <tr class="bg-gray-50">
-                        <td class="border border-gray-300 px-3 py-2"
+                    <tr class="bg-muted">
+                        <td class="border border-border px-3 py-2"
                             >150,00&nbsp;€ – 499,99&nbsp;€</td
                         >
-                        <td class="border border-gray-300 px-3 py-2"
+                        <td class="border border-border px-3 py-2"
                             >178,50&nbsp;€ – 594,99&nbsp;€</td
                         >
-                        <td class="border border-gray-300 px-3 py-2"
+                        <td class="border border-border px-3 py-2"
                             >7 – 14 Tage</td
                         >
-                        <td class="border border-gray-300 px-3 py-2"
+                        <td class="border border-border px-3 py-2"
                             >16,07&nbsp;€</td
                         >
-                        <td class="border border-gray-300 px-3 py-2"
+                        <td class="border border-border px-3 py-2"
                             >19,12&nbsp;€</td
                         >
                     </tr>
                     <tr>
-                        <td class="border border-gray-300 px-3 py-2"
+                        <td class="border border-border px-3 py-2"
                             >500,00&nbsp;€ – 999,99&nbsp;€</td
                         >
-                        <td class="border border-gray-300 px-3 py-2"
+                        <td class="border border-border px-3 py-2"
                             >595,00&nbsp;€ – 1.189,99&nbsp;€</td
                         >
-                        <td class="border border-gray-300 px-3 py-2"
+                        <td class="border border-border px-3 py-2"
                             >7 – 14 Tage</td
                         >
-                        <td class="border border-gray-300 px-3 py-2"
+                        <td class="border border-border px-3 py-2"
                             >17,85&nbsp;€</td
                         >
-                        <td class="border border-gray-300 px-3 py-2"
+                        <td class="border border-border px-3 py-2"
                             >21,24&nbsp;€</td
                         >
                     </tr>
-                    <tr class="bg-gray-50">
-                        <td class="border border-gray-300 px-3 py-2"
+                    <tr class="bg-muted">
+                        <td class="border border-border px-3 py-2"
                             >ab 1.000,00&nbsp;€</td
                         >
-                        <td class="border border-gray-300 px-3 py-2"
+                        <td class="border border-border px-3 py-2"
                             >ab 1.190,00&nbsp;€</td
                         >
-                        <td class="border border-gray-300 px-3 py-2"
+                        <td class="border border-border px-3 py-2"
                             >7 – 14 Tage</td
                         >
-                        <td class="border border-gray-300 px-3 py-2"
+                        <td class="border border-border px-3 py-2"
                             >0,00&nbsp;€ (versandfrei)</td
                         >
-                        <td class="border border-gray-300 px-3 py-2"
+                        <td class="border border-border px-3 py-2"
                             >0,00&nbsp;€ (versandfrei)</td
                         >
                     </tr>
@@ -137,61 +132,56 @@
         <div class="mb-8 overflow-x-auto">
             <table class="w-full border-collapse text-sm">
                 <thead>
-                    <tr class="bg-gray-100 text-left text-gray-700">
-                        <th
-                            class="border border-gray-300 px-3 py-2 font-semibold"
+                    <tr class="bg-muted text-left text-muted-foreground">
+                        <th class="border border-border px-3 py-2 font-semibold"
                             >Preisspanne (netto)</th
                         >
-                        <th
-                            class="border border-gray-300 px-3 py-2 font-semibold"
+                        <th class="border border-border px-3 py-2 font-semibold"
                             >Preisspanne (brutto)</th
                         >
-                        <th
-                            class="border border-gray-300 px-3 py-2 font-semibold"
+                        <th class="border border-border px-3 py-2 font-semibold"
                             >Lieferzeit</th
                         >
-                        <th
-                            class="border border-gray-300 px-3 py-2 font-semibold"
+                        <th class="border border-border px-3 py-2 font-semibold"
                             >Versandkosten (netto)</th
                         >
-                        <th
-                            class="border border-gray-300 px-3 py-2 font-semibold"
+                        <th class="border border-border px-3 py-2 font-semibold"
                             >Versandkosten (brutto)</th
                         >
                     </tr>
                 </thead>
-                <tbody class="text-gray-700">
+                <tbody class="text-muted-foreground">
                     <tr>
-                        <td class="border border-gray-300 px-3 py-2"
+                        <td class="border border-border px-3 py-2"
                             >0,01&nbsp;€ – 149,99&nbsp;€</td
                         >
-                        <td class="border border-gray-300 px-3 py-2"
+                        <td class="border border-border px-3 py-2"
                             >0,01&nbsp;€ – 178,49&nbsp;€</td
                         >
-                        <td class="border border-gray-300 px-3 py-2"
+                        <td class="border border-border px-3 py-2"
                             >7 – 14 Tage</td
                         >
-                        <td class="border border-gray-300 px-3 py-2"
+                        <td class="border border-border px-3 py-2"
                             >303,45&nbsp;€</td
                         >
-                        <td class="border border-gray-300 px-3 py-2"
+                        <td class="border border-border px-3 py-2"
                             >361,11&nbsp;€</td
                         >
                     </tr>
-                    <tr class="bg-gray-50">
-                        <td class="border border-gray-300 px-3 py-2"
+                    <tr class="bg-muted">
+                        <td class="border border-border px-3 py-2"
                             >ab 150,00&nbsp;€</td
                         >
-                        <td class="border border-gray-300 px-3 py-2"
+                        <td class="border border-border px-3 py-2"
                             >ab 178,50&nbsp;€</td
                         >
-                        <td class="border border-gray-300 px-3 py-2"
+                        <td class="border border-border px-3 py-2"
                             >7 – 14 Tage</td
                         >
-                        <td class="border border-gray-300 px-3 py-2"
+                        <td class="border border-border px-3 py-2"
                             >297,50&nbsp;€</td
                         >
-                        <td class="border border-gray-300 px-3 py-2"
+                        <td class="border border-border px-3 py-2"
                             >361,11&nbsp;€</td
                         >
                     </tr>
@@ -206,30 +196,27 @@
         <div class="mb-8 overflow-x-auto">
             <table class="w-full border-collapse text-sm">
                 <thead>
-                    <tr class="bg-gray-100 text-left text-gray-700">
-                        <th
-                            class="border border-gray-300 px-3 py-2 font-semibold"
+                    <tr class="bg-muted text-left text-muted-foreground">
+                        <th class="border border-border px-3 py-2 font-semibold"
                             >Lieferzeit</th
                         >
-                        <th
-                            class="border border-gray-300 px-3 py-2 font-semibold"
+                        <th class="border border-border px-3 py-2 font-semibold"
                             >Versandkosten (netto)</th
                         >
-                        <th
-                            class="border border-gray-300 px-3 py-2 font-semibold"
+                        <th class="border border-border px-3 py-2 font-semibold"
                             >Versandkosten (brutto)</th
                         >
                     </tr>
                 </thead>
-                <tbody class="text-gray-700">
+                <tbody class="text-muted-foreground">
                     <tr>
-                        <td class="border border-gray-300 px-3 py-2"
+                        <td class="border border-border px-3 py-2"
                             >1 – 3 Tage</td
                         >
-                        <td class="border border-gray-300 px-3 py-2"
+                        <td class="border border-border px-3 py-2"
                             >0,00&nbsp;€ (kostenlos)</td
                         >
-                        <td class="border border-gray-300 px-3 py-2"
+                        <td class="border border-border px-3 py-2"
                             >0,00&nbsp;€ (kostenlos)</td
                         >
                     </tr>
@@ -244,30 +231,27 @@
         <div class="mb-8 overflow-x-auto">
             <table class="w-full border-collapse text-sm">
                 <thead>
-                    <tr class="bg-gray-100 text-left text-gray-700">
-                        <th
-                            class="border border-gray-300 px-3 py-2 font-semibold"
+                    <tr class="bg-muted text-left text-muted-foreground">
+                        <th class="border border-border px-3 py-2 font-semibold"
                             >Lieferzeit</th
                         >
-                        <th
-                            class="border border-gray-300 px-3 py-2 font-semibold"
+                        <th class="border border-border px-3 py-2 font-semibold"
                             >Kosten (netto)</th
                         >
-                        <th
-                            class="border border-gray-300 px-3 py-2 font-semibold"
+                        <th class="border border-border px-3 py-2 font-semibold"
                             >Kosten (brutto)</th
                         >
                     </tr>
                 </thead>
-                <tbody class="text-gray-700">
+                <tbody class="text-muted-foreground">
                     <tr>
-                        <td class="border border-gray-300 px-3 py-2"
+                        <td class="border border-border px-3 py-2"
                             >7 – 14 Tage</td
                         >
-                        <td class="border border-gray-300 px-3 py-2"
+                        <td class="border border-border px-3 py-2"
                             >575,00&nbsp;€</td
                         >
-                        <td class="border border-gray-300 px-3 py-2"
+                        <td class="border border-border px-3 py-2"
                             >684,25&nbsp;€</td
                         >
                     </tr>
@@ -275,7 +259,7 @@
             </table>
         </div>
 
-        <p class="mb-8 text-sm text-gray-700">
+        <p class="mb-8 text-sm text-muted-foreground">
             Alle angegebenen Preise verstehen sich inkl. der jeweils gültigen
             gesetzlichen Mehrwertsteuer (bei Privatkunden) oder zzgl. MwSt. (bei
             Unternehmern).
@@ -285,7 +269,7 @@
         <h2 class="mb-2 text-lg font-bold text-brand-secondary">
             Eigentumsvorbehalt
         </h2>
-        <div class="mb-8 space-y-3 text-sm text-gray-700">
+        <div class="mb-8 space-y-3 text-sm text-muted-foreground">
             <p>
                 Bis zur vollständigen Bezahlung behalten wir uns das Eigentum an
                 der gelieferten Ware vor. Bei vertragswidrigem Verhalten des
@@ -336,7 +320,7 @@
         <h2 class="mb-2 text-lg font-bold text-brand-secondary">
             Mängelanzeige
         </h2>
-        <p class="mb-8 text-sm text-gray-700">
+        <p class="mb-8 text-sm text-muted-foreground">
             Sollte die gelieferte Ware offensichtliche Mängel aufweisen, so ist
             dies innerhalb von drei Werktagen nach Erhalt der Ware anzuzeigen.
             Beschädigungen an der Verpackung sind vom Transportunternehmen
@@ -349,7 +333,7 @@
         <h2 class="mb-2 text-lg font-bold text-brand-secondary">
             Verjährung von Mängelansprüchen
         </h2>
-        <p class="mb-8 text-sm text-gray-700">
+        <p class="mb-8 text-sm text-muted-foreground">
             Mängelansprüche gegen uns verjähren nach 12 Monaten. Dies gilt nicht
             für den Fall schuldhafter Pflichtverletzungen, die zur Verletzung
             des Lebens, Körpers oder der Gesundheit führen oder für grob
@@ -360,7 +344,7 @@
         <h2 class="mb-2 text-lg font-bold text-brand-secondary">
             Nacherfüllung
         </h2>
-        <p class="mb-8 text-sm text-gray-700">
+        <p class="mb-8 text-sm text-muted-foreground">
             Ist eine von uns gelieferte Sache mangelhaft und wir sind zur
             Nacherfüllung verpflichtet, können wir nach unserer Wahl den Mangel
             an der gelieferten Sache beseitigen oder gegen Rückgabe der
@@ -371,7 +355,7 @@
         <h2 class="mb-2 text-lg font-bold text-brand-secondary">
             Werbeaussagen
         </h2>
-        <p class="mb-8 text-sm text-gray-700">
+        <p class="mb-8 text-sm text-muted-foreground">
             Soweit die Beschaffenheit des Kaufgegenstandes nicht vereinbart
             wurde, gehören Eigenschaften, die aufgrund von Äußerungen von
             Dritten, insbesondere Werbeaussagen von Herstellern, Importeuren und
@@ -385,7 +369,7 @@
 
         <!-- Datenschutz -->
         <h2 class="mb-2 text-lg font-bold text-brand-secondary">Datenschutz</h2>
-        <p class="mb-8 text-sm text-gray-700">
+        <p class="mb-8 text-sm text-muted-foreground">
             Wir speichern und verwenden die Bestelldaten des Kunden für die
             Abwicklung der Geschäftsbeziehung. Eine Weitergabe der Daten an
             ausgewählte Partner zur Erfüllung bzw. Zahlungsabwicklung erfolgt
@@ -397,7 +381,7 @@
         <h2 class="mb-2 text-lg font-bold text-brand-secondary">
             Erfüllungsort, Gerichtsstand
         </h2>
-        <p class="mb-8 text-sm text-gray-700">
+        <p class="mb-8 text-sm text-muted-foreground">
             Erfüllungsort und Gerichtsstand ist Holzwickede.
         </p>
     </main>

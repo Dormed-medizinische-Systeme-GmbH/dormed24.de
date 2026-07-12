@@ -35,7 +35,7 @@
             <div class="flex shrink-0 flex-col gap-2 sm:flex-row">
                 <button
                     type="button"
-                    class="rounded-lg border px-4 py-2 text-sm font-semibold text-brand-secondary transition hover:bg-gray-50"
+                    class="rounded-lg border px-4 py-2 text-sm font-semibold text-brand-secondary transition hover:bg-muted"
                     onclick={hideBanner}
                 >
                     Nur notwendige

@@ -28,7 +28,7 @@
             Widerrufsbelehrung
         </h1>
 
-        <div class="space-y-6 text-sm leading-relaxed text-gray-700">
+        <div class="space-y-6 text-sm leading-relaxed text-muted-foreground">
             <section>
                 <p>
                     Verbraucher haben das Recht, binnen 14 Tagen ohne Angabe von
@@ -51,7 +51,7 @@
             </section>
 
             <section>
-                <h2 class="mb-2 font-semibold text-gray-900">
+                <h2 class="mb-2 font-semibold text-foreground">
                     Folgen des Widerrufs
                 </h2>
                 <p>
@@ -74,7 +74,7 @@
             </section>
 
             <section class="border-t pt-6">
-                <h2 class="mb-2 font-semibold text-gray-900">
+                <h2 class="mb-2 font-semibold text-foreground">
                     Freiwillige Rückgaberichtlinie
                 </h2>
                 <p>
@@ -97,7 +97,7 @@
             </section>
 
             <section class="border-t pt-6">
-                <h2 class="mb-2 font-semibold text-gray-900">Kontakt</h2>
+                <h2 class="mb-2 font-semibold text-foreground">Kontakt</h2>
                 <p>
                     Weitere Informationen erhalten Sie telefonisch oder über
                     unser Kontaktformular.

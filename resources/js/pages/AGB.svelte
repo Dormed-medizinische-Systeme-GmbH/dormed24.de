@@ -16,12 +16,12 @@
         <h1 class="mb-2 text-2xl font-bold text-brand-secondary">
             Allgemeine Geschäftsbedingungen
         </h1>
-        <p class="mb-8 text-sm text-gray-500">
+        <p class="mb-8 text-sm text-muted-foreground">
             Stand: 01.01.2025 · dormed24.de, ein Angebot der Dormed medizinische
             Systeme GmbH
         </p>
 
-        <div class="space-y-10 text-sm text-gray-700">
+        <div class="space-y-10 text-sm text-muted-foreground">
             <!-- 1 -->
             <section>
                 <h2 class="mb-3 text-base font-bold text-brand-secondary">

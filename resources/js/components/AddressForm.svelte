@@ -35,7 +35,7 @@
 </script>
 
 <div class="space-y-4">
-    <h3 class="font-bold text-gray-900">{legend}</h3>
+    <h3 class="font-bold text-foreground">{legend}</h3>
 
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
@@ -81,10 +81,12 @@
                     value={data.company}
                     oninput={(e) => update('company', e.currentTarget.value)}
                     placeholder="Firmenname"
-                    class={errors[`${prefix}.company`] ? 'border-red-500' : ''}
+                    class={errors[`${prefix}.company`]
+                        ? 'border-destructive'
+                        : ''}
                 />
                 {#if errors[`${prefix}.company`]}
-                    <p class="mt-1 text-xs text-red-500">
+                    <p class="mt-1 text-xs text-destructive">
                         {errors[`${prefix}.company`]}
                     </p>
                 {/if}
@@ -95,16 +97,18 @@
 
         <div>
             <Label for="{prefix}.first_name">
-                Vorname <span class="text-red-500">*</span>
+                Vorname <span class="text-destructive">*</span>
             </Label>
             <Input
                 id="{prefix}.first_name"
                 value={data.first_name}
                 oninput={(e) => update('first_name', e.currentTarget.value)}
-                class={errors[`${prefix}.first_name`] ? 'border-red-500' : ''}
+                class={errors[`${prefix}.first_name`]
+                    ? 'border-destructive'
+                    : ''}
             />
             {#if errors[`${prefix}.first_name`]}
-                <p class="mt-1 text-xs text-red-500">
+                <p class="mt-1 text-xs text-destructive">
                     {errors[`${prefix}.first_name`]}
                 </p>
             {/if}
@@ -112,16 +116,18 @@
 
         <div>
             <Label for="{prefix}.last_name">
-                Nachname <span class="text-red-500">*</span>
+                Nachname <span class="text-destructive">*</span>
             </Label>
             <Input
                 id="{prefix}.last_name"
                 value={data.last_name}
                 oninput={(e) => update('last_name', e.currentTarget.value)}
-                class={errors[`${prefix}.last_name`] ? 'border-red-500' : ''}
+                class={errors[`${prefix}.last_name`]
+                    ? 'border-destructive'
+                    : ''}
             />
             {#if errors[`${prefix}.last_name`]}
-                <p class="mt-1 text-xs text-red-500">
+                <p class="mt-1 text-xs text-destructive">
                     {errors[`${prefix}.last_name`]}
                 </p>
             {/if}
@@ -129,16 +135,16 @@
 
         <div class="sm:col-span-1">
             <Label for="{prefix}.street">
-                Straße <span class="text-red-500">*</span>
+                Straße <span class="text-destructive">*</span>
             </Label>
             <Input
                 id="{prefix}.street"
                 value={data.street}
                 oninput={(e) => update('street', e.currentTarget.value)}
-                class={errors[`${prefix}.street`] ? 'border-red-500' : ''}
+                class={errors[`${prefix}.street`] ? 'border-destructive' : ''}
             />
             {#if errors[`${prefix}.street`]}
-                <p class="mt-1 text-xs text-red-500">
+                <p class="mt-1 text-xs text-destructive">
                     {errors[`${prefix}.street`]}
                 </p>
             {/if}
@@ -146,16 +152,18 @@
 
         <div>
             <Label for="{prefix}.house_number">
-                Hausnr. <span class="text-red-500">*</span>
+                Hausnr. <span class="text-destructive">*</span>
             </Label>
             <Input
                 id="{prefix}.house_number"
                 value={data.house_number}
                 oninput={(e) => update('house_number', e.currentTarget.value)}
-                class={errors[`${prefix}.house_number`] ? 'border-red-500' : ''}
+                class={errors[`${prefix}.house_number`]
+                    ? 'border-destructive'
+                    : ''}
             />
             {#if errors[`${prefix}.house_number`]}
-                <p class="mt-1 text-xs text-red-500">
+                <p class="mt-1 text-xs text-destructive">
                     {errors[`${prefix}.house_number`]}
                 </p>
             {/if}
@@ -176,31 +184,35 @@
             <div class="flex gap-2">
                 <div class="w-24 shrink-0">
                     <Label for="{prefix}.zip">
-                        PLZ <span class="text-red-500">*</span>
+                        PLZ <span class="text-destructive">*</span>
                     </Label>
                     <Input
                         id="{prefix}.zip"
                         value={data.zip}
                         oninput={(e) => update('zip', e.currentTarget.value)}
-                        class={errors[`${prefix}.zip`] ? 'border-red-500' : ''}
+                        class={errors[`${prefix}.zip`]
+                            ? 'border-destructive'
+                            : ''}
                     />
                 </div>
 
                 <div class="min-w-0 flex-1">
                     <Label for="{prefix}.city">
-                        Ort <span class="text-red-500">*</span>
+                        Ort <span class="text-destructive">*</span>
                     </Label>
                     <Input
                         id="{prefix}.city"
                         value={data.city}
                         oninput={(e) => update('city', e.currentTarget.value)}
-                        class={errors[`${prefix}.city`] ? 'border-red-500' : ''}
+                        class={errors[`${prefix}.city`]
+                            ? 'border-destructive'
+                            : ''}
                     />
                 </div>
             </div>
 
             {#if errors[`${prefix}.zip`] || errors[`${prefix}.city`]}
-                <p class="mt-1 text-xs text-red-500">
+                <p class="mt-1 text-xs text-destructive">
                     {errors[`${prefix}.zip`] ?? errors[`${prefix}.city`]}
                 </p>
             {/if}
