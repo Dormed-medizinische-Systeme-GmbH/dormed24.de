@@ -480,9 +480,7 @@
                         </span>
                     </div>
 
-                    <div
-                        class="flex flex-col gap-3 sm:flex-row sm:items-center"
-                    >
+                    <div class="flex flex-row items-center gap-3">
                         <div
                             class="flex h-12 items-center rounded-xl border border-input bg-white"
                         >
@@ -508,7 +506,7 @@
                         </div>
 
                         <Button
-                            class="h-12 flex-1 rounded-xl bg-[#111111] text-white hover:bg-[#111111]/90 disabled:opacity-50"
+                            class="h-12 flex-1 whitespace-nowrap rounded-xl bg-[#111111] text-white hover:bg-[#111111]/90 disabled:opacity-50"
                             onclick={addToCart}
                             disabled={!product.is_available}
                         >
