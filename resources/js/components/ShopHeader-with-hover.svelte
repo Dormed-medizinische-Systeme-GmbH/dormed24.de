@@ -157,7 +157,7 @@
 
 <svelte:window onclick={handleClickOutside} onkeydown={handleKeydown} />
 
-<header class="bg-white shadow-sm">
+<header class="relative z-40 bg-white shadow-sm">
     <!-- Top row: logo + search + icons -->
     <div class="border-b">
         <div
