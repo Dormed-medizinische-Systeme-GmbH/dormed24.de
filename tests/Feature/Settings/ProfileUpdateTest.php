@@ -81,6 +81,20 @@ class ProfileUpdateTest extends TestCase
         $this->assertNull($user->fresh());
     }
 
+    public function test_unverified_user_can_delete_their_account(): void
+    {
+        // DSGVO Art. 17: die Kontolöschung darf nicht an einer
+        // unbestätigten E-Mail-Adresse scheitern (V4 S-4).
+        $user = Customer::factory()->unverified()->create();
+
+        $this->actingAs($user)
+            ->delete(route('profile.destroy'), ['password' => 'password'])
+            ->assertRedirect(route('home'));
+
+        $this->assertGuest();
+        $this->assertNull($user->fresh());
+    }
+
     public function test_correct_password_must_be_provided_to_delete_account()
     {
         $user = Customer::factory()->create();

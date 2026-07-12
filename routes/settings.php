@@ -14,11 +14,14 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('settings/addresses', [AddressController::class, 'edit'])->name('addresses.edit');
     Route::put('settings/addresses', [AddressController::class, 'update'])->name('addresses.update');
+
+    // Bewusst ohne "verified": Kontolöschung (DSGVO Art. 17) darf nicht an
+    // einer unbestätigten E-Mail-Adresse scheitern; das Passwort wird im
+    // ProfileDeleteRequest geprüft.
+    Route::delete('settings/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::delete('settings/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-
     Route::get('settings/security', [SecurityController::class, 'edit'])
         ->middleware(RequirePassword::class)
         ->name('security.edit');

@@ -63,6 +63,20 @@ class CheckoutFlowTest extends TestCase
             ]);
     }
 
+    public function test_address_update_rejects_unsupported_country(): void
+    {
+        $customer = Customer::factory()->create();
+
+        $this->actingAs($customer)
+            ->patch(route('checkout.address.update'), [
+                'shipping_address' => [
+                    ...$this->completeAddress(),
+                    'country' => 'XX',
+                ],
+            ])
+            ->assertSessionHasErrors(['shipping_address.country']);
+    }
+
     public function test_address_update_stores_shipping_address_in_session(): void
     {
         $customer = Customer::factory()->create();

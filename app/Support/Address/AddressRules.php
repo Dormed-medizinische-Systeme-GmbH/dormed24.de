@@ -5,6 +5,14 @@ namespace App\Support\Address;
 class AddressRules
 {
     /**
+     * Lieferländer — muss mit dem Länder-Select im AddressForm
+     * (resources/js/components/AddressForm.svelte) übereinstimmen. Ein freier
+     * 2-Zeichen-String würde sonst bis in den PayPal-createOrder-Call wandern
+     * und dort einen 500er statt einer Feldmeldung produzieren.
+     */
+    public const COUNTRIES = 'DE,AT,CH,NL,BE,LU,FR';
+
+    /**
      * @var array<string, array<int, string>>
      */
     private const BASE = [
@@ -17,7 +25,7 @@ class AddressRules
         'address_line2' => ['nullable', 'string', 'max:255'],
         'zip' => ['required', 'string', 'max:20'],
         'city' => ['required', 'string', 'max:255'],
-        'country' => ['required', 'string', 'size:2'],
+        'country' => ['required', 'string', 'in:'.self::COUNTRIES],
         'phone' => ['nullable', 'string', 'max:50'],
     ];
 
