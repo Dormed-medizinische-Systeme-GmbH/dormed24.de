@@ -6,6 +6,10 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
+// TEMPORÄR: Deploy-Validierung — existiert erst nach dem nächsten erfolgreichen
+// Deploy auf dem Server. Antwortet "OK" (200). Nach der Validierung wieder entfernen.
+Route::get('/deploy-check', fn () => response('OK', 200)->header('Content-Type', 'text/plain'));
+
 Route::get('/', HomeController::class)->name('home');
 
 Route::prefix('informationen')->group(function () {
