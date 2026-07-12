@@ -82,6 +82,27 @@ jobs:
           npm ci
           echo "::endgroup::"
 
+          echo "::group::Alte Caches leeren (MUSS vor jedem artisan-Aufruf passieren)"
+          # Die gecachten config/routes/views stammen noch vom VORIGEN Release.
+          # Nach dem git pull zeigen sie ggf. auf geloeschte Klassen oder
+          # entfernte Routen -> JEDER artisan-Aufruf bootet gegen einen kaputten
+          # Cache und scheitert. Das trifft auch den artisan-Aufruf, den der
+          # Wayfinder-Vite-Plugin waehrend "npm run build" absetzt.
+          # Deshalb steht das hier oben und nicht erst nach dem Build.
+          php artisan optimize:clear
+          echo "::endgroup::"
+
+          echo "::group::Wayfinder-Routen erzeugen"
+          # resources/js/actions + resources/js/routes sind gitignored, existieren
+          # nach dem Pull also NICHT - sie muessen generiert werden, sonst findet
+          # der Vite-Build die Imports nicht.
+          # Explizit statt nur implizit im Vite-Plugin: der Plugin verschluckt die
+          # Artisan-Fehlermeldung ("Command failed") - hier sehen wir sie im Klartext.
+          # --with-form ist Pflicht (siehe AGENTS.md), sonst fehlt .form() und die
+          # Auth-Seiten crashen clientseitig.
+          php artisan wayfinder:generate --with-form
+          echo "::endgroup::"
+
           echo "::group::Frontend bauen (Client + SSR-Bundle)"
           # build:ssr baut BEIDES: Client-Assets und bootstrap/ssr/app.js.
           # Der Server faehrt SSR dauerhaft (INERTIA_SSR_ENABLED=true), das
@@ -89,14 +110,13 @@ jobs:
           npm run build:ssr
           echo "::endgroup::"
 
-          echo "::group::Migrationen + Caches"
-          # Erst Caches leeren (die gepullten config/routes koennen sich
-          # geaendert haben), dann migrieren, dann frisch cachen.
+          echo "::group::Migrationen + Caches neu aufbauen"
           # WICHTIG: "migrate --force" spielt nur NEUE Migrationen ein und
           # loescht NIEMALS Daten. Ein "migrate:fresh --seed" (Sandbox-Reset)
           # passiert bewusst NUR manuell auf dem Server, nie im Deploy.
-          php artisan optimize:clear
           php artisan migrate --force
+          # Erst hier neu cachen - mit dem frischen Code UND der aktuellen .env
+          # (das ist auch der Schritt, der INERTIA_SSR_ENABLED=true wirksam macht).
           php artisan optimize
           echo "::endgroup::"
 
