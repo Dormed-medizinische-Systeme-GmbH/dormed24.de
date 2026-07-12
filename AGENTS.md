@@ -315,9 +315,23 @@ Der Shop deckt **ausschließlich** Bestellannahme + Zahlungsabwicklungsschicht a
 `lint.yml` ruft `npm run format` (`prettier --write`) und `npm run lint` (`eslint --fix`) — **mutierende** Varianten. Es scheitert nur an *nicht* auto-fixbaren Fehlern, nicht an Formatierungs-Drift. Das echte Gate ist damit `tests.yml` (PHPStan + PHPUnit).
 **Um es scharf zu machen:** einmal `npm run format` + `vendor/bin/pint` laufen lassen und committen (räumt ~29 Dateien Prettier-Drift + Pint-Drift auf), dann in `lint.yml` auf `composer lint:check`, `npm run lint:check`, `npm run format:check` umstellen. `composer ci:check` bündelt bereits das komplette Gate.
 
-### `update.sh` — nur noch der Sandbox-Reset, kein Deploy
+### Sandbox-Reset — kein Skript, nur die nackten Befehle
 
-`update.sh` im Repo-Root zieht **bewusst keinen Code, installiert keine Dependencies und baut nichts** — das macht `deploy.yml` bei jedem Push zuverlässig, eine zweite Build-Quelle würde nur Drift-Risiko schaffen. Die Datei macht ausschließlich das, was der automatische Deploy **nie** tut: `optimize:clear` → **`migrate:fresh --seed --force`** → `optimize` → SSR-Reload. Manuell auf dem Server ausführen, wenn der Katalog auf einen sauberen Demo-Stand zurückgesetzt werden soll.
+Kein `update.sh` mehr: `deploy.yml` hält Code/Dependencies/Assets bei jedem Push
+aktuell, ein Wrapper-Skript für die restlichen paar Befehle wäre unnötige
+Abstraktion für eine seltene, bewusste Handaktion. Der Sandbox-Reset (Katalog auf
+sauberen Demo-Stand zurücksetzen) läuft manuell auf dem Server:
+
+```bash
+php artisan optimize:clear
+php artisan migrate:fresh --seed --force
+php artisan optimize
+php artisan inertia:stop-ssr   # systemd startet den SSR-Prozess per Restart=always neu
+```
+
+**`migrate:fresh --seed` passiert ausschließlich hier, manuell** — `deploy.yml`
+macht das nie (nutzt `migrate --force`, das nur neue Migrationen einspielt und
+nie Daten löscht).
 
 ---
 
