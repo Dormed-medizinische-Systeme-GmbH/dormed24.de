@@ -265,4 +265,17 @@ class CheckoutFlowTest extends TestCase
             ->get(route('checkout.success', ['order_id' => $order->id]))
             ->assertRedirect(route('home'));
     }
+
+    public function test_success_page_rejects_failed_and_cancelled_orders(): void
+    {
+        $customer = Customer::factory()->create();
+
+        foreach (['failed', 'cancelled'] as $status) {
+            $order = Order::factory()->for($customer)->create(['status' => $status]);
+
+            $this->actingAs($customer)
+                ->get(route('checkout.success', ['order_id' => $order->id]))
+                ->assertRedirect(route('checkout.error'));
+        }
+    }
 }

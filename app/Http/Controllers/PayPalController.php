@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Checkout\PlaceOrderRequest;
+use App\Mail\PaymentAmountMismatchMail;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Models\Setting;
 use App\Services\PayPalService;
 use App\Support\Cart\CartService;
 use App\Support\Orders\OrderManager;
@@ -14,6 +16,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Inertia\Response as InertiaResponse;
 
 class PayPalController extends Controller
@@ -136,10 +139,14 @@ class PayPalController extends Controller
 
             $payment->order->update(['status' => 'failed']);
 
+            // Non-2xx, damit der PayPal-Button den Fehlerpfad nimmt statt auf
+            // die Erfolgsseite weiterzuleiten (Kunde sähe sonst "Vielen Dank"
+            // ohne bezahlte Order, ohne Mails).
             return response()->json([
                 'status' => 'FAILED',
                 'paypal_order_id' => $paypalOrderId,
-            ]);
+                'error' => 'Die Zahlung wurde von PayPal nicht abgeschlossen. Bitte versuchen Sie es erneut oder wählen Sie eine andere Zahlungsart.',
+            ], 422);
         } catch (\Throwable $e) {
             Log::error('PayPal captureOrder exception', [
                 'paypal_order_id' => $paypalOrderId,
@@ -263,6 +270,11 @@ class PayPalController extends Controller
                 'expected' => $payment->order->total_amount,
             ]);
 
+            // Das Geld ist bei PayPal bereits eingezogen, die Order wird aber
+            // failed - ohne aktive Meldung bliebe das nur im Log haengen und
+            // braeuchte Zufall, um aufzufallen (V4 B-1).
+            $this->notifyAmountMismatch($payment, (string) $capturedAmount);
+
             return false;
         }
 
@@ -285,6 +297,29 @@ class PayPalController extends Controller
         $this->cartService->clear();
 
         return true;
+    }
+
+    /**
+     * Alert the operator about a capture whose amount does not match the
+     * order: the money has already been collected at PayPal, but the order
+     * is marked failed - this needs a manual look (refund or correction).
+     */
+    private function notifyAmountMismatch(Payment $payment, string $capturedAmount): void
+    {
+        $recipient = Setting::get('shop.email');
+
+        if (! $recipient) {
+            return;
+        }
+
+        try {
+            Mail::to($recipient)->send(new PaymentAmountMismatchMail($payment, $capturedAmount));
+        } catch (\Throwable $e) {
+            Log::channel('mail')->error('Amount mismatch alert mail failed', [
+                'order_id' => $payment->order->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

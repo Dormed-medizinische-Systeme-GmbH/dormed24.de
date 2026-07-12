@@ -153,6 +153,13 @@ class CheckoutController extends Controller
             return to_route('home');
         }
 
+        // Eine fehlgeschlagene/stornierte Zahlung darf nie als "Vielen Dank
+        // für Ihre Bestellung" enden (V4 B1) - pending ist dagegen legitim
+        // (Rechnung wartet auf Überweisung).
+        if (in_array($order->status, ['failed', 'cancelled'], true)) {
+            return to_route('checkout.error');
+        }
+
         $summary = $this->orderManager->summaryFromOrder($order);
 
         return Inertia::render('Checkout/Success', [

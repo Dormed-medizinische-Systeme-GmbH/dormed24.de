@@ -2,12 +2,15 @@
 
 namespace Tests\Feature\Checkout;
 
+use App\Mail\PaymentAmountMismatchMail;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Product;
+use App\Models\Setting;
 use App\Services\PayPalService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class PayPalCaptureTest extends TestCase
@@ -93,10 +96,58 @@ class PayPalCaptureTest extends TestCase
             ->postJson(route('paypal.order.capture'), [
                 'paypal_order_id' => $payment->paypal_order_id,
             ])
-            ->assertOk()
+            ->assertStatus(422)
             ->assertJson(['status' => 'FAILED']);
 
         $this->assertSame('FAILED', $payment->fresh()->status);
+        $this->assertSame('failed', $order->fresh()->status);
+    }
+
+    public function test_capture_amount_mismatch_alerts_the_operator(): void
+    {
+        Mail::fake();
+        Setting::set('shop.email', 'shop@dormed.example');
+
+        $customer = Customer::factory()->create();
+        $order = Order::factory()->for($customer)->create(['status' => 'pending', 'total_amount' => '100.00']);
+        $payment = Payment::factory()->created()->for($order)->create();
+
+        $this->mock(PayPalService::class, function ($mock): void {
+            $mock->shouldReceive('captureOrder')->once()->andReturn([
+                'status' => 'COMPLETED',
+                'purchase_units' => [[
+                    'payments' => ['captures' => [['amount' => ['value' => '1.00']]]],
+                ]],
+            ]);
+        });
+
+        $this->actingAs($customer)
+            ->postJson(route('paypal.order.capture'), [
+                'paypal_order_id' => $payment->paypal_order_id,
+            ])
+            ->assertStatus(422);
+
+        Mail::assertSent(PaymentAmountMismatchMail::class, fn ($mail): bool => $mail->hasTo('shop@dormed.example'));
+    }
+
+    public function test_capture_with_incomplete_status_returns_unprocessable(): void
+    {
+        $customer = Customer::factory()->create();
+        $order = Order::factory()->for($customer)->create(['status' => 'pending']);
+        $payment = Payment::factory()->created()->for($order)->create();
+
+        $this->mock(PayPalService::class, function ($mock): void {
+            // z. B. eCheck: Capture angenommen, aber noch nicht abgeschlossen.
+            $mock->shouldReceive('captureOrder')->once()->andReturn(['status' => 'PENDING']);
+        });
+
+        $this->actingAs($customer)
+            ->postJson(route('paypal.order.capture'), [
+                'paypal_order_id' => $payment->paypal_order_id,
+            ])
+            ->assertStatus(422)
+            ->assertJson(['status' => 'FAILED']);
+
         $this->assertSame('failed', $order->fresh()->status);
     }
 
