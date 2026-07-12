@@ -24,32 +24,43 @@
     import { toUrl } from '@/lib/utils';
     import { logout } from '@/routes';
     import { edit as editProfile } from '@/routes/profile';
-    import type { Customer } from '@/types';
+    import type { Cart, Customer } from '@/types';
 
     type MegaMenuKey = 'artikelgruppen' | 'verbrauchsartikel' | null;
+    type NavCategory = { id: number; name: string; slug: string };
 
+    // TEST-DATEN: Diese Navigationsstruktur (zwei Mega-Menu-Gruppen) ist
+    // erfunden, es gibt aktuell nur eine flache Kategorie-Liste im Backend
+    // (navCategories). Beide Mega-Menus zeigen deshalb dieselben echten
+    // Kategorien - siehe TODO.md fuer die Diskussion, wie das langfristig
+    // aussehen soll.
     const navItems = [
         { label: 'Home', href: '/', menu: null },
-        { label: 'Artikelgruppen', href: '/artikelgruppen', menu: 'artikelgruppen' as MegaMenuKey },
-        { label: 'Verbrauchsartikel', href: '/verbrauchsartikel', menu: 'verbrauchsartikel' as MegaMenuKey },
+        {
+            label: 'Artikelgruppen',
+            href: '/artikelgruppen',
+            menu: 'artikelgruppen' as MegaMenuKey,
+        },
+        {
+            label: 'Verbrauchsartikel',
+            href: '/verbrauchsartikel',
+            menu: 'verbrauchsartikel' as MegaMenuKey,
+        },
         { label: 'Hilfe & Kontakt', href: '/hilfe', menu: null },
     ] as const;
 
-    const megaMenus: Record<string, { label: string; href: string }[]> = {
-        artikelgruppen: [
-            { label: 'Kleingeräte', href: '/artikelgruppen/kleingeraete' },
-            { label: 'Pulsoximetrie', href: '/artikelgruppen/pulsoximetrie' },
-            { label: 'Notfall', href: '/artikelgruppen/notfall' },
-            { label: 'Diagnostik', href: '/artikelgruppen/diagnostik' },
-            { label: 'Monitoring', href: '/artikelgruppen/monitoring' },
-            { label: 'Zubehör', href: '/artikelgruppen/zubehoer' },
-        ],
-        verbrauchsartikel: [
-            { label: 'Einmalhandschuhe', href: '/verbrauchsartikel/handschuhe' },
-            { label: 'Verbandmaterial', href: '/verbrauchsartikel/verbandmaterial' },
-            { label: 'Desinfektionsmittel', href: '/verbrauchsartikel/desinfektion' },
-        ],
-    };
+    const navCategories = $derived(page.props.navCategories as NavCategory[]);
+
+    const megaMenus = $derived({
+        artikelgruppen: navCategories.map((cat) => ({
+            label: cat.name,
+            href: `/${cat.slug}`,
+        })),
+        verbrauchsartikel: navCategories.map((cat) => ({
+            label: cat.name,
+            href: `/${cat.slug}`,
+        })),
+    } as Record<string, { label: string; href: string }[]>);
 
     let activeMenu = $state<MegaMenuKey>(null);
     let closeTimer: ReturnType<typeof setTimeout>;
@@ -70,19 +81,8 @@
         activeMenu = null;
     }
 
-    let {
-        cartTotal = 0,
-        cartCount = 0,
-    }: {
-        cartTotal?: number;
-        cartCount?: number;
-    } = $props();
-
     const auth = $derived(page.props.auth);
-
-    const formattedTotal = $derived(
-        formatPrice(cartTotal),
-    );
+    const cart = $derived(page.props.cart as Cart);
 
     type SearchResult = { id: number; name: string; price: string };
 
@@ -142,7 +142,10 @@
     }
 
     function handleClickOutside(e: MouseEvent) {
-        if (searchContainerEl && !searchContainerEl.contains(e.target as Node)) {
+        if (
+            searchContainerEl &&
+            !searchContainerEl.contains(e.target as Node)
+        ) {
             isOpen = false;
         }
     }
@@ -157,7 +160,9 @@
 <header class="bg-white shadow-sm">
     <!-- Top row: logo + search + icons -->
     <div class="border-b">
-        <div class="mx-auto flex h-16 max-w-7xl items-center gap-6 px-4 lg:px-8">
+        <div
+            class="mx-auto flex h-16 max-w-7xl items-center gap-6 px-4 lg:px-8"
+        >
             <!-- Logo -->
             <Link href="/" class="shrink-0">
                 <img src="/logo.svg" alt="dormed 24" class="h-10 w-auto" />
@@ -197,11 +202,15 @@
                         class="absolute left-0 right-0 top-[calc(100%+4px)] z-50 overflow-hidden rounded-md border bg-white shadow-lg"
                     >
                         {#if isLoading}
-                            <div class="px-4 py-3 text-sm text-muted-foreground">
+                            <div
+                                class="px-4 py-3 text-sm text-muted-foreground"
+                            >
                                 Suche ...
                             </div>
                         {:else if results.length === 0}
-                            <div class="px-4 py-3 text-sm text-muted-foreground">
+                            <div
+                                class="px-4 py-3 text-sm text-muted-foreground"
+                            >
                                 Keine Ergebnisse für „{query}"
                             </div>
                         {:else}
@@ -216,7 +225,9 @@
                                             <div
                                                 class="h-9 w-9 shrink-0 rounded bg-gray-100"
                                             ></div>
-                                            <span class="flex-1 truncate text-sm">
+                                            <span
+                                                class="flex-1 truncate text-sm"
+                                            >
                                                 {product.name}
                                             </span>
                                             <span
@@ -233,7 +244,9 @@
                                 class="flex items-center justify-between border-t px-4 py-2.5 text-sm text-[#1a6bbf] hover:bg-accent"
                                 onclick={() => (isOpen = false)}
                             >
-                                <span class="flex items-center gap-1 font-medium">
+                                <span
+                                    class="flex items-center gap-1 font-medium"
+                                >
                                     <ChevronRight class="h-4 w-4" />
                                     Alle Suchergebnisse anzeigen
                                 </span>
@@ -337,16 +350,16 @@
                 <Button variant="ghost" class="gap-2 px-3">
                     <div class="relative">
                         <ShoppingCart class="h-5 w-5" />
-                        {#if cartCount > 0}
+                        {#if cart.count > 0}
                             <span
                                 class="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-[#1a6bbf] text-[10px] font-bold text-white"
                             >
-                                {cartCount}
+                                {cart.count}
                             </span>
                         {/if}
                     </div>
                     <span class="text-sm font-medium text-[#1a3a5c]">
-                        {formattedTotal}*
+                        {cart.total}*
                     </span>
                 </Button>
             </div>
@@ -362,14 +375,15 @@
                         <button
                             class="flex items-center gap-0.5 border-b-2 px-4 py-3 text-sm font-medium transition-colors
                                 {activeMenu === item.menu
-                                    ? 'border-[#1a6bbf] text-[#1a3a5c]'
-                                    : 'border-transparent text-gray-600 hover:text-[#1a3a5c]'}"
+                                ? 'border-[#1a6bbf] text-[#1a3a5c]'
+                                : 'border-transparent text-gray-600 hover:text-[#1a3a5c]'}"
                             onmouseenter={() => openMenu(item.menu)}
                             onmouseleave={scheduleClose}
                         >
                             {item.label}
                             <ChevronRight
-                                class="h-3.5 w-3.5 transition-transform duration-150 {activeMenu === item.menu
+                                class="h-3.5 w-3.5 transition-transform duration-150 {activeMenu ===
+                                item.menu
                                     ? 'rotate-90'
                                     : ''}"
                             />
@@ -396,11 +410,14 @@
                 <div class="mx-auto max-w-7xl px-4 py-4 lg:px-8">
                     <div class="mb-3 flex items-center justify-between">
                         <Link
-                            href={navItems.find((n) => n.menu === activeMenu)?.href ?? '/'}
+                            href={navItems.find((n) => n.menu === activeMenu)
+                                ?.href ?? '/'}
                             class="flex items-center gap-1 text-sm font-semibold text-[#1a3a5c] hover:underline"
                             onclick={closeMenu}
                         >
-                            Zur Kategorie {navItems.find((n) => n.menu === activeMenu)?.label}
+                            Zur Kategorie {navItems.find(
+                                (n) => n.menu === activeMenu,
+                            )?.label}
                             <ChevronRight class="h-4 w-4" />
                         </Link>
                         <button

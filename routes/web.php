@@ -2,7 +2,9 @@
 
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\SitemapController;
+use App\Models\Product;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
@@ -11,6 +13,29 @@ Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap')
 Route::get('/deploy-check', fn () => response('OK', 200)->header('Content-Type', 'text/plain'));
 
 Route::get('/', HomeController::class)->name('home');
+
+// TEST: Landingpage-Kopie mit Hover-Mega-Menu-Header (siehe TODO.md).
+// Zum Entfernen: diese Route + resources/js/pages/Test/Welcome.svelte +
+// resources/js/components/TestAppFooter.svelte loeschen.
+Route::get('/test', function () {
+    $randomProducts = Product::available()
+        ->with(['images' => fn ($query) => $query->where('sort_order', 0)])
+        ->inRandomOrder()
+        ->limit(8)
+        ->get(['id', 'name', 'price'])
+        ->map(fn (Product $product) => [
+            'id' => $product->id,
+            'name' => $product->name,
+            'price' => $product->price,
+            'image_url' => $product->images->first()?->url,
+        ])
+        ->values();
+
+    return Inertia::render('Test/Welcome', [
+        'randomProductsTitle' => 'Entdecken Sie unser Sortiment',
+        'randomProducts' => $randomProducts,
+    ]);
+})->name('test.hover-header');
 
 Route::prefix('informationen')->group(function () {
     Route::inertia('/versand', 'VersandUndZahlung')->name('versand');
