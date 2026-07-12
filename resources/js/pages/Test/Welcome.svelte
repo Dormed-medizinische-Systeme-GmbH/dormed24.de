@@ -39,7 +39,8 @@
         'Diagnostik',
         'Notfallmedizin',
         'Monitoring',
-        'Zubehör & Verbrauchsmaterial',
+        'Zubehör',
+        'Verbrauchsmaterial',
     ] as const;
 
     const onboardingSteps = [
@@ -258,10 +259,16 @@
         ></div>
         <!-- Content -->
         <div
-            class="relative z-10 mx-auto flex min-h-[72svh] max-w-7xl items-center px-8 py-16 will-change-transform lg:min-h-[calc(100svh-4.5rem)] lg:px-8 lg:py-20"
+            class="relative z-10 mx-auto flex min-h-[72svh] max-w-7xl items-center px-8 py-16 will-change-transform md:min-h-[calc(100svh-4.5rem)] md:py-20"
             style:transform={`translate3d(0, ${heroParallaxOffset * 0.45}px, 0)`}
         >
             <div class="max-w-lg">
+                <!-- Farbwert #8fc4f0 wie im abgenommenen Artifact-Mockup (heller als --brand-accent, für Lesbarkeit auf dunklem Verlauf) -->
+                <p
+                    class="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-[#8fc4f0]"
+                >
+                    Medizintechnik für Praxis · MVZ · Klinik
+                </p>
                 <h1
                     class="mb-3 text-3xl font-bold leading-tight text-white lg:text-4xl"
                 >
@@ -276,7 +283,7 @@
                         <li
                             class="flex items-center gap-2.5 font-semibold text-white"
                         >
-                            <Check class="size-4 shrink-0" />
+                            <Check class="size-4 shrink-0 text-[#8fc4f0]" />
                             {feature}
                         </li>
                     {/each}
