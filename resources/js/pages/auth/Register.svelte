@@ -92,7 +92,18 @@
             <div class="flex items-center justify-between">
                 <Label for="terms" class="flex items-center space-x-3">
                     <Checkbox id="terms" />
-                    <span>AGBs akzeptiert</span>
+                    <span>
+                        <a
+                            href="/unternehmen/agb"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="hover:underline"
+                            onclick={(e) => e.stopPropagation()}
+                        >
+                            AGBs
+                        </a>
+                        akzeptiert
+                    </span>
                 </Label>
             </div>
 
