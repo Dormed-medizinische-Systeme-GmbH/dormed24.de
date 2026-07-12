@@ -6,7 +6,6 @@
     import FileCheck from '@lucide/svelte/icons/file-check';
     import ImageIcon from '@lucide/svelte/icons/image';
     import PackageCheck from '@lucide/svelte/icons/package-check';
-    import Phone from '@lucide/svelte/icons/phone';
     import ShieldCheck from '@lucide/svelte/icons/shield-check';
     import Truck from '@lucide/svelte/icons/truck';
     import * as ProductController from '@/actions/App/Http/Controllers/ProductController';
