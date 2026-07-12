@@ -12,6 +12,7 @@
     import PasswordInput from '@/components/PasswordInput.svelte';
     import TextLink from '@/components/TextLink.svelte';
     import { Button } from '@/components/ui/button';
+    import { Checkbox } from '@/components/ui/checkbox';
     import { Input } from '@/components/ui/input';
     import { Label } from '@/components/ui/label';
     import { Spinner } from '@/components/ui/spinner';
@@ -80,6 +81,19 @@
                     passwordrules={passwordRules}
                 />
                 <InputError message={errors.password_confirmation} />
+            </div>
+
+            <!--
+                Rein optische Checkbox ohne name-Attribut: wird nicht als
+                Formularfeld mitgesendet, keine Backend-Validierung. Die
+                shadcn-Checkbox ist intern ein <button>, "required" haette
+                hier ohnehin keine erzwingende Wirkung.
+            -->
+            <div class="flex items-center justify-between">
+                <Label for="terms" class="flex items-center space-x-3">
+                    <Checkbox id="terms" />
+                    <span>AGBs akzeptiert</span>
+                </Label>
             </div>
 
             <Button
