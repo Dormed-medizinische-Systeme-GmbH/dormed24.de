@@ -229,7 +229,7 @@
     >
         <!-- Background image fills the section -->
         <img
-            src="/assets/hero.png"
+            src="/assets/hero-banner.png"
             alt=""
             aria-hidden="true"
             width="1920"
