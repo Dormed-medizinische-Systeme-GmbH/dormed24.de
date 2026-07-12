@@ -61,6 +61,16 @@
             <p class="text-sm text-muted-foreground">
                 Thomas Stücker-Everding, Andreas Draheim
             </p>
+            <p class="mt-3 text-sm text-muted-foreground">
+                Diese Seite wurde gestaltet und entwickelt von
+                <a
+                    href="https://everding.solutions"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-brand-accent hover:underline"
+                    >Linus Stücker-Everding</a
+                >.
+            </p>
         </section>
 
         <section class="mb-8">
