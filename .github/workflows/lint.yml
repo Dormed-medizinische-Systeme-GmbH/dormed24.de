@@ -17,8 +17,15 @@ on:
   # Erlaubt deploy.yml, diesen Workflow als wiederverwendbares Gate aufzurufen.
   workflow_call:
 
+# "read" reicht: der Workflow checkt nur aus und laesst Pint/ESLint/Prettier
+# laufen - er pusht nichts (der git-auto-commit-Schritt unten ist auskommentiert).
+# WICHTIG: ein per `uses:` aufgerufener Workflow darf nie MEHR Rechte anfordern
+# als der Aufrufer hat. deploy.yml gewaehrt "contents: read" - stuende hier
+# "write", scheitert der Aufruf mit "Invalid workflow file".
+# Wer den Auto-Commit-Schritt reaktiviert, muss hier UND in deploy.yml auf
+# "contents: write" gehen.
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   quality:
