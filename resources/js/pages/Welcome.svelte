@@ -39,7 +39,8 @@
         'Diagnostik',
         'Notfallmedizin',
         'Monitoring',
-        'Zubehör & Verbrauchsmaterial',
+        'Zubehör',
+        'Verbrauchsmaterial',
     ] as const;
 
     const onboardingSteps = [
