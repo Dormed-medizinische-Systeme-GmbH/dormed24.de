@@ -227,18 +227,27 @@
     <section
         class="relative -mt-16 min-h-[calc(72svh+4rem)] overflow-hidden pt-16 md:-mt-28 md:min-h-[calc(100svh+7rem)] md:pt-28"
     >
-        <!-- Background image fills the section -->
-        <img
-            src="/assets/hero-banner.png"
-            alt=""
-            aria-hidden="true"
-            width="1920"
-            height="1080"
-            fetchpriority="high"
-            decoding="async"
-            class="absolute inset-x-0 -top-20 h-[calc(100%+5rem)] w-full object-cover object-center md:-top-28 md:h-[calc(100%+7rem)]"
-            style:transform={`translate3d(0, ${heroParallaxOffset}px, 0)`}
-        />
+        <!--
+            Background image fills the section. AVIF (54 KB) → WebP (196 KB) →
+            PNG (748 KB): der Browser nimmt das erste Format, das er kann.
+            `class="contents"` am <picture>, damit der Wrapper das Layout nicht
+            beeinflusst — das <img> bleibt absolut positioniert wie zuvor.
+        -->
+        <picture class="contents">
+            <source srcset="/assets/hero-banner.avif" type="image/avif" />
+            <source srcset="/assets/hero-banner.webp" type="image/webp" />
+            <img
+                src="/assets/hero-banner.png"
+                alt=""
+                aria-hidden="true"
+                width="1920"
+                height="1080"
+                fetchpriority="high"
+                decoding="async"
+                class="absolute inset-x-0 -top-20 h-[calc(100%+5rem)] w-full object-cover object-center md:-top-28 md:h-[calc(100%+7rem)]"
+                style:transform={`translate3d(0, ${heroParallaxOffset}px, 0)`}
+            />
+        </picture>
         <!-- Content -->
         <div
             class="relative z-10 mx-auto flex min-h-[72svh] max-w-7xl items-center px-8 py-16 will-change-transform lg:min-h-[calc(100svh-4.5rem)] lg:px-8 lg:py-20"
