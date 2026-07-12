@@ -367,9 +367,9 @@
 
     <!--
         Onboarding: echte Reihenfolge (registrieren -> freischalten ->
-        bestellen), deshalb sind Nummern hier inhaltlich gerechtfertigt.
-        Auf Desktop verbindet eine Linie die Stationen wie in einem
-        Beschaffungs-Workflow, auf Mobile reicht "Schritt N" in der Card.
+        bestellen). Grosse, transparente Hintergrund-Ziffer statt kleinem
+        Kreis-Badge - abgenommene Variante aus dem Artifact-Vergleich,
+        1:1 uebernommen.
     -->
     <section class="bg-muted">
         <div class="mx-auto max-w-7xl px-4 py-16 lg:px-8 lg:py-24">
@@ -386,40 +386,32 @@
             </div>
 
             <div
-                class="mt-12 hidden items-center gap-3 md:flex"
-                aria-hidden="true"
+                class="mt-10 grid divide-y divide-border overflow-hidden rounded-2xl border border-border bg-background md:grid-cols-3 md:divide-x md:divide-y-0"
             >
                 {#each onboardingSteps as step, index (step.title)}
-                    <div class="flex flex-1 items-center gap-3 last:flex-none">
-                        <div
-                            class="grid size-10 shrink-0 place-items-center rounded-full bg-primary text-sm font-bold text-white"
+                    <div class="relative overflow-hidden px-7 pb-7 pt-10">
+                        <span
+                            class="pointer-events-none absolute right-1 -top-6 text-[6.5rem] font-extrabold leading-none text-primary/[0.06]"
+                            aria-hidden="true"
                         >
                             {index + 1}
-                        </div>
-                        {#if index < onboardingSteps.length - 1}
-                            <div class="h-px flex-1 bg-border"></div>
-                        {/if}
+                        </span>
+                        <p
+                            class="relative mb-4 inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.08em] text-brand-accent"
+                        >
+                            <span class="size-1.5 rounded-full bg-brand-accent"
+                            ></span>
+                            Schritt {index + 1}
+                        </p>
+                        <h3 class="relative text-base font-bold text-primary">
+                            {step.title}
+                        </h3>
+                        <p
+                            class="relative mt-2.5 text-sm leading-6 text-muted-foreground"
+                        >
+                            {step.text}
+                        </p>
                     </div>
-                {/each}
-            </div>
-
-            <div class="mt-6 grid gap-4 md:mt-4 md:grid-cols-3">
-                {#each onboardingSteps as step, index (step.title)}
-                    <Card class="border-border">
-                        <CardContent class="flex flex-col gap-2">
-                            <p
-                                class="text-sm font-semibold text-brand-accent md:hidden"
-                            >
-                                Schritt {index + 1}
-                            </p>
-                            <h3 class="text-lg font-semibold text-foreground">
-                                {step.title}
-                            </h3>
-                            <p class="text-sm leading-6 text-muted-foreground">
-                                {step.text}
-                            </p>
-                        </CardContent>
-                    </Card>
                 {/each}
             </div>
         </div>
