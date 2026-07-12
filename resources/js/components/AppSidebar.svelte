@@ -38,16 +38,24 @@
     ];
 
     const catalogItems: NavItem[] = [
-        { title: 'Produkte', href: '/admin/products', icon: Package },
-        { title: 'Kategorien', href: '/admin/categories', icon: Tag },
         { title: 'Hersteller', href: '/admin/manufacturers', icon: Building2 },
+        { title: 'Kategorien', href: '/admin/categories', icon: Tag },
+        { title: 'Produkte', href: '/admin/products', icon: Package },
     ];
 
     const settingsItems: NavItem[] = [
         { title: 'Allgemein', href: '/admin/settings/general', icon: Settings },
         { title: 'Mailversand', href: '/admin/settings/mail', icon: Mail },
-        { title: 'Zahlungsarten', href: '/admin/settings/payment', icon: CreditCard },
-        { title: 'Versandarten', href: '/admin/settings/shipping', icon: Truck },
+        {
+            title: 'Zahlungsarten',
+            href: '/admin/settings/payment',
+            icon: CreditCard,
+        },
+        {
+            title: 'Versandarten',
+            href: '/admin/settings/shipping',
+            icon: Truck,
+        },
     ];
 </script>
 
@@ -57,11 +65,7 @@
             <SidebarMenuItem>
                 <SidebarMenuButton size="lg" asChild>
                     {#snippet children(props)}
-                        <Link
-                            {...props}
-                            href="/admin"
-                            class={props.class}
-                        >
+                        <Link {...props} href="/admin" class={props.class}>
                             <AppLogo />
                         </Link>
                     {/snippet}
