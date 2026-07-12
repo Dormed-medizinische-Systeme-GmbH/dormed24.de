@@ -207,8 +207,11 @@
                 <img src="/logo.svg" alt="dormed 24" class="h-10 w-auto" />
             </Link>
 
-            <!-- Search -->
-            <div bind:this={searchContainerEl} class="relative flex-1">
+            <!-- Search (hidden on mobile, wie im Haupt-ShopHeader) -->
+            <div
+                bind:this={searchContainerEl}
+                class="relative hidden flex-1 md:block"
+            >
                 <div class="relative">
                     <Input
                         type="search"
