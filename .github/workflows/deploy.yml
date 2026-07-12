@@ -120,6 +120,19 @@ jobs:
           php artisan optimize
           echo "::endgroup::"
 
+          echo "::group::Schreibrechte fuer www-data sicherstellen"
+          # artisan/npm legen Dateien mit umask 022 an -> 644. www-data ist zwar
+          # in der Gruppe, haette dann aber nur LESErechte. Betroffen:
+          #  - storage/logs      (Laravel will bei jedem Fehler schreiben)
+          #  - bootstrap/cache
+          #  - database/         SQLite! Die DB-Datei UND das Verzeichnis muessen
+          #    schreibbar sein (SQLite legt -wal/-shm/Journal daneben an), und
+          #    wegen SESSION_DRIVER=database + CACHE_STORE=database schreibt
+          #    JEDER Request in die DB. Fehlt das -> HTTP 500 auf jeder Seite.
+          # Laeuft als "deploy", dem die Dateien gehoeren -> kein sudo noetig.
+          chmod -R g+w storage bootstrap/cache database 2>/dev/null || true
+          echo "::endgroup::"
+
           echo "::group::SSR-Server neu laden"
           # Der SSR-Node-Prozess haelt das Bundle im Speicher - ohne Neustart
           # wuerde er nach dem Deploy weiter den ALTEN Code ausliefern.

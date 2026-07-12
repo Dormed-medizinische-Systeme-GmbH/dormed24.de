@@ -171,8 +171,12 @@ sudo chown -R deploy:www-data .
 sudo find . -type d -exec chmod 2755 {} \;    # 2 = setgid -> neue Dateien erben die Gruppe
 sudo find . -type f -exec chmod 644 {} \;
 
-# NUR diese beiden brauchen Schreibrechte für www-data:
-sudo chmod -R 2775 storage bootstrap/cache
+# www-data braucht Schreibrechte auf die Laravel-Runtime-Ordner UND — weil die
+# DB SQLite ist und SESSION_DRIVER/CACHE_STORE=database jeder Request in die DB
+# schreibt — auf das database/-Verzeichnis samt Datei (SQLite legt -wal/-shm
+# daneben an). Fehlt database/ hier -> HTTP 500 auf jeder Seite.
+sudo chmod -R 2775 storage bootstrap/cache database
+sudo chmod 664 database/database.sqlite 2>/dev/null || true
 ```
 
 Symlink für Produktbilder (public-Disk):
