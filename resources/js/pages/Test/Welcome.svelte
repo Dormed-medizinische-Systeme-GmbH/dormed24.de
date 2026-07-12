@@ -245,14 +245,23 @@
                 style:transform={`translate3d(0, ${heroParallaxOffset}px, 0)`}
             />
         </picture>
+        <!--
+            Seitlicher Verlauf statt Text-direkt-auf-Foto: deckendes Navy
+            (= --primary / #0d1f44) links, komplett durchsichtig rechts.
+            Garantiert Kontrast fuer den Text unabhaengig vom Bildausschnitt,
+            ohne einen sichtbaren Kasten/Card-Rand einzufuehren.
+        -->
+        <div
+            class="absolute inset-0 z-[1]"
+            aria-hidden="true"
+            style="background: linear-gradient(90deg, rgba(13,31,68,.94) 0%, rgba(13,31,68,.85) 32%, rgba(13,31,68,.35) 58%, rgba(13,31,68,0) 78%);"
+        ></div>
         <!-- Content -->
         <div
             class="relative z-10 mx-auto flex min-h-[72svh] max-w-7xl items-center px-8 py-16 will-change-transform lg:min-h-[calc(100svh-4.5rem)] lg:px-8 lg:py-20"
             style:transform={`translate3d(0, ${heroParallaxOffset * 0.45}px, 0)`}
         >
-            <div
-                class="max-w-lg rounded-3xl border border-white/15 bg-primary/50 p-8 shadow-2xl shadow-black/30 backdrop-blur-xl sm:p-10"
-            >
+            <div class="max-w-lg">
                 <h1
                     class="mb-3 text-3xl font-bold leading-tight text-white lg:text-4xl"
                 >
