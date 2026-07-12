@@ -16,7 +16,7 @@ class ProductSeeder extends Seeder
 {
     use WithoutModelEvents;
 
-    private const CSV_PATH = '_SHOPWARE-EXPORTS/aktuellen produkte.csv';
+    private const CSV_PATH = '.assets/Shopware-Exports/aktuellen produkte.csv';
 
     private const BASE_CATEGORIES = [
         ['name' => 'Ultraschallsysteme', 'slug' => 'ultraschallsysteme', 'description' => null],
