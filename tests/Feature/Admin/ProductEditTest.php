@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ProductEditTest extends TestCase
@@ -140,6 +141,22 @@ class ProductEditTest extends TestCase
             ->delete(route('admin.products.destroy', $product))
             ->assertRedirect(route('admin.products.index'));
 
+        $this->assertDatabaseMissing('products', ['id' => $product->id]);
+    }
+
+    public function test_destroy_removes_the_image_directory(): void
+    {
+        Storage::fake('public');
+
+        $product = Product::factory()->create();
+        Storage::disk('public')->put("products/{$product->id}/cover.png", 'fake-image');
+        $product->images()->create(['path' => "products/{$product->id}/cover.png", 'sort_order' => 0]);
+
+        $this->actingAsAdmin()
+            ->delete(route('admin.products.destroy', $product))
+            ->assertRedirect(route('admin.products.index'));
+
+        Storage::disk('public')->assertDirectoryEmpty("products/{$product->id}");
         $this->assertDatabaseMissing('products', ['id' => $product->id]);
     }
 

@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\Manufacturer;
 use App\Models\Product;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -58,6 +59,13 @@ class ProductController extends Controller
         if ($product->orderItems()->count() > 0) {
             return back()->with('error', 'Produkt kann nicht gelöscht werden, da es bereits bestellt wurde.');
         }
+
+        // Die product_images-Zeilen kaskadieren in der DB, die Dateien auf
+        // dem public-Disk nicht — ohne das Aufräumen hier akkumulieren
+        // verwaiste Bildordner (V4 Q-2). Bewusst im Controller statt als
+        // Model-Event: der ProductSeeder löscht via WithoutModelEvents und
+        // räumt das products-Verzeichnis ohnehin komplett selbst.
+        Storage::disk('public')->deleteDirectory("products/{$product->id}");
 
         $product->delete();
 
