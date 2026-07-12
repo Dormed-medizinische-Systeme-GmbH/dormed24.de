@@ -4,13 +4,16 @@
     import ShopHeader from '@/components/ShopHeader.svelte';
 </script>
 
-<AppHead title="Allgemeine Geschäftsbedingungen" description="AGB der Dormed medizinische Systeme GmbH für den Online-Shop dormed24.de." />
+<AppHead
+    title="Allgemeine Geschäftsbedingungen"
+    description="AGB der Dormed medizinische Systeme GmbH für den Online-Shop dormed24.de."
+/>
 
 <div class="flex min-h-screen flex-col bg-white">
     <ShopHeader />
 
     <main class="flex-1 mx-auto max-w-7xl px-4 py-10 lg:px-8">
-        <h1 class="mb-2 text-2xl font-bold text-[#1a3a5c]">
+        <h1 class="mb-2 text-2xl font-bold text-brand-secondary">
             Allgemeine Geschäftsbedingungen
         </h1>
         <p class="mb-8 text-sm text-gray-500">
@@ -21,7 +24,7 @@
         <div class="space-y-10 text-sm text-gray-700">
             <!-- 1 -->
             <section>
-                <h2 class="mb-3 text-base font-bold text-[#1a3a5c]">
+                <h2 class="mb-3 text-base font-bold text-brand-secondary">
                     1. Geltungsbereich, Begriffsbestimmung
                 </h2>
                 <ol class="space-y-2 list-none">
@@ -57,7 +60,7 @@
 
             <!-- 2 -->
             <section>
-                <h2 class="mb-3 text-base font-bold text-[#1a3a5c]">
+                <h2 class="mb-3 text-base font-bold text-brand-secondary">
                     2. Angebot und Vertragsabschluss
                 </h2>
                 <ol class="space-y-2 list-none">
@@ -124,7 +127,7 @@
 
             <!-- 3 -->
             <section>
-                <h2 class="mb-3 text-base font-bold text-[#1a3a5c]">
+                <h2 class="mb-3 text-base font-bold text-brand-secondary">
                     3. Änderungsvorbehalt und Rücktrittsrechte
                 </h2>
                 <ol class="space-y-2 list-none">
@@ -177,7 +180,7 @@
 
             <!-- 4 -->
             <section>
-                <h2 class="mb-3 text-base font-bold text-[#1a3a5c]">
+                <h2 class="mb-3 text-base font-bold text-brand-secondary">
                     4. Preise
                 </h2>
                 <ol class="space-y-2 list-none">
@@ -251,7 +254,7 @@
 
             <!-- 5 -->
             <section>
-                <h2 class="mb-3 text-base font-bold text-[#1a3a5c]">
+                <h2 class="mb-3 text-base font-bold text-brand-secondary">
                     5. Lieferung, Lieferfrist, Annahmeverzug
                 </h2>
                 <ol class="space-y-2 list-none">
@@ -318,7 +321,7 @@
 
             <!-- 6 -->
             <section>
-                <h2 class="mb-3 text-base font-bold text-[#1a3a5c]">
+                <h2 class="mb-3 text-base font-bold text-brand-secondary">
                     6. Zahlungen
                 </h2>
                 <ol class="space-y-2 list-none">
@@ -371,7 +374,7 @@
 
             <!-- 7 -->
             <section>
-                <h2 class="mb-3 text-base font-bold text-[#1a3a5c]">
+                <h2 class="mb-3 text-base font-bold text-brand-secondary">
                     7. Abtretbarkeit von Ansprüchen
                 </h2>
                 <p>
@@ -382,7 +385,7 @@
 
             <!-- 8 -->
             <section>
-                <h2 class="mb-3 text-base font-bold text-[#1a3a5c]">
+                <h2 class="mb-3 text-base font-bold text-brand-secondary">
                     8. Gewährleistung, Garantie
                 </h2>
                 <ol class="space-y-2 list-none">
@@ -478,7 +481,7 @@
 
             <!-- 9 -->
             <section>
-                <h2 class="mb-3 text-base font-bold text-[#1a3a5c]">
+                <h2 class="mb-3 text-base font-bold text-brand-secondary">
                     9. Haftungsbeschränkung
                 </h2>
                 <ol class="space-y-2 list-none">
@@ -524,7 +527,7 @@
 
             <!-- 10 -->
             <section>
-                <h2 class="mb-3 text-base font-bold text-[#1a3a5c]">
+                <h2 class="mb-3 text-base font-bold text-brand-secondary">
                     10. Eigentumsvorbehalt
                 </h2>
                 <ol class="space-y-2 list-none">
@@ -604,7 +607,7 @@
 
             <!-- 11 -->
             <section>
-                <h2 class="mb-3 text-base font-bold text-[#1a3a5c]">
+                <h2 class="mb-3 text-base font-bold text-brand-secondary">
                     11. Datensicherung
                 </h2>
                 <ol class="space-y-2 list-none">
@@ -629,7 +632,7 @@
 
             <!-- 12 -->
             <section>
-                <h2 class="mb-3 text-base font-bold text-[#1a3a5c]">
+                <h2 class="mb-3 text-base font-bold text-brand-secondary">
                     12. Datenschutz
                 </h2>
                 <ol class="space-y-2 list-none">
@@ -656,7 +659,7 @@
 
             <!-- 13 -->
             <section>
-                <h2 class="mb-3 text-base font-bold text-[#1a3a5c]">
+                <h2 class="mb-3 text-base font-bold text-brand-secondary">
                     13. Erfüllungsort, Gerichtsstand, Kaufrecht
                 </h2>
                 <ol class="space-y-2 list-none">
@@ -681,7 +684,7 @@
 
             <!-- 14 -->
             <section>
-                <h2 class="mb-3 text-base font-bold text-[#1a3a5c]">
+                <h2 class="mb-3 text-base font-bold text-brand-secondary">
                     14. Schlussbestimmungen
                 </h2>
                 <ol class="space-y-2 list-none">

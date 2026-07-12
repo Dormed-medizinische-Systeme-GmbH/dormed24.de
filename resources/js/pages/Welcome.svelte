@@ -346,11 +346,11 @@
                 {#each trustItems as item (item.label)}
                     <div class="flex items-center gap-3 px-6 py-5">
                         <item.icon
-                            class="size-8 shrink-0 text-[#1a6bbf]"
+                            class="size-8 shrink-0 text-brand-accent"
                             strokeWidth={1.5}
                         />
                         <span
-                            class="text-sm font-semibold leading-snug text-[#0d1f44]"
+                            class="text-sm font-semibold leading-snug text-primary"
                         >
                             {item.label}
                         </span>
@@ -380,7 +380,7 @@
             <div class="mt-8 grid gap-4 md:grid-cols-3">
                 {#each onboardingSteps as step, index (index)}
                     <article class="rounded-xl border bg-white p-6 shadow-sm">
-                        <p class="text-sm font-semibold text-[#1a6bbf]">
+                        <p class="text-sm font-semibold text-brand-accent">
                             Schritt {index + 1}
                         </p>
                         <h3 class="mt-2 text-lg font-semibold text-gray-900">
@@ -544,7 +544,7 @@
                 </div>
                 <Link
                     href={ProductController.index.url()}
-                    class="hidden shrink-0 text-sm font-semibold text-[#1a6bbf] hover:underline lg:inline-flex lg:items-center lg:gap-2"
+                    class="hidden shrink-0 text-sm font-semibold text-brand-accent hover:underline lg:inline-flex lg:items-center lg:gap-2"
                 >
                     Alle Produkte ansehen
                     <ArrowRight class="size-4" />
@@ -557,7 +557,7 @@
                         class="rounded-xl border bg-white p-6 shadow-sm transition hover:shadow-md"
                     >
                         <p
-                            class="text-xs font-semibold uppercase tracking-wide text-[#1a6bbf]"
+                            class="text-xs font-semibold uppercase tracking-wide text-brand-accent"
                         >
                             Produkthighlight
                         </p>
@@ -570,12 +570,13 @@
                         <div
                             class="mt-5 flex items-center justify-between gap-4 border-t pt-4"
                         >
-                            <span class="text-sm font-semibold text-[#1a3a5c]"
+                            <span
+                                class="text-sm font-semibold text-brand-secondary"
                                 >{product.price}</span
                             >
                             <Link
                                 href={ProductController.index.url()}
-                                class="text-sm font-semibold text-[#1a6bbf] hover:underline"
+                                class="text-sm font-semibold text-brand-accent hover:underline"
                             >
                                 Zum Sortiment
                             </Link>
@@ -587,7 +588,7 @@
             <div class="mt-6 lg:hidden">
                 <Link
                     href={ProductController.index.url()}
-                    class="inline-flex items-center gap-2 text-sm font-semibold text-[#1a6bbf] hover:underline"
+                    class="inline-flex items-center gap-2 text-sm font-semibold text-brand-accent hover:underline"
                 >
                     Alle Produkte ansehen
                     <ArrowRight class="size-4" />
@@ -634,7 +635,9 @@
                             <div
                                 class="border-b pb-5 last:border-b-0 last:pb-0"
                             >
-                                <p class="text-sm font-semibold text-[#1a3a5c]">
+                                <p
+                                    class="text-sm font-semibold text-brand-secondary"
+                                >
                                     {column.title}
                                 </p>
                                 <p
@@ -649,14 +652,14 @@
                     <div class="mt-6 flex flex-wrap gap-3">
                         <Link
                             href={ProductController.index.url()}
-                            class="inline-flex items-center gap-2 rounded-lg bg-[#0d1f44] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#0d1f44]/90"
+                            class="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary/90"
                         >
                             Jetzt shoppen
                             <ArrowRight class="size-4" />
                         </Link>
                         <Link
                             href="/kontakt"
-                            class="inline-flex items-center gap-2 rounded-lg border bg-white px-4 py-2.5 text-sm font-semibold text-[#1a3a5c] hover:text-[#1a6bbf]"
+                            class="inline-flex items-center gap-2 rounded-lg border bg-white px-4 py-2.5 text-sm font-semibold text-brand-secondary hover:text-brand-accent"
                         >
                             Beratung anfragen
                         </Link>

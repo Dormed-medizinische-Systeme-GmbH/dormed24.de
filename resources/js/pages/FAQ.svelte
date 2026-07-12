@@ -117,7 +117,7 @@
 
     <main class="flex-1">
         <div class="mx-auto max-w-7xl px-4 py-10 lg:px-8">
-            <h1 class="mb-2 text-2xl font-bold text-[#1a3a5c]">
+            <h1 class="mb-2 text-2xl font-bold text-brand-secondary">
                 Häufige Fragen
             </h1>
             <p class="mb-10 text-sm text-gray-500">
@@ -126,12 +126,12 @@
                 Bei weiteren Fragen erreichen Sie uns unter
                 <a
                     href={contact.phone_href}
-                    class="text-[#1a6bbf] hover:underline">{contact.phone}</a
+                    class="text-brand-accent hover:underline">{contact.phone}</a
                 >
                 oder
                 <a
                     href={`mailto:${contact.email}`}
-                    class="text-[#1a6bbf] hover:underline">{contact.email}</a
+                    class="text-brand-accent hover:underline">{contact.email}</a
                 >.
             </p>
 
@@ -142,7 +142,7 @@
                 {#each faqItems as item (item.id)}
                     <Accordion.Item value={item.id} class="group">
                         <Accordion.Trigger
-                            class="flex w-full items-center justify-between gap-4 py-5 text-left text-sm font-medium text-[#1a3a5c] transition-colors hover:text-[#1a6bbf] [&[data-state=open]>svg]:rotate-180"
+                            class="flex w-full items-center justify-between gap-4 py-5 text-left text-sm font-medium text-brand-secondary transition-colors hover:text-brand-accent [&[data-state=open]>svg]:rotate-180"
                         >
                             {item.question}
                         </Accordion.Trigger>
@@ -156,9 +156,9 @@
             </Accordion.Root>
 
             <div
-                class="mt-12 rounded-xl border border-[#1a6bbf]/20 bg-[#f0f7ff] px-6 py-6"
+                class="mt-12 rounded-xl border border-brand-accent/20 bg-[#f0f7ff] px-6 py-6"
             >
-                <p class="text-sm font-semibold text-[#1a3a5c]">
+                <p class="text-sm font-semibold text-brand-secondary">
                     Ihre Frage ist nicht dabei?
                 </p>
                 <p class="mt-1 text-sm text-gray-600">
@@ -167,13 +167,13 @@
                 <div class="mt-4 flex flex-wrap gap-3">
                     <a
                         href={contact.phone_href}
-                        class="inline-flex items-center rounded-md bg-[#1a3a5c] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#1a6bbf]"
+                        class="inline-flex items-center rounded-md bg-brand-secondary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-accent"
                     >
                         {contact.phone}
                     </a>
                     <a
                         href={`mailto:${contact.email}`}
-                        class="inline-flex items-center rounded-md border border-[#1a3a5c] px-4 py-2 text-sm font-medium text-[#1a3a5c] transition-colors hover:bg-[#1a3a5c] hover:text-white"
+                        class="inline-flex items-center rounded-md border border-brand-secondary px-4 py-2 text-sm font-medium text-brand-secondary transition-colors hover:bg-brand-secondary hover:text-white"
                     >
                         {contact.email}
                     </a>

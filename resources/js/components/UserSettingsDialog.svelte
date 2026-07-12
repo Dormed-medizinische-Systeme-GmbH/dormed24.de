@@ -618,7 +618,7 @@
                                                 openOrderDetail(order.id)}
                                         >
                                             <span
-                                                class="font-medium text-[#0d1f44]"
+                                                class="font-medium text-primary"
                                             >
                                                 #{order.id}
                                             </span>

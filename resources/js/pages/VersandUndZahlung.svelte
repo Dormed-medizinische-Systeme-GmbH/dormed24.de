@@ -14,7 +14,7 @@
     <ShopHeader />
 
     <main class="flex-1 mx-auto max-w-7xl px-4 py-10 lg:px-8">
-        <h1 class="mb-6 text-2xl font-bold text-[#1a3a5c]">Versand</h1>
+        <h1 class="mb-6 text-2xl font-bold text-brand-secondary">Versand</h1>
 
         <p class="mb-8 text-sm text-gray-700">
             <strong>Hinweis:</strong> Unsere Angebote richten sich an
@@ -22,12 +22,13 @@
             Widerrufsrecht gemäß §355 BGB zu. Weitere Informationen finden Sie
             in unserer <Link
                 href="/informationen/widerrufsbelehrung"
-                class="text-[#1a6bbf] hover:underline">Widerrufsbelehrung</Link
+                class="text-brand-accent hover:underline"
+                >Widerrufsbelehrung</Link
             >.
         </p>
 
         <!-- Standardversand (DPD) -->
-        <h2 class="mb-3 text-lg font-bold text-[#1a3a5c]">
+        <h2 class="mb-3 text-lg font-bold text-brand-secondary">
             Standardversand (DPD)
         </h2>
         <div class="mb-8 overflow-x-auto">
@@ -130,7 +131,7 @@
         </div>
 
         <!-- Standardversand + Video-Einweisung -->
-        <h2 class="mb-3 text-lg font-bold text-[#1a3a5c]">
+        <h2 class="mb-3 text-lg font-bold text-brand-secondary">
             Standardversand (DPD) + Video-Einweisung
         </h2>
         <div class="mb-8 overflow-x-auto">
@@ -199,7 +200,9 @@
         </div>
 
         <!-- Selbstabholung -->
-        <h2 class="mb-3 text-lg font-bold text-[#1a3a5c]">Selbstabholung</h2>
+        <h2 class="mb-3 text-lg font-bold text-brand-secondary">
+            Selbstabholung
+        </h2>
         <div class="mb-8 overflow-x-auto">
             <table class="w-full border-collapse text-sm">
                 <thead>
@@ -235,7 +238,7 @@
         </div>
 
         <!-- Persönliche Lieferung -->
-        <h2 class="mb-3 text-lg font-bold text-[#1a3a5c]">
+        <h2 class="mb-3 text-lg font-bold text-brand-secondary">
             Persönliche Lieferung inkl. Einweisung &amp; Installation
         </h2>
         <div class="mb-8 overflow-x-auto">
@@ -279,7 +282,7 @@
         </p>
 
         <!-- Eigentumsvorbehalt -->
-        <h2 class="mb-2 text-lg font-bold text-[#1a3a5c]">
+        <h2 class="mb-2 text-lg font-bold text-brand-secondary">
             Eigentumsvorbehalt
         </h2>
         <div class="mb-8 space-y-3 text-sm text-gray-700">
@@ -330,7 +333,9 @@
         </div>
 
         <!-- Mängelanzeige -->
-        <h2 class="mb-2 text-lg font-bold text-[#1a3a5c]">Mängelanzeige</h2>
+        <h2 class="mb-2 text-lg font-bold text-brand-secondary">
+            Mängelanzeige
+        </h2>
         <p class="mb-8 text-sm text-gray-700">
             Sollte die gelieferte Ware offensichtliche Mängel aufweisen, so ist
             dies innerhalb von drei Werktagen nach Erhalt der Ware anzuzeigen.
@@ -341,7 +346,7 @@
         </p>
 
         <!-- Verjährung -->
-        <h2 class="mb-2 text-lg font-bold text-[#1a3a5c]">
+        <h2 class="mb-2 text-lg font-bold text-brand-secondary">
             Verjährung von Mängelansprüchen
         </h2>
         <p class="mb-8 text-sm text-gray-700">
@@ -352,7 +357,9 @@
         </p>
 
         <!-- Nacherfüllung -->
-        <h2 class="mb-2 text-lg font-bold text-[#1a3a5c]">Nacherfüllung</h2>
+        <h2 class="mb-2 text-lg font-bold text-brand-secondary">
+            Nacherfüllung
+        </h2>
         <p class="mb-8 text-sm text-gray-700">
             Ist eine von uns gelieferte Sache mangelhaft und wir sind zur
             Nacherfüllung verpflichtet, können wir nach unserer Wahl den Mangel
@@ -361,7 +368,9 @@
         </p>
 
         <!-- Werbeaussagen -->
-        <h2 class="mb-2 text-lg font-bold text-[#1a3a5c]">Werbeaussagen</h2>
+        <h2 class="mb-2 text-lg font-bold text-brand-secondary">
+            Werbeaussagen
+        </h2>
         <p class="mb-8 text-sm text-gray-700">
             Soweit die Beschaffenheit des Kaufgegenstandes nicht vereinbart
             wurde, gehören Eigenschaften, die aufgrund von Äußerungen von
@@ -375,7 +384,7 @@
         </p>
 
         <!-- Datenschutz -->
-        <h2 class="mb-2 text-lg font-bold text-[#1a3a5c]">Datenschutz</h2>
+        <h2 class="mb-2 text-lg font-bold text-brand-secondary">Datenschutz</h2>
         <p class="mb-8 text-sm text-gray-700">
             Wir speichern und verwenden die Bestelldaten des Kunden für die
             Abwicklung der Geschäftsbeziehung. Eine Weitergabe der Daten an
@@ -385,7 +394,7 @@
         </p>
 
         <!-- Erfüllungsort -->
-        <h2 class="mb-2 text-lg font-bold text-[#1a3a5c]">
+        <h2 class="mb-2 text-lg font-bold text-brand-secondary">
             Erfüllungsort, Gerichtsstand
         </h2>
         <p class="mb-8 text-sm text-gray-700">

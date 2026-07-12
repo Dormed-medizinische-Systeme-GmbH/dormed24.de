@@ -142,13 +142,13 @@
                                                     <div>
                                                         <Link
                                                             href={item.product_url}
-                                                            class="font-semibold text-gray-900 hover:text-[#1a6bbf]"
+                                                            class="font-semibold text-gray-900 hover:text-brand-accent"
                                                         >
                                                             {item.name}
                                                         </Link>
                                                         {#if item.manufacturer_name}
                                                             <p
-                                                                class="text-xs text-[#1a6bbf]"
+                                                                class="text-xs text-brand-accent"
                                                             >
                                                                 {item.manufacturer_name}
                                                             </p>
@@ -264,7 +264,7 @@
 
                         <Button
                             asChild
-                            class="mt-4 w-full bg-[#0d1f44] text-white hover:bg-[#0d1f44]/90"
+                            class="mt-4 w-full bg-primary text-white hover:bg-primary/90"
                             disabled={cart.is_empty}
                         >
                             {#snippet children(props)}
@@ -294,7 +294,7 @@
                                         checked={method.selected}
                                         onchange={() =>
                                             updateShipping(method.id)}
-                                        class="mt-0.5 accent-[#0d1f44]"
+                                        class="mt-0.5 accent-primary"
                                     />
                                     <span class="text-sm">
                                         <span

@@ -212,7 +212,7 @@
                                             href={ProductController.show.url(
                                                 product.id,
                                             )}
-                                            class={`flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-accent ${activeResultIndex === index ? 'bg-[#eef5ff] text-[#0d1f44]' : ''}`}
+                                            class={`flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-accent ${activeResultIndex === index ? 'bg-[#eef5ff] text-primary' : ''}`}
                                             onclick={() => (isOpen = false)}
                                             onmouseenter={() =>
                                                 (activeResultIndex = index)}
@@ -234,7 +234,7 @@
                                                 {product.name}
                                             </span>
                                             <span
-                                                class="shrink-0 text-sm font-medium text-[#1a3a5c]"
+                                                class="shrink-0 text-sm font-medium text-brand-secondary"
                                             >
                                                 {formatPrice(product.price)}*
                                             </span>
@@ -244,7 +244,7 @@
                             </ul>
                             <Link
                                 href={allResultsUrl}
-                                class="flex items-center justify-between border-t px-4 py-2.5 text-sm text-[#1a6bbf] hover:bg-accent"
+                                class="flex items-center justify-between border-t px-4 py-2.5 text-sm text-brand-accent hover:bg-accent"
                                 onclick={() => (isOpen = false)}
                             >
                                 <span
@@ -289,7 +289,7 @@
                             {#each staticNavStart as item (item.label)}
                                 <Link
                                     href={item.href}
-                                    class="rounded-md px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-accent hover:text-[#1a3a5c]"
+                                    class="rounded-md px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-accent hover:text-brand-secondary"
                                 >
                                     {item.label}
                                 </Link>
@@ -297,7 +297,7 @@
                             {#each navCategories as cat (cat.id)}
                                 <Link
                                     href={`/${cat.slug}`}
-                                    class="rounded-md px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-accent hover:text-[#1a3a5c]"
+                                    class="rounded-md px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-accent hover:text-brand-secondary"
                                 >
                                     {cat.name}
                                 </Link>
@@ -310,14 +310,16 @@
                 <Button variant="ghost" class="gap-2 px-3" asChild>
                     {#snippet children(props)}
                         <Link href={cartRoutes.index.url()} class={props.class}>
-                            <span class="text-sm font-medium text-[#1a3a5c]">
+                            <span
+                                class="text-sm font-medium text-brand-secondary"
+                            >
                                 {formatPrice(cart.total)}*
                             </span>
                             <div class="relative">
                                 <ShoppingCart class="size-5" />
                                 {#if cart.count > 0}
                                     <span
-                                        class="absolute -right-2 -top-2 flex size-4 items-center justify-center rounded-full bg-[#1a6bbf] text-[10px] font-bold text-white"
+                                        class="absolute -right-2 -top-2 flex size-4 items-center justify-center rounded-full bg-brand-accent text-[10px] font-bold text-white"
                                     >
                                         {cart.count}
                                     </span>
@@ -362,7 +364,7 @@
                 {#each staticNavStart as item (item.label)}
                     <Link
                         href={item.href}
-                        class="border-b-2 border-transparent px-4 py-3 text-sm font-medium text-gray-600 transition-colors hover:border-[#1a6bbf] hover:text-[#1a3a5c]"
+                        class="border-b-2 border-transparent px-4 py-3 text-sm font-medium text-gray-600 transition-colors hover:border-brand-accent hover:text-brand-secondary"
                     >
                         {item.label}
                     </Link>
@@ -370,7 +372,7 @@
                 {#each navCategories as cat (cat.id)}
                     <Link
                         href={`/${cat.slug}`}
-                        class="border-b-2 border-transparent px-4 py-3 text-sm font-medium text-gray-600 transition-colors hover:border-[#1a6bbf] hover:text-[#1a3a5c]"
+                        class="border-b-2 border-transparent px-4 py-3 text-sm font-medium text-gray-600 transition-colors hover:border-brand-accent hover:text-brand-secondary"
                     >
                         {cat.name}
                     </Link>

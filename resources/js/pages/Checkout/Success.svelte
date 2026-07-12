@@ -154,7 +154,7 @@
                 <Download class="size-4" />
                 Rechnung herunterladen
             </Button>
-            <Button asChild class="flex-1 bg-[#0d1f44] text-white hover:bg-[#0d1f44]/90">
+            <Button asChild class="flex-1 bg-primary text-white hover:bg-primary/90">
                 {#snippet children(props)}
                     <Link href="/" class={props.class}>
                         Weiter einkaufen

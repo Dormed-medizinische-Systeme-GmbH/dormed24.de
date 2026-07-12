@@ -33,7 +33,7 @@
     </div>
     <div class="flex flex-col gap-1 px-4 pb-5 pt-4">
         <p
-            class="line-clamp-2 min-h-12 text-[15px] font-medium leading-6 text-gray-900 transition-colors group-hover:text-[#1a6bbf]"
+            class="line-clamp-2 min-h-12 text-[15px] font-medium leading-6 text-gray-900 transition-colors group-hover:text-brand-accent"
         >
             {product.name}
         </p>
@@ -42,7 +42,7 @@
                 {product.manufacturer.name}
             </p>
         {/if}
-        <p class="pt-1 text-base font-semibold text-[#0d1f44]">
+        <p class="pt-1 text-base font-semibold text-primary">
             {formatPrice(product.price)}*
         </p>
     </div>

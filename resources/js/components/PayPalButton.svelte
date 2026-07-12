@@ -171,7 +171,7 @@
     {#if isProcessing}
         <div class="mt-2 flex items-center justify-center gap-2">
             <div
-                class="size-4 animate-spin rounded-full border-2 border-[#1a6bbf] border-t-transparent"
+                class="size-4 animate-spin rounded-full border-2 border-brand-accent border-t-transparent"
             ></div>
             <span class="text-sm text-gray-600">Zahlung wird verarbeitet…</span>
         </div>

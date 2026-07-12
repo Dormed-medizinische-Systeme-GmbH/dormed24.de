@@ -291,7 +291,7 @@
         <nav class="mb-8 flex items-center gap-1.5 text-sm text-gray-500">
             <Link
                 href={ProductController.index.url()}
-                class="hover:text-[#1a6bbf]"
+                class="hover:text-brand-accent"
             >
                 Alle Produkte
             </Link>
@@ -299,7 +299,7 @@
                 <ChevronRight class="size-3.5 shrink-0" />
                 <Link
                     href={CategoryController.show.url(product.category.slug)}
-                    class="text-gray-600 hover:text-[#1a6bbf]"
+                    class="text-gray-600 hover:text-brand-accent"
                 >
                     {product.category.name}
                 </Link>
@@ -348,7 +348,7 @@
                                         class={cn(
                                             'aspect-square overflow-hidden rounded-2xl border bg-[#f6f7f8] transition-colors',
                                             activeImageIndex === i
-                                                ? 'border-[#0d1f44]'
+                                                ? 'border-primary'
                                                 : 'border-gray-200 hover:border-gray-300',
                                         )}
                                         aria-label={`Bild ${i + 1}`}
@@ -380,7 +380,7 @@
                     <div class="flex flex-col gap-3">
                         {#if product.manufacturer}
                             <span
-                                class="text-sm font-medium uppercase tracking-[0.18em] text-[#1a6bbf]"
+                                class="text-sm font-medium uppercase tracking-[0.18em] text-brand-accent"
                             >
                                 {product.manufacturer.name}
                             </span>
@@ -432,7 +432,7 @@
                         </span>
                     </div>
 
-                    <p class="text-sm text-[#1a6bbf] hover:underline">
+                    <p class="text-sm text-brand-accent hover:underline">
                         <Link href="/informationen/versand"
                             >Preise inkl. MwSt. zzgl. Versandkosten</Link
                         >
@@ -526,7 +526,7 @@
                     class={cn(
                         'px-6 py-3 text-sm font-semibold transition-colors',
                         activeTab === 'beschreibung'
-                            ? 'border-b-2 border-[#1a6bbf] text-[#1a6bbf]'
+                            ? 'border-b-2 border-brand-accent text-brand-accent'
                             : 'text-gray-500 hover:text-gray-800',
                     )}
                     onclick={() => (activeTab = 'beschreibung')}
@@ -537,7 +537,7 @@
                     class={cn(
                         'px-6 py-3 text-sm font-semibold transition-colors',
                         activeTab === 'bewertungen'
-                            ? 'border-b-2 border-[#1a6bbf] text-[#1a6bbf]'
+                            ? 'border-b-2 border-brand-accent text-brand-accent'
                             : 'text-gray-500 hover:text-gray-800',
                     )}
                     onclick={() => (activeTab = 'bewertungen')}
@@ -785,7 +785,7 @@
 
                                         <Button
                                             type="submit"
-                                            class="w-full bg-[#0d1f44] text-white hover:bg-[#0d1f44]/90"
+                                            class="w-full bg-primary text-white hover:bg-primary/90"
                                             disabled={processing}
                                         >
                                             Bewertung senden

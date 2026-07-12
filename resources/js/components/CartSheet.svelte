@@ -47,14 +47,14 @@
     <SheetTrigger asChild>
         {#snippet children(props)}
             <Button variant="ghost" class="gap-2 px-3" onclick={props.onclick}>
-                <span class="text-sm font-medium text-[#1a3a5c]">
+                <span class="text-sm font-medium text-brand-secondary">
                     {formattedTotal}*
                 </span>
                 <div class="relative">
                     <ShoppingCart class="size-5" />
                     {#if cart.count > 0}
                         <span
-                            class="absolute -right-2 -top-2 flex size-4 items-center justify-center rounded-full bg-[#1a6bbf] text-[10px] font-bold text-white"
+                            class="absolute -right-2 -top-2 flex size-4 items-center justify-center rounded-full bg-brand-accent text-[10px] font-bold text-white"
                         >
                             {cart.count}
                         </span>
@@ -121,7 +121,7 @@
                                 >
                                     <Link
                                         href={item.product_url}
-                                        class="text-sm font-semibold leading-snug text-gray-900 hover:text-[#1a6bbf]"
+                                        class="text-sm font-semibold leading-snug text-gray-900 hover:text-brand-accent"
                                     >
                                         {item.name}
                                     </Link>
@@ -198,7 +198,7 @@
                 {#snippet children(closeProps)}
                     <Button
                         asChild
-                        class="w-full bg-[#0d1f44] text-white hover:bg-[#0d1f44]/90"
+                        class="w-full bg-primary text-white hover:bg-primary/90"
                         disabled={cart.is_empty}
                     >
                         {#snippet children(btnProps)}
@@ -219,7 +219,7 @@
             <div class="mt-3 text-center">
                 <Link
                     href={cartRoutes.index.url()}
-                    class="text-sm font-semibold text-[#1a3a5c] hover:underline"
+                    class="text-sm font-semibold text-brand-secondary hover:underline"
                 >
                     Warenkorb anzeigen
                 </Link>

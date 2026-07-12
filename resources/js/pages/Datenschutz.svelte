@@ -24,7 +24,7 @@
     <ShopHeader />
 
     <main class="flex-1 mx-auto max-w-7xl px-4 py-10 lg:px-8">
-        <h1 class="mb-8 text-2xl font-bold text-[#1a3a5c]">
+        <h1 class="mb-8 text-2xl font-bold text-brand-secondary">
             Datenschutzerklärung
         </h1>
 
@@ -36,7 +36,7 @@
         <div class="space-y-10 text-sm text-gray-700">
             <!-- 1 -->
             <section>
-                <h2 class="mb-4 text-base font-bold text-[#1a3a5c]">
+                <h2 class="mb-4 text-base font-bold text-brand-secondary">
                     1. Erhebung und Speicherung personenbezogener Daten
                 </h2>
 
@@ -195,7 +195,7 @@
 
             <!-- 2 -->
             <section>
-                <h2 class="mb-3 text-base font-bold text-[#1a3a5c]">
+                <h2 class="mb-3 text-base font-bold text-brand-secondary">
                     2. Weitergabe von Daten an Dritte
                 </h2>
                 <p class="mb-3">
@@ -234,7 +234,7 @@
 
             <!-- 3 -->
             <section>
-                <h2 class="mb-3 text-base font-bold text-[#1a3a5c]">
+                <h2 class="mb-3 text-base font-bold text-brand-secondary">
                     3. Betroffenenrechte
                 </h2>
                 <p class="mb-3">Sie haben das Recht:</p>
@@ -301,7 +301,7 @@
                     Zur Ausübung Ihrer Rechte wenden Sie sich bitte an:
                     <a
                         href="mailto:datenschutz@dormed24.de"
-                        class="text-[#1a6bbf] hover:underline"
+                        class="text-brand-accent hover:underline"
                         >datenschutz@dormed24.de</a
                     >
                 </p>
@@ -309,7 +309,7 @@
 
             <!-- 4 -->
             <section>
-                <h2 class="mb-3 text-base font-bold text-[#1a3a5c]">
+                <h2 class="mb-3 text-base font-bold text-brand-secondary">
                     4. Speicherdauer
                 </h2>
                 <p>
@@ -323,7 +323,7 @@
 
             <!-- 5 -->
             <section>
-                <h2 class="mb-3 text-base font-bold text-[#1a3a5c]">
+                <h2 class="mb-3 text-base font-bold text-brand-secondary">
                     5. Cookies
                 </h2>
                 <p class="mb-3">
@@ -366,7 +366,7 @@
 
             <!-- 6 -->
             <section>
-                <h2 class="mb-3 text-base font-bold text-[#1a3a5c]">
+                <h2 class="mb-3 text-base font-bold text-brand-secondary">
                     6. Online-Marketing und Analyse-Tools
                 </h2>
                 <p class="mb-4">
@@ -411,7 +411,7 @@
                                 href="https://tools.google.com/dlpage/gaoptout?hl=de"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                class="text-[#1a6bbf] hover:underline"
+                                class="text-brand-accent hover:underline"
                                 >tools.google.com/dlpage/gaoptout</a
                             >
                         </p>
@@ -452,7 +452,7 @@
                                 href="http://www.google.com/privacy_ads.html"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                class="text-[#1a6bbf] hover:underline"
+                                class="text-brand-accent hover:underline"
                                 >Seite zur Deaktivierung von Google-Anzeigen</a
                             > aufrufen.
                         </p>
@@ -482,7 +482,7 @@
 
             <!-- 7 -->
             <section>
-                <h2 class="mb-3 text-base font-bold text-[#1a3a5c]">
+                <h2 class="mb-3 text-base font-bold text-brand-secondary">
                     7. Zahlungsdienstleister
                 </h2>
 
@@ -519,7 +519,7 @@
                                 href="https://www.paypal.com/de/webapps/mpp/ua/privacy-full"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                class="text-[#1a6bbf] hover:underline"
+                                class="text-brand-accent hover:underline"
                                 >Datenschutzerklärung von PayPal</a
                             >.
                         </p>
@@ -543,7 +543,7 @@
 
             <!-- 8 -->
             <section>
-                <h2 class="mb-3 text-base font-bold text-[#1a3a5c]">
+                <h2 class="mb-3 text-base font-bold text-brand-secondary">
                     8. Datensicherheit
                 </h2>
                 <p class="mb-3">
@@ -564,7 +564,7 @@
 
             <!-- 9 -->
             <section>
-                <h2 class="mb-3 text-base font-bold text-[#1a3a5c]">
+                <h2 class="mb-3 text-base font-bold text-brand-secondary">
                     9. Aktualität und Änderung dieser Datenschutzerklärung
                 </h2>
                 <p>
@@ -577,7 +577,7 @@
                     unter
                     <Link
                         href="/unternehmen/datenschutz"
-                        class="text-[#1a6bbf] hover:underline"
+                        class="text-brand-accent hover:underline"
                         >dormed-shop.test/unternehmen/datenschutz</Link
                     >
                     abgerufen und ausgedruckt werden.
@@ -586,7 +586,7 @@
 
             <!-- 10 -->
             <section>
-                <h2 class="mb-3 text-base font-bold text-[#1a3a5c]">
+                <h2 class="mb-3 text-base font-bold text-brand-secondary">
                     10. Verantwortlicher
                 </h2>
                 <address class="not-italic leading-relaxed">
@@ -596,19 +596,19 @@
                     Telefon:
                     <a
                         href={contact.phone_href}
-                        class="text-[#1a6bbf] hover:underline"
+                        class="text-brand-accent hover:underline"
                         >{contact.phone}</a
                     ><br />
                     E-Mail:
                     <a
                         href={`mailto:${contact.email}`}
-                        class="text-[#1a6bbf] hover:underline"
+                        class="text-brand-accent hover:underline"
                         >{contact.email}</a
                     ><br /><br />
                     Datenschutzanfragen:
                     <a
                         href="mailto:datenschutz@dormed24.de"
-                        class="text-[#1a6bbf] hover:underline"
+                        class="text-brand-accent hover:underline"
                         >datenschutz@dormed24.de</a
                     >
                 </address>

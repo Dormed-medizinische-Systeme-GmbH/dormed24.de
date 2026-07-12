@@ -35,14 +35,14 @@
             <div class="flex shrink-0 flex-col gap-2 sm:flex-row">
                 <button
                     type="button"
-                    class="rounded-lg border px-4 py-2 text-sm font-semibold text-[#1a3a5c] transition hover:bg-gray-50"
+                    class="rounded-lg border px-4 py-2 text-sm font-semibold text-brand-secondary transition hover:bg-gray-50"
                     onclick={hideBanner}
                 >
                     Nur notwendige
                 </button>
                 <button
                     type="button"
-                    class="rounded-lg bg-[#0d1f44] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#0d1f44]/90"
+                    class="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary/90"
                     onclick={hideBanner}
                 >
                     Alle Cookies erlauben

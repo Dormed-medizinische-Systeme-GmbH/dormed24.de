@@ -25,7 +25,9 @@
 
     <main class="flex-1 mx-auto max-w-2xl px-4 py-16 text-center lg:px-8">
         <div class="mb-5 flex justify-center">
-            <div class="flex size-16 items-center justify-center rounded-full bg-red-100">
+            <div
+                class="flex size-16 items-center justify-center rounded-full bg-red-100"
+            >
                 <AlertCircle class="size-8 text-red-600" />
             </div>
         </div>
@@ -34,15 +36,20 @@
         </h1>
         <p class="mt-3 text-sm text-gray-500">
             Bitte versuchen Sie es erneut oder kontaktieren Sie uns unter
-            <a href={contact.phone_href} class="text-[#1a6bbf] hover:underline">{contact.phone}</a>.
+            <a
+                href={contact.phone_href}
+                class="text-brand-accent hover:underline">{contact.phone}</a
+            >.
         </p>
         <div class="mt-8 flex justify-center gap-3">
             <Button asChild variant="outline">
                 {#snippet children(props)}
-                    <Link href="/checkout/confirm" class={props.class}>Zurück zur Bestellung</Link>
+                    <Link href="/checkout/confirm" class={props.class}
+                        >Zurück zur Bestellung</Link
+                    >
                 {/snippet}
             </Button>
-            <Button asChild class="bg-[#0d1f44] text-white hover:bg-[#0d1f44]/90">
+            <Button asChild class="bg-primary text-white hover:bg-primary/90">
                 {#snippet children(props)}
                     <Link href="/" class={props.class}>Zur Startseite</Link>
                 {/snippet}

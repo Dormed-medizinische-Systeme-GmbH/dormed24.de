@@ -229,7 +229,7 @@
                             Bitte beachten Sie die
                             <Link
                                 href="/informationen/widerrufsbelehrung"
-                                class="text-[#1a6bbf] hover:underline"
+                                class="text-brand-accent hover:underline"
                             >
                                 Widerrufsbelehrung
                             </Link>.
@@ -243,7 +243,7 @@
                                 Ich habe die
                                 <Link
                                     href="/unternehmen/agb"
-                                    class="text-[#1a6bbf] hover:underline"
+                                    class="text-brand-accent hover:underline"
                                     >AGB</Link
                                 >
                                 gelesen und bin mit ihnen einverstanden.
@@ -290,7 +290,7 @@
                             </p>
                             <button
                                 onclick={enableBillingAddress}
-                                class="mt-2 text-sm text-[#1a6bbf] hover:underline"
+                                class="mt-2 text-sm text-brand-accent hover:underline"
                             >
                                 Abweichende Rechnungsadresse eingeben
                             </button>
@@ -304,7 +304,7 @@
                             />
                             <button
                                 onclick={disableBillingAddress}
-                                class="mt-2 text-sm text-[#1a6bbf] hover:underline"
+                                class="mt-2 text-sm text-brand-accent hover:underline"
                             >
                                 Wie Lieferadresse verwenden
                             </button>
@@ -370,7 +370,7 @@
                                                 checked={method.selected}
                                                 onchange={() =>
                                                     updatePayment(method.id)}
-                                                class="mt-0.5 accent-[#0d1f44]"
+                                                class="mt-0.5 accent-primary"
                                             />
                                             <span class="text-sm">
                                                 <span
@@ -398,8 +398,7 @@
                                     !addressComplete}
                                 <div class="mt-6">
                                     <button
-                                        class="relative w-full overflow-hidden rounded-md px-4 py-2.5 text-sm font-semibold text-white transition-opacity select-none"
-                                        style="background:#0d1f44;"
+                                        class="relative w-full overflow-hidden rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-white transition-opacity select-none"
                                         disabled={isDisabled}
                                         onpointerdown={holdStart}
                                         onpointerup={holdEnd}
@@ -447,7 +446,7 @@
                         {:else}
                             <Button
                                 asChild
-                                class="mt-6 w-full bg-[#0d1f44] text-white hover:bg-[#0d1f44]/90"
+                                class="mt-6 w-full bg-primary text-white hover:bg-primary/90"
                             >
                                 {#snippet children(props)}
                                     <Link

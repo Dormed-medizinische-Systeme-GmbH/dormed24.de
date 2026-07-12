@@ -44,7 +44,7 @@
                         <Table.Cell class="font-medium">
                             <Link
                                 href={`/customer/orders/${order.id}`}
-                                class="block w-full text-[#0d1f44] hover:underline"
+                                class="block w-full text-primary hover:underline"
                             >
                                 #{order.id}
                             </Link>

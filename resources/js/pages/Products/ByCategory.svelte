@@ -81,7 +81,7 @@
             <select
                 value={sort}
                 onchange={(e) => onSortChange(e.currentTarget.value)}
-                class="rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-[#0d1f44] focus:outline-none"
+                class="rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-primary focus:outline-none"
             >
                 {#each sortOptions as option (option.value)}
                     <option value={option.value}>{option.label}</option>
@@ -96,7 +96,7 @@
                 </p>
                 <Link
                     href={ProductController.index.url()}
-                    class="mt-4 inline-block text-sm text-[#1a6bbf] hover:underline"
+                    class="mt-4 inline-block text-sm text-brand-accent hover:underline"
                 >
                     Alle Produkte anzeigen
                 </Link>
@@ -112,7 +112,7 @@
                 {#snippet loading()}
                     <div class="mt-8 flex justify-center">
                         <div
-                            class="size-6 animate-spin rounded-full border-2 border-[#1a6bbf] border-t-transparent"
+                            class="size-6 animate-spin rounded-full border-2 border-brand-accent border-t-transparent"
                         ></div>
                     </div>
                 {/snippet}
