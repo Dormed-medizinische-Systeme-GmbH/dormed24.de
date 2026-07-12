@@ -2,9 +2,10 @@ name: linter
 
 on:
   push:
+    # "main" fehlt hier bewusst: dort ruft deploy.yml diesen Workflow per
+    # workflow_call als Deploy-Gate auf (sonst liefe er doppelt).
     branches:
       - develop
-      - main
       - master
       - workos
   pull_request:
@@ -13,6 +14,8 @@ on:
       - main
       - master
       - workos
+  # Erlaubt deploy.yml, diesen Workflow als wiederverwendbares Gate aufzurufen.
+  workflow_call:
 
 permissions:
   contents: write

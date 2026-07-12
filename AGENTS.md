@@ -249,6 +249,69 @@ Der Shop deckt **ausschließlich** Bestellannahme + Zahlungsabwicklungsschicht a
 - **Es gibt keinen Fulfillment-Status im System** (kein „in Bearbeitung"/„versendet"/„abgeschlossen" — bewusst entfernt, siehe Git-Historie). `paid` ist der finale Erfolgszustand; Versand/Rechnung/DPD-Tracking passiert in der externen Rechnungssoftware.
 - Storno (`cancelled`) über den Admin ist aktuell **nicht** vorgesehen — nur PayPal selbst (Abbruch/Timeout) oder eine zukünftige bilaterale PayPal-Storno-Anbindung dürfen das setzen.
 
+---
+
+## CI/CD & Deployment
+
+**Ziel:** Auf den Server muss man **nur noch für einen Sandbox-Reset** (`migrate:fresh --seed`). Alles andere macht der Deploy automatisch beim Push auf `main`.
+
+### Die drei Workflows (`.github/workflows/`)
+
+| Workflow | Läuft bei | Inhalt |
+| --- | --- | --- |
+| `tests.yml` | Push (develop/master/workos), PR, **+ `workflow_call`** | PHPStan + PHPUnit + Build, **PHP 8.4** |
+| `lint.yml` | Push (develop/master/workos), PR, **+ `workflow_call`** | Pint + ESLint + Prettier |
+| `deploy.yml` | **Push auf `main`** + manuell (`workflow_dispatch`) | ruft beide Gates auf, deployt danach per SSH |
+
+**Das „depends on":** `deploy.yml` ruft `tests.yml` und `lint.yml` als *reusable workflows* (`uses:`) auf und wartet per **`needs: [tests, lint]`**. Der Deploy-Job startet nur, wenn **beide grün** sind. Deshalb fehlt `main` bewusst in den `push`-Triggern von tests/lint — sonst liefen sie doppelt.
+
+**PHP-Matrix:** nur `8.4`. `composer.json` verlangt `"php": "^8.4"` — **8.3 kann strukturell nicht funktionieren** und schlug deshalb immer fehl (früher fälschlich in der Matrix).
+
+### Deploy-Modell (Server)
+
+- **SSH-User: `deploy`** — niemals `root`, niemals `www-data`. Kein `sudo -u www-data`.
+- **Webserver läuft weiter als `www-data`**; der braucht nur Lese-/Ausführrechte auf die App und **Schreibrechte auf `storage/` + `bootstrap/cache/`**.
+- **App-Pfad:** `/var/www/test.dormed24.de`
+- Der Deploy führt aus: `git pull --ff-only` → `composer install --no-dev` → `npm ci` → `npm run build` → `optimize:clear` → **`migrate --force`** → `optimize`.
+- **`migrate --force` spielt nur NEUE Migrationen ein und löscht nie Daten.** Ein **`migrate:fresh --seed` (Sandbox-Reset) passiert ausschließlich manuell auf dem Server** — bewusst nie im Deploy.
+- `git pull --ff-only` bricht ab statt zu mergen, falls der Server divergiert (lieber roter Deploy als Merge-Chaos).
+
+### GitHub-Konfiguration
+
+**Secret** (Settings → Secrets → Actions) — nur der private Key ist geheim:
+
+| Name | Inhalt |
+| --- | --- |
+| `DEPLOY_SSH_KEY` | **privater** SSH-Key (der öffentliche liegt in `/home/deploy/.ssh/authorized_keys`) |
+
+**Variables** (Settings → Variables → Actions) — nicht geheim, deshalb bewusst *keine* Secrets:
+
+| Name | Wert |
+| --- | --- |
+| `DEPLOY_HOST` | `test.dormed24.de` |
+| `DEPLOY_USER` | `deploy` |
+| `DEPLOY_PATH` | `/var/www/test.dormed24.de` |
+| `SSH_KNOWN_HOSTS` | Ausgabe von `ssh-keyscan test.dormed24.de` (öffentlicher Host-Key → verhindert MITM) |
+
+**Kein `DEPLOY_PORT`** — Port 22 ist Default, ein Secret dafür wäre sinnlos.
+
+### Server-Anforderungen (sonst bricht der Deploy)
+
+- **PHP 8.4** (Projekt-Constraint).
+- **Node ≥ 20.19** — Vite 8 crasht auf Node 18 (`CustomEvent is not defined`). Node muss im **PATH des `deploy`-Users bei nicht-interaktiver SSH-Session** liegen (nvm in `~/.bashrc` reicht dafür oft **nicht**!). Der Workflow prüft das explizit und bricht mit klarer Meldung ab.
+- **SSR ist auf dem Server aktuell AUS** (`INERTIA_SSR_ENABLED=false`) → Deploy baut nur `npm run build`. Zum Aktivieren: `npm run build:ssr` im Deploy **und** `inertia:start-ssr` als Dauerprozess (Supervisor) — siehe README-Launch-Checkliste.
+
+### ⚠️ `lint.yml` ist derzeit ein weiches Gate
+
+`lint.yml` ruft `npm run format` (`prettier --write`) und `npm run lint` (`eslint --fix`) — **mutierende** Varianten. Es scheitert nur an *nicht* auto-fixbaren Fehlern, nicht an Formatierungs-Drift. Das echte Gate ist damit `tests.yml` (PHPStan + PHPUnit).
+**Um es scharf zu machen:** einmal `npm run format` + `vendor/bin/pint` laufen lassen und committen (räumt ~29 Dateien Prettier-Drift + Pint-Drift auf), dann in `lint.yml` auf `composer lint:check`, `npm run lint:check`, `npm run format:check` umstellen. `composer ci:check` bündelt bereits das komplette Gate.
+
+### Nicht verwechseln: `update.sh`
+
+`update.sh` im Repo-Root ist **das Dev-/Staging-Reset-Skript** (enthält `migrate:fresh --seed`) — **nicht** der Produktions-Deploy. Der Deploy lebt ausschließlich in `deploy.yml`.
+
+---
+
 ## Noch nicht gebaut
 
 - Wartungsmodus, Produktfilter, Bulk-Aktionen, Bestell-/Kunden-Filter im Admin (siehe `TODO.md`)

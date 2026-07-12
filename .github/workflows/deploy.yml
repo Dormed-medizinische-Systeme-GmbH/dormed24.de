@@ -1,0 +1,108 @@
+name: deploy
+
+# Deploy nach test.dormed24.de — laeuft NUR, wenn tests + linter gruen sind.
+# Die beiden Gates werden hier per `uses:` (reusable workflow) aufgerufen und
+# via `needs:` abgewartet — das ist das GitHub-Aequivalent zu "depends_on".
+on:
+  push:
+    branches: [main]
+  # Manuell nachtriggerbar, ohne neuen Commit (Actions -> deploy -> Run workflow).
+  workflow_dispatch:
+
+# Nie zwei Deploys gleichzeitig auf denselben Server; laufende Deploys werden
+# NICHT abgebrochen (ein halber Deploy waere schlimmer als ein Warten).
+concurrency:
+  group: deploy-test-dormed24
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  # --- Gate 1: PHPStan + PHPUnit + Build (PHP 8.4) -------------------------
+  tests:
+    uses: ./.github/workflows/tests.yml
+
+  # --- Gate 2: Pint + ESLint + Prettier ------------------------------------
+  lint:
+    uses: ./.github/workflows/lint.yml
+
+  # --- Deploy: erst wenn BEIDE Gates erfolgreich waren ----------------------
+  deploy:
+    needs: [tests, lint]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: SSH-Key und Host-Verifikation einrichten
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # Host-Key aus den Variables: verhindert MITM. OHNE das muesste man
+          # StrictHostKeyChecking abschalten - das waere unsicher.
+          printf '%s\n' "${{ vars.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Deploy per SSH (User "deploy", niemals root/www-data)
+        env:
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+              -o StrictHostKeyChecking=yes \
+              "${DEPLOY_USER}@${DEPLOY_HOST}" \
+              "DEPLOY_PATH='${DEPLOY_PATH}' bash -s" <<'REMOTE'
+          set -euo pipefail
+
+          cd "${DEPLOY_PATH}"
+
+          echo "::group::Umgebung"
+          # Non-interaktive SSH-Sessions laden ~/.bashrc oft nicht -> nvm/node
+          # fehlen dann im PATH. Deshalb hier hart pruefen statt kryptisch zu
+          # scheitern. Vite 8 braucht zwingend Node >= 20.19.
+          for cmd in git composer npm node php; do
+            command -v "$cmd" >/dev/null 2>&1 || { echo "FEHLT im PATH des deploy-Users: $cmd"; exit 1; }
+          done
+          echo "node:     $(node --version)   (benoetigt: >= 20.19, Vite 8)"
+          echo "php:      $(php --version | head -1)"
+          echo "composer: $(composer --version)"
+          echo "::endgroup::"
+
+          echo "::group::Code aktualisieren"
+          # --ff-only: bricht ab statt zu mergen, falls der Server lokale
+          # Commits/Divergenzen hat. Lieber ein roter Deploy als ein Merge-Chaos.
+          git pull --ff-only
+          echo "::endgroup::"
+
+          echo "::group::Dependencies"
+          composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+          npm ci
+          echo "::endgroup::"
+
+          echo "::group::Frontend bauen"
+          # Nur Client-Assets: SSR ist auf dem Server aktuell AUS
+          # (INERTIA_SSR_ENABLED=false). Zum Aktivieren siehe AGENTS.md/README:
+          # dann "npm run build:ssr" + inertia:start-ssr als Dauerprozess.
+          npm run build
+          echo "::endgroup::"
+
+          echo "::group::Migrationen + Caches"
+          # Erst Caches leeren (die gepullten config/routes koennen sich
+          # geaendert haben), dann migrieren, dann frisch cachen.
+          # WICHTIG: "migrate --force" spielt nur NEUE Migrationen ein und
+          # loescht NIEMALS Daten. Ein "migrate:fresh --seed" (Sandbox-Reset)
+          # passiert bewusst NUR manuell auf dem Server, nie im Deploy.
+          php artisan optimize:clear
+          php artisan migrate --force
+          php artisan optimize
+          echo "::endgroup::"
+
+          echo "✅ Deploy abgeschlossen: $(git rev-parse --short HEAD)"
+          REMOTE
+
+      - name: SSH-Key entfernen
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
