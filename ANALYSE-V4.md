@@ -28,9 +28,8 @@ Voranalysen klassifiziert: **NEU** / **REGRESSION** / **CARRY-OVER** /
   aktiv. Keine ungeschützte Route gefunden; die Rating-Route ist wie dokumentiert
   deaktiviert (auskommentiert, taucht in `route:list` nicht mehr auf).
 - **Mass-Assignment:** `User`/`Customer` mit `#[Fillable]`-Allowlist, `is_admin`
-  nicht fillable (Fix aus V3 S-5 verifiziert — **TODO.md behauptet noch das
-  Gegenteil**, siehe D-2). Settings mit Key-Whitelist + Format-Validierung +
-  Verschlüsselung sensibler Keys, Secrets maskiert.
+  nicht fillable (Fix aus V3 S-5 verifiziert). Settings mit Key-Whitelist +
+  Format-Validierung + Verschlüsselung sensibler Keys, Secrets maskiert.
 - **Seeder:** `ProductSeeder`-Produktionsguard (`SEED_PRODUCTS_FORCE`) und
   Dev-only User/Customer/Rating-Seeder verifiziert. `DB::prohibitDestructiveCommands()`
   in Produktion aktiv.
@@ -44,7 +43,7 @@ das bekannte Deploy-Skript-Thema und SEO-/Doku-Nacharbeiten.
 
 | Klasse | Punkte |
 | --- | --- |
-| **NEU** | B1 (Capture-FAILED → Erfolgsseite), S-1 (Webhook kann refunded→paid zurückdrehen), S-2/S-3 (PayPal-Kleinhärtungen), SEO-1 (relative Canonical/og:url im SSR), SEO-3 (Produkt-Cover ungeskaliert), Q-1 (Sort-Duplikat), Q-2 (Bild-Waisen beim Produkt-Löschen), D-1/D-2 (Doku-Drift SCHEMA.md/TODO.md) |
+| **NEU** | B1 (Capture-FAILED → Erfolgsseite), S-1 (Webhook kann refunded→paid zurückdrehen), S-2/S-3 (PayPal-Kleinhärtungen), SEO-1 (relative Canonical/og:url im SSR), SEO-3 (Produkt-Cover ungeskaliert), Q-1 (Sort-Duplikat), Q-2 (Bild-Waisen beim Produkt-Löschen), D-1 (Doku-Drift SCHEMA.md) |
 | **REGRESSION** | Q-4 (npm audit 8 low — V3 war sauber; einzige echte Regression, low-severity) |
 | **CARRY-OVER** | B2 (update.sh/Deploy — dokumentiert in todo-deploy.md), B-1 bis B-3 (V3 B-3/B-5-Kleinkram), SEO-2 (Hero-WebP), CI-Gate svelte-check, Backup-Strategie, `sessions.user_id`, Cart-DTO |
 | **BEWUSST** (nicht re-flaggt) | Kein Bestandskonzept, Cookie-Banner-Attrappe, UI-Kit-Dateien bleiben, synchroner Mailversand, SQLite, Sitemap listet unverfügbare Produkte, Dashboard-Umsatz ohne `is_test`-Filter, Rechnung bleibt `pending` ohne Auto-Cleanup, Zahlung/Versand-Seiten-Überschneidung, ShopHeader-with-hover-Backup, keine atomaren Deploys |
@@ -272,13 +271,9 @@ mit Wartungspflicht — tatsächlich fehlen/stimmen nicht:
 ~30 min Abgleich gegen `database-schema`; bei der Gelegenheit `payments`- und
 `product_variants`-Spalten aus den Migrationen übernehmen.
 
-### D-2. TODO.md widerspricht dem Code (NEU — Doku-Drift)
-
-`TODO.md:29-32` führt „🔴 is_admin aus User Fillable entfernen" als offen —
-das ist seit V3 S-5 erledigt (`app/Models/User.php:17`, `#[Fillable]` ohne
-`is_admin`, inkl. Tests). Den Punkt abhaken/streichen, sonst frisst der
-nächste Audit-Durchlauf wieder Zeit damit. (Der Rating-Punkt in TODO.md ist
-dagegen korrekt als Wiedervorlage markiert.)
+~~### D-2. TODO.md widerspricht dem Code~~ ✅ (10.07.2026 — TODO.md bereinigt:
+erledigte Punkte gestrichen, `is_admin`/Ratings/Slug/AGB-Stand am Code
+verifiziert)
 
 ---
 
@@ -380,4 +375,4 @@ die Prod-Domain (für die eine Umgebung okay).
 4. **S-2** (afterPayment-Ownership, eine Zeile) + **S-4-Kleinkram**.
 5. **SEO-1** (absolute Canonical im SSR) → **SEO-2/SEO-3** (Bilder) — vor dem
    ersten Indexieren billiger als danach.
-6. **D-1/D-2** (SCHEMA.md, TODO.md nachziehen) + Q-1/Q-2 nach Gelegenheit.
+6. **D-1** (SCHEMA.md nachziehen) + Q-1/Q-2 nach Gelegenheit.
