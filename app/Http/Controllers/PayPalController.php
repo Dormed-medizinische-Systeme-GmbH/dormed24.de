@@ -216,9 +216,14 @@ class PayPalController extends Controller
             return to_route('checkout.index');
         }
 
+        // Ownership-Scope wie beim JS-Capture (V4 S-2): sonst könnte ein
+        // eingeloggter Dritter mit bekanntem Token fremde Orders capturen —
+        // und completeCapture() würde dabei den Warenkorb der falschen
+        // Session leeren.
         /** @var Payment|null $payment */
         $payment = Payment::query()
             ->where('paypal_order_id', $token)
+            ->whereHas('order', fn ($q) => $q->where('customer_id', $request->user()?->id))
             ->with('order')
             ->first();
 

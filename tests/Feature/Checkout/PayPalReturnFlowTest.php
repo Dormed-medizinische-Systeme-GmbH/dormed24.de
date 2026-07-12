@@ -42,9 +42,25 @@ class PayPalReturnFlowTest extends TestCase
     {
         $payment = Payment::factory()->completed()->create();
 
-        $this->actingAs(Customer::factory()->create())
+        $this->actingAs($payment->order->customer)
             ->get(route('paypal.after-payment', ['token' => $payment->paypal_order_id]))
             ->assertRedirect(route('checkout.success', ['paypal_order_id' => $payment->paypal_order_id]));
+    }
+
+    public function test_after_payment_ignores_another_customers_token(): void
+    {
+        $payment = Payment::factory()->created()->create();
+
+        $this->mock(PayPalService::class, function ($mock): void {
+            // S-2: fremde Tokens duerfen keinen Capture ausloesen.
+            $mock->shouldNotReceive('captureOrder');
+        });
+
+        $this->actingAs(Customer::factory()->create())
+            ->get(route('paypal.after-payment', ['token' => $payment->paypal_order_id]))
+            ->assertRedirect(route('checkout.index'));
+
+        $this->assertSame('CREATED', $payment->fresh()->status);
     }
 
     public function test_after_payment_captures_pending_payment_and_redirects_to_success(): void
@@ -64,7 +80,7 @@ class PayPalReturnFlowTest extends TestCase
                 ->andReturn('CAPTURE123456789');
         });
 
-        $this->actingAs(Customer::factory()->create())
+        $this->actingAs($order->customer)
             ->get(route('paypal.after-payment', ['token' => $payment->paypal_order_id]))
             ->assertRedirect(route('checkout.success', ['paypal_order_id' => $payment->paypal_order_id]));
 
@@ -81,7 +97,7 @@ class PayPalReturnFlowTest extends TestCase
             $mock->shouldReceive('captureOrder')->once()->andReturn(['status' => 'DECLINED']);
         });
 
-        $this->actingAs(Customer::factory()->create())
+        $this->actingAs($payment->order->customer)
             ->get(route('paypal.after-payment', ['token' => $payment->paypal_order_id]))
             ->assertRedirect(route('checkout.error'));
     }
