@@ -57,11 +57,9 @@
     let { customers, filters }: { customers: Paginator; filters: Filters } =
         $props();
 
-    let search = $state(filters.search);
-
-    $effect(() => {
-        search = filters.search;
-    });
+    // Lokal editierbares Suchfeld: re-derived, sobald der Server neue Filter
+    // zurückgibt, per Eingabe/Reset lokal überschreibbar (writable $derived).
+    let search = $derived(filters.search);
 
     function submitSearch(value = search) {
         const term = value.trim();
