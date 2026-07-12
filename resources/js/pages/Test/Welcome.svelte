@@ -287,27 +287,6 @@
                         </li>
                     {/each}
                 </ul>
-
-                <a
-                    href={contact.phone_href}
-                    class="group inline-flex items-center gap-4 rounded-xl bg-white/10 px-5 py-3.5 backdrop-blur-sm transition hover:bg-white/20"
-                >
-                    <div
-                        class="rounded-full bg-white/20 p-2.5 transition group-hover:bg-white/30"
-                    >
-                        <Phone class="size-5 text-white" />
-                    </div>
-                    <span
-                        class="hidden text-2xl font-bold tracking-wide text-white lg:text-3xl"
-                    >
-                        02301 – 188/600
-                    </span>
-                    <span
-                        class="text-2xl font-bold tracking-wide text-white lg:text-3xl"
-                    >
-                        {contact.phone}
-                    </span>
-                </a>
             </div>
         </div>
     </section>

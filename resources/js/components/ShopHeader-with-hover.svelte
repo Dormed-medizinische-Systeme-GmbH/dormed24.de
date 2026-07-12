@@ -404,26 +404,6 @@
                             </Link>
                         {/each}
                     </div>
-                    <div class="mb-3 flex items-center justify-between">
-                        <Link
-                            href={navItems.find((n) => n.menu === activeMenu)
-                                ?.href ?? '/'}
-                            class="flex items-center gap-1 text-sm font-semibold text-[#1a3a5c] hover:underline"
-                            onclick={closeMenu}
-                        >
-                            Zur Kategorie {navItems.find(
-                                (n) => n.menu === activeMenu,
-                            )?.label}
-                            <ChevronRight class="h-4 w-4" />
-                        </Link>
-                        <button
-                            onclick={closeMenu}
-                            class="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
-                            aria-label="Menü schließen"
-                        >
-                            <X class="h-4 w-4" />
-                        </button>
-                    </div>
                 </div>
             </div>
         {/if}
