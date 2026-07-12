@@ -9,6 +9,28 @@ den der Workflow erwartet.
 
 ---
 
+## Bekannte Fakten zum Server (Stand: Setup)
+
+| | |
+| --- | --- |
+| **IP** | `65.109.18.153` |
+| **DNS** | ⚠️ `test.dormed24.de` löst **noch nicht** auf. Nur `dormed24.de` → `65.109.18.153`. |
+| **SSH-Host-Key (ed25519)** | Fingerprint `SHA256:+XULRut13kJLW0b5nwO/7mxKlevF6u8uWqdRsA14Yn8` |
+| **App-Pfad** | `/var/www/test.dormed24.de` |
+| **SSH-User (Deploy)** | `deploy` — **nie** root, **nie** www-data |
+| **Webserver-User** | `www-data` |
+
+### ⚠️ Test und Produktion liegen auf DERSELBEN Maschine
+
+`test.dormed24.de` und `dormed24.de` zeigen auf dieselbe IP. Der Sandbox-Reset
+(`migrate:fresh --seed`) läuft also auf derselben Kiste wie die spätere Produktion.
+
+**Zwingend:** getrennte Verzeichnisse **und getrennte Datenbanken**. Bei SQLite
+heißt das: unterschiedlicher `DB_DATABASE`-Pfad in der jeweiligen `.env`.
+Ein Reset im Test-Verzeichnis darf die Produktions-DB niemals erreichen.
+
+---
+
 ## ⚠️ Zuerst verstehen: es gibt ZWEI Schlüsselpaare
 
 Die werden gern verwechselt — beide sind nötig, sie zeigen in **entgegengesetzte Richtungen**:
@@ -82,14 +104,35 @@ Verbindung testen:
 sudo -u deploy ssh -T git@github.com     # erwartete Antwort: "Hi ...! You've successfully authenticated"
 ```
 
-**3c. Host-Fingerprint für GitHub bereitstellen** (für die Variable `SSH_KNOWN_HOSTS`):
+**3c. Host-Fingerprint verifizieren** (für die GitHub-Variable `SSH_KNOWN_HOSTS`):
+
+Der Host-Key wurde bereits von außen gescannt. **Auf dem Server gegenprüfen**, dass
+er echt ist (verhindert, dass ein MITM-Scan übernommen wird):
 
 ```bash
-ssh-keyscan -t ed25519 test.dormed24.de
-# Zum Gegenprüfen (verhindert, dass ein MITM-Scan übernommen wird):
 ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub
 ```
-→ Die `ssh-keyscan`-Ausgabe geht 1:1 in die GitHub-**Variable** `SSH_KNOWN_HOSTS`.
+
+**Muss ergeben:**
+```
+256 SHA256:+XULRut13kJLW0b5nwO/7mxKlevF6u8uWqdRsA14Yn8 ...
+```
+
+Stimmt das **nicht** überein → **abbrechen und melden.**
+
+Der Wert für die GitHub-Variable `SSH_KNOWN_HOSTS` lautet dann (Achtung: der Eintrag
+muss zu dem Namen passen, mit dem verbunden wird = `DEPLOY_HOST`):
+
+```
+65.109.18.153 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILvH/6vSedqw5ULZLdDf8Ps7DC7QvlWQWcy8+guUC7Yo
+```
+
+Sobald der DNS-Eintrag `test.dormed24.de` → `65.109.18.153` existiert, stattdessen
+den kombinierten Eintrag verwenden (deckt beide Namen ab):
+
+```
+test.dormed24.de,65.109.18.153 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILvH/6vSedqw5ULZLdDf8Ps7DC7QvlWQWcy8+guUC7Yo
+```
 
 ---
 
