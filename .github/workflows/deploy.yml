@@ -82,11 +82,11 @@ jobs:
           npm ci
           echo "::endgroup::"
 
-          echo "::group::Frontend bauen"
-          # Nur Client-Assets: SSR ist auf dem Server aktuell AUS
-          # (INERTIA_SSR_ENABLED=false). Zum Aktivieren siehe AGENTS.md/README:
-          # dann "npm run build:ssr" + inertia:start-ssr als Dauerprozess.
-          npm run build
+          echo "::group::Frontend bauen (Client + SSR-Bundle)"
+          # build:ssr baut BEIDES: Client-Assets und bootstrap/ssr/app.js.
+          # Der Server faehrt SSR dauerhaft (INERTIA_SSR_ENABLED=true), das
+          # SSR-Bundle muss also bei jedem Deploy neu gebaut werden.
+          npm run build:ssr
           echo "::endgroup::"
 
           echo "::group::Migrationen + Caches"
@@ -98,6 +98,17 @@ jobs:
           php artisan optimize:clear
           php artisan migrate --force
           php artisan optimize
+          echo "::endgroup::"
+
+          echo "::group::SSR-Server neu laden"
+          # Der SSR-Node-Prozess haelt das Bundle im Speicher - ohne Neustart
+          # wuerde er nach dem Deploy weiter den ALTEN Code ausliefern.
+          # inertia:stop-ssr faehrt ihn ueber HTTP herunter; die systemd-Unit
+          # (Restart=always) startet ihn sofort mit dem neuen Bundle neu.
+          # Das braucht KEIN sudo - deshalb dieser Weg statt systemctl.
+          php artisan inertia:stop-ssr || true
+          sleep 3
+          php artisan inertia:check-ssr
           echo "::endgroup::"
 
           echo "✅ Deploy abgeschlossen: $(git rev-parse --short HEAD)"

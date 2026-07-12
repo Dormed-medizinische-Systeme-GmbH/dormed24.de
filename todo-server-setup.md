@@ -207,8 +207,12 @@ APP_DEBUG=false            # trotzdem: keine Stacktraces nach außen
 APP_URL=https://test.dormed24.de
 SESSION_SECURE_COOKIE=true # bei HTTPS
 
-INERTIA_SSR_ENABLED=false  # SSR ist aus; der Deploy baut nur `npm run build`
+INERTIA_SSR_ENABLED=true   # SSR läuft dauerhaft -> braucht den Dienst aus Schritt 7b!
 ```
+
+> ⚠️ `INERTIA_SSR_ENABLED=true` **ohne** den SSR-Dienst (Schritt 7b) macht die Seite
+> langsamer, nicht schneller: Laravel würde bei jedem Request vergeblich versuchen,
+> die Seite an `127.0.0.1:13714` zu schicken. Schalter und Dienst gehören zusammen.
 
 Datenbank, Mail-/PayPal-Zugangsdaten nach Bedarf (PayPal-Credentials werden ohnehin
 im Admin unter Einstellungen gepflegt, nicht in der `.env`).
@@ -221,7 +225,7 @@ im Admin unter Einstellungen gepflegt, nicht in der `.env`).
 cd /var/www/test.dormed24.de
 sudo -u deploy composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
 sudo -u deploy npm ci
-sudo -u deploy npm run build
+sudo -u deploy npm run build:ssr      # baut Client-Assets UND bootstrap/ssr/app.js
 sudo -u deploy php artisan migrate --force
 sudo -u deploy php artisan optimize
 ```
@@ -230,6 +234,55 @@ Admin-Account anlegen:
 ```bash
 sudo -u deploy php artisan add:admin
 ```
+
+---
+
+## 7b. ❗ SSR-Dienst einrichten (Pflicht — SSR läuft hier dauerhaft)
+
+SSR braucht **einen zweiten, dauerhaft laufenden Node-Prozess** neben PHP-FPM.
+Er nimmt von Laravel das Seiten-Objekt entgegen, rendert die Svelte-Seite zu
+fertigem HTML und gibt es zurück. Läuft er nicht, bringt `INERTIA_SSR_ENABLED=true`
+nur Nachteile.
+
+**systemd-Unit anlegen** — `/etc/systemd/system/inertia-ssr-test.service`:
+
+```ini
+[Unit]
+Description=Inertia SSR (test.dormed24.de)
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/test.dormed24.de
+ExecStart=/usr/bin/php artisan inertia:start-ssr
+# Restart=always ist ZWINGEND: der Deploy fährt den Prozess mit
+# "inertia:stop-ssr" herunter, damit systemd ihn mit dem NEUEN Bundle neu
+# startet. Ohne Restart=always bliebe er nach jedem Deploy tot.
+Restart=always
+RestartSec=2
+# Node muss auffindbar sein (systemwerte Installation -> /usr/bin/node)
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Aktivieren und prüfen:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now inertia-ssr-test
+sudo systemctl status inertia-ssr-test          # muss "active (running)" sein
+
+cd /var/www/test.dormed24.de
+sudo -u deploy php artisan inertia:check-ssr    # muss "SSR server is running" melden
+```
+
+**Warum kein `sudo` im Deploy nötig ist:** Der Deploy ruft `php artisan inertia:stop-ssr`
+— das ist nur ein HTTP-Shutdown-Request an `127.0.0.1:13714`, kein Systemdienst-Befehl.
+Der Prozess beendet sich, **systemd startet ihn dank `Restart=always` sofort mit dem
+frischen Bundle neu**. Der `deploy`-User braucht dafür keinerlei Sonderrechte.
 
 ---
 
@@ -278,12 +331,22 @@ sudo -u deploy git -C /var/www/test.dormed24.de pull --ff-only
 # 4) Läuft die App?
 curl -sI https://test.dormed24.de | head -1     # erwartet: HTTP/2 200
 
-# 5) Sandbox-Reset funktioniert? (der EINE Grund, warum man noch auf den Server muss)
+# 5) Läuft SSR wirklich? (muss "SSR server is running" sagen)
+sudo systemctl status inertia-ssr-test
+sudo -u deploy php artisan inertia:check-ssr
+
+# 6) Kommt das HTML schon fertig gerendert vom Server?
+#    Der Marker "data-server-rendered" MUSS auftauchen - sonst ist SSR nicht aktiv.
+curl -s https://test.dormed24.de | grep -c "data-server-rendered"    # erwartet: >= 1
+
+# 7) Sandbox-Reset funktioniert? (der EINE Grund, warum man noch auf den Server muss)
 sudo -u deploy php artisan migrate:fresh --seed
 ```
 
-Läuft Punkt 5 durch, ist `APP_ENV` korrekt gesetzt (in `production` würde es
-absichtlich abbrechen).
+- Läuft Punkt 6 ins Leere (`0`), ist entweder `INERTIA_SSR_ENABLED` nicht `true`
+  oder der Dienst aus Schritt 7b läuft nicht.
+- Läuft Punkt 7 durch, ist `APP_ENV` korrekt gesetzt (in `production` würde es
+  absichtlich abbrechen).
 
 ---
 

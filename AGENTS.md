@@ -272,9 +272,17 @@ Der Shop deckt **ausschließlich** Bestellannahme + Zahlungsabwicklungsschicht a
 - **SSH-User: `deploy`** — niemals `root`, niemals `www-data`. Kein `sudo -u www-data`.
 - **Webserver läuft weiter als `www-data`**; der braucht nur Lese-/Ausführrechte auf die App und **Schreibrechte auf `storage/` + `bootstrap/cache/`**.
 - **App-Pfad:** `/var/www/test.dormed24.de`
-- Der Deploy führt aus: `git pull --ff-only` → `composer install --no-dev` → `npm ci` → `npm run build` → `optimize:clear` → **`migrate --force`** → `optimize`.
+- Der Deploy führt aus: `git pull --ff-only` → `composer install --no-dev` → `npm ci` → **`npm run build:ssr`** → `optimize:clear` → **`migrate --force`** → `optimize` → **`inertia:stop-ssr`** (SSR-Reload).
 - **`migrate --force` spielt nur NEUE Migrationen ein und löscht nie Daten.** Ein **`migrate:fresh --seed` (Sandbox-Reset) passiert ausschließlich manuell auf dem Server** — bewusst nie im Deploy.
 - `git pull --ff-only` bricht ab statt zu mergen, falls der Server divergiert (lieber roter Deploy als Merge-Chaos).
+
+### SSR läuft auf dem Server dauerhaft
+
+- Server-`.env`: **`INERTIA_SSR_ENABLED=true`** (der Schalter lebt in der `.env` — die ist **gitignored**, wird also **nie** gepusht. Ein Push schaltet SSR nirgends ein, er liefert nur die Fähigkeit.)
+- Der Deploy baut deshalb **`npm run build:ssr`** (Client **+** `bootstrap/ssr/app.js`).
+- Ein **systemd-Dienst** (`inertia-ssr-test.service`, `Restart=always`) hält `php artisan inertia:start-ssr` dauerhaft am Laufen.
+- **Reload nach dem Deploy:** `php artisan inertia:stop-ssr` fährt den Prozess per HTTP herunter, systemd startet ihn dank `Restart=always` sofort mit dem **neuen Bundle** neu. Kein `sudo` nötig. Ohne diesen Schritt würde SSR nach dem Deploy weiter den **alten** Code ausliefern.
+- Setup-Details: `todo-server-setup.md`, Schritt 7b.
 
 ### GitHub-Konfiguration
 
@@ -299,7 +307,8 @@ Der Shop deckt **ausschließlich** Bestellannahme + Zahlungsabwicklungsschicht a
 
 - **PHP 8.4** (Projekt-Constraint).
 - **Node ≥ 20.19** — Vite 8 crasht auf Node 18 (`CustomEvent is not defined`). Node muss im **PATH des `deploy`-Users bei nicht-interaktiver SSH-Session** liegen (nvm in `~/.bashrc` reicht dafür oft **nicht**!). Der Workflow prüft das explizit und bricht mit klarer Meldung ab.
-- **SSR ist auf dem Server aktuell AUS** (`INERTIA_SSR_ENABLED=false`) → Deploy baut nur `npm run build`. Zum Aktivieren: `npm run build:ssr` im Deploy **und** `inertia:start-ssr` als Dauerprozess (Supervisor) — siehe README-Launch-Checkliste.
+- **Node muss auch für den SSR-Dienst auffindbar sein** — die systemd-Unit läuft als `www-data` und startet den Node-Prozess; deshalb Node **systemweit** installieren (`/usr/bin/node`), nicht per nvm im Home eines Users.
+- **SSR-Dienst muss laufen** (`inertia-ssr-test.service`) — sonst läuft `INERTIA_SSR_ENABLED=true` ins Leere. Siehe SSR-Abschnitt oben.
 
 ### ⚠️ `lint.yml` ist derzeit ein weiches Gate
 
