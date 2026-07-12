@@ -21,7 +21,7 @@
     weissen Chip, da der Schriftzug im SVG dunkel (#1d1d1b) ist.
 -->
 <footer class="mt-auto bg-primary text-white/70">
-    <div class="mx-auto max-w-7xl px-4 py-14 lg:px-8">
+    <div class="mx-auto max-w-7xl px-4 pb-7 pt-14 lg:px-8">
         <div
             class="flex flex-wrap justify-between gap-10 border-b border-white/10 pb-10"
         >
