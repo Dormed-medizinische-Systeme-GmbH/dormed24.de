@@ -1,0 +1,254 @@
+# Server-Setup-Checkliste — test.dormed24.de (für Codex auf dem Server)
+
+Ziel: GitHub Actions (`.github/workflows/deploy.yml`) deployt beim Push auf `main`
+per SSH als User `deploy`. Diese Checkliste bringt den Server in genau den Zustand,
+den der Workflow erwartet.
+
+**Nach dem Setup muss man auf den Server nur noch für den Sandbox-Reset**
+(`php artisan migrate:fresh --seed`). Alles andere macht der Deploy.
+
+---
+
+## ⚠️ Zuerst verstehen: es gibt ZWEI Schlüsselpaare
+
+Die werden gern verwechselt — beide sind nötig, sie zeigen in **entgegengesetzte Richtungen**:
+
+| # | Richtung | Privater Teil | Öffentlicher Teil |
+| - | -------- | ------------- | ----------------- |
+| 1 | **GitHub Actions → Server** | GitHub-Secret `DEPLOY_SSH_KEY` | `/home/deploy/.ssh/authorized_keys` **auf dem Server** |
+| 2 | **Server → GitHub** (für `git pull`) | `/home/deploy/.ssh/id_ed25519` **auf dem Server** | GitHub-Repo → Settings → **Deploy keys** (read-only) |
+
+Schlüsselpaar 1 erzeugt Linus lokal. Schlüsselpaar 2 wird **auf dem Server** erzeugt (Schritt 3).
+
+---
+
+## 1. Systemvoraussetzungen prüfen
+
+```bash
+php --version        # MUSS 8.4.x sein  (composer.json: "php": "^8.4")
+node --version       # MUSS >= 20.19 sein (Vite 8 crasht auf Node 18!)
+npm --version
+composer --version
+git --version
+```
+
+- **PHP 8.4** ist Pflicht — 8.3 kann das Projekt nicht installieren.
+- **Node >= 20.19** ist Pflicht — sonst stirbt `npm run build` mit
+  `ReferenceError: CustomEvent is not defined`.
+- Nötige PHP-Extensions: die Laravel-Standardliste (`mbstring`, `xml`, `curl`,
+  `zip`, `intl`, `sqlite3` bzw. `pdo_mysql` je nach DB), plus `gd` für Bilder.
+
+---
+
+## 2. Deploy-User anlegen
+
+```bash
+sudo adduser --disabled-password --gecos "" deploy
+sudo mkdir -p /home/deploy/.ssh
+sudo chmod 700 /home/deploy/.ssh
+```
+
+`deploy` bekommt **kein sudo** und **keine** Shell-Rechte auf `www-data`.
+Der Webserver läuft weiterhin als `www-data`.
+
+---
+
+## 3. SSH einrichten
+
+**3a. GitHub Actions → Server** (öffentlicher Teil von Schlüsselpaar 1, kommt von Linus):
+
+```bash
+sudo -u deploy tee -a /home/deploy/.ssh/authorized_keys <<'EOF'
+ssh-ed25519 AAAA... github-actions-deploy
+EOF
+sudo chmod 600 /home/deploy/.ssh/authorized_keys
+sudo chown -R deploy:deploy /home/deploy/.ssh
+```
+
+**3b. Server → GitHub** (Schlüsselpaar 2, hier auf dem Server erzeugen):
+
+```bash
+sudo -u deploy ssh-keygen -t ed25519 -C "test.dormed24.de deploy" \
+     -f /home/deploy/.ssh/id_ed25519 -N ""
+sudo -u deploy cat /home/deploy/.ssh/id_ed25519.pub
+```
+
+→ Diesen **public key** im GitHub-Repo eintragen unter
+**Settings → Deploy keys → Add deploy key** (⚠️ *ohne* Write-Access — der Server
+muss nur pullen).
+
+Verbindung testen:
+```bash
+sudo -u deploy ssh -T git@github.com     # erwartete Antwort: "Hi ...! You've successfully authenticated"
+```
+
+**3c. Host-Fingerprint für GitHub bereitstellen** (für die Variable `SSH_KNOWN_HOSTS`):
+
+```bash
+ssh-keyscan -t ed25519 test.dormed24.de
+# Zum Gegenprüfen (verhindert, dass ein MITM-Scan übernommen wird):
+ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub
+```
+→ Die `ssh-keyscan`-Ausgabe geht 1:1 in die GitHub-**Variable** `SSH_KNOWN_HOSTS`.
+
+---
+
+## 4. Repository klonen
+
+```bash
+sudo mkdir -p /var/www/test.dormed24.de
+sudo chown deploy:www-data /var/www/test.dormed24.de
+
+sudo -u deploy git clone git@github.com:DormedGmbH/dormed24.de.git \
+     /var/www/test.dormed24.de
+
+cd /var/www/test.dormed24.de
+sudo -u deploy git checkout main
+```
+
+Falls Git meckert („dubious ownership"):
+```bash
+sudo -u deploy git config --global --add safe.directory /var/www/test.dormed24.de
+```
+
+---
+
+## 5. Rechte-Modell
+
+Grundregel: **`deploy` besitzt die Dateien** (schreibt beim Deploy),
+**`www-data` liest sie** — und schreibt **nur** in die Laravel-Runtime-Ordner.
+
+```bash
+cd /var/www/test.dormed24.de
+
+# Besitzer: deploy, Gruppe: www-data
+sudo chown -R deploy:www-data .
+
+# App-Dateien: www-data darf lesen/ausführen, nicht schreiben
+sudo find . -type d -exec chmod 2755 {} \;    # 2 = setgid -> neue Dateien erben die Gruppe
+sudo find . -type f -exec chmod 644 {} \;
+
+# NUR diese beiden brauchen Schreibrechte für www-data:
+sudo chmod -R 2775 storage bootstrap/cache
+```
+
+Symlink für Produktbilder (public-Disk):
+```bash
+sudo -u deploy php artisan storage:link
+```
+
+---
+
+## 6. `.env` anlegen — ⚠️ WICHTIGSTER PUNKT
+
+```bash
+sudo -u deploy cp .env.example .env
+sudo -u deploy php artisan key:generate
+sudo -u deploy nano .env
+```
+
+### ❗ `APP_ENV` darf auf diesem Server **NICHT** `production` sein
+
+Das ist der Test-/Sandbox-Server. `APP_ENV=production` hätte **zwei fatale Effekte**:
+
+1. **PayPal würde LIVE laufen.** `App\Support\PaymentMode` leitet sandbox/live
+   **ausschließlich** aus `APP_ENV` ab (`production` = live). Echtes Geld auf dem Testsystem.
+2. **Der Sandbox-Reset wäre blockiert.** `DB::prohibitDestructiveCommands()` verbietet
+   `migrate:fresh` in Produktion, und der `ProductSeeder` bricht dort per Guard ab.
+   Genau das, was hier funktionieren *muss*.
+
+**Also:**
+```dotenv
+APP_ENV=staging            # NICHT production!
+APP_DEBUG=false            # trotzdem: keine Stacktraces nach außen
+APP_URL=https://test.dormed24.de
+SESSION_SECURE_COOKIE=true # bei HTTPS
+
+INERTIA_SSR_ENABLED=false  # SSR ist aus; der Deploy baut nur `npm run build`
+```
+
+Datenbank, Mail-/PayPal-Zugangsdaten nach Bedarf (PayPal-Credentials werden ohnehin
+im Admin unter Einstellungen gepflegt, nicht in der `.env`).
+
+---
+
+## 7. Erstinstallation (einmalig von Hand)
+
+```bash
+cd /var/www/test.dormed24.de
+sudo -u deploy composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+sudo -u deploy npm ci
+sudo -u deploy npm run build
+sudo -u deploy php artisan migrate --force
+sudo -u deploy php artisan optimize
+```
+
+Admin-Account anlegen:
+```bash
+sudo -u deploy php artisan add:admin
+```
+
+---
+
+## 8. ❗ Node im nicht-interaktiven PATH — der häufigste Stolperstein
+
+GitHub Actions ruft `ssh deploy@host 'befehle'` auf. Das ist eine **nicht-interaktive,
+nicht-Login-Shell** — `~/.bashrc` / `~/.profile` werden dabei oft **nicht** geladen.
+Wenn Node per **nvm** installiert ist, ist es dann **nicht im PATH** und der Deploy
+stirbt mit `npm: command not found`.
+
+**Der Acid-Test — genau so muss es funktionieren:**
+```bash
+ssh deploy@test.dormed24.de 'node --version; npm --version; php --version; composer --version; git --version'
+```
+
+Kommt hier etwas nicht, dann **Node systemweit installieren** (empfohlen), z. B. via NodeSource:
+```bash
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+sudo apt-get install -y nodejs
+```
+(Damit liegt Node in `/usr/bin` und ist in jeder Shell verfügbar.)
+
+---
+
+## 9. Webserver (nginx/apache)
+
+- DocumentRoot: `/var/www/test.dormed24.de/**public**` (nicht der Repo-Root!)
+- Läuft als `www-data`.
+- PHP-FPM mit **PHP 8.4**.
+- HTTPS für `test.dormed24.de`.
+
+---
+
+## 10. Abschluss-Verifikation
+
+```bash
+# 1) SSH von außen als deploy (mit dem Actions-Key) funktioniert?
+ssh -i <actions_private_key> deploy@test.dormed24.de 'echo OK'
+
+# 2) Alle Tools im nicht-interaktiven PATH? (Schritt 8)
+ssh deploy@test.dormed24.de 'cd /var/www/test.dormed24.de && node -v && php -v && composer -V && git status --short'
+
+# 3) Kann deploy pullen?
+sudo -u deploy git -C /var/www/test.dormed24.de pull --ff-only
+
+# 4) Läuft die App?
+curl -sI https://test.dormed24.de | head -1     # erwartet: HTTP/2 200
+
+# 5) Sandbox-Reset funktioniert? (der EINE Grund, warum man noch auf den Server muss)
+sudo -u deploy php artisan migrate:fresh --seed
+```
+
+Läuft Punkt 5 durch, ist `APP_ENV` korrekt gesetzt (in `production` würde es
+absichtlich abbrechen).
+
+---
+
+## Danach: GitHub konfigurieren (macht Linus)
+
+**Secret:** `DEPLOY_SSH_KEY` = privater Teil von Schlüsselpaar 1
+**Variables:** `DEPLOY_HOST=test.dormed24.de` · `DEPLOY_USER=deploy` ·
+`DEPLOY_PATH=/var/www/test.dormed24.de` · `SSH_KNOWN_HOSTS=<ssh-keyscan-Ausgabe>`
+
+Erst **danach** auf `main` pushen — sonst läuft der Deploy-Workflow rot, weil die
+Secrets fehlen.
