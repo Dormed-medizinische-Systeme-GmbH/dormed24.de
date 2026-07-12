@@ -31,8 +31,11 @@ echo "⚙️  Generating Wayfinder routes..."
 php artisan wayfinder:generate --with-form
 
 echo ""
-echo "🔨 Building frontend assets..."
-npm run build
+echo "🔨 Building frontend assets (Client + SSR-Bundle)..."
+# build:ssr baut Client-Assets UND das SSR-Bundle (bootstrap/ssr/app.js).
+# Auch wenn lokal CSR läuft (INERTIA_SSR_ENABLED=false): so bleibt das
+# SSR-Bundle konsistent, falls das Flag mal auf true steht. Braucht Node ≥ 20.19.
+npm run build:ssr
 
 # 5. Run migrations
 echo ""
@@ -51,6 +54,13 @@ php artisan route:clear
 echo ""
 echo "🔄 Restarting queue workers..."
 php artisan queue:restart 2>/dev/null || true
+
+# 7b. Reload SSR server (only effective when INERTIA_SSR_ENABLED=true UND ein
+#     Prozessmanager wie Supervisor/systemd den Prozess mit dem neuen Bundle
+#     wieder hochbringt). Bei lokalem CSR ist das ein harmloser No-op.
+echo ""
+echo "🔄 Reloading SSR server (if enabled)..."
+php artisan inertia:stop-ssr 2>/dev/null || true
 
 # 8. Re-cache for production
 echo ""
