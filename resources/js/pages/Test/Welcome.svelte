@@ -259,7 +259,7 @@
         <!-- Content -->
         <div
             class="relative z-10 mx-auto flex min-h-[72svh] max-w-7xl items-center px-8 py-16 will-change-transform md:min-h-[calc(100svh-4.5rem)] md:py-20"
-            style:transform={`translate3d(0, ${heroParallaxOffset * 0.45}px, 0)`}
+            style:transform={`translate3d(0, ${heroParallaxOffset}px, 0)`}
         >
             <div class="max-w-lg">
                 <!-- Farbwert #8fc4f0 wie im abgenommenen Artifact-Mockup (heller als --brand-accent, für Lesbarkeit auf dunklem Verlauf) -->
@@ -391,7 +391,7 @@
                 {#each onboardingSteps as step, index (step.title)}
                     <div class="relative overflow-hidden px-7 pb-7 pt-10">
                         <span
-                            class="pointer-events-none absolute right-1 -top-6 text-[6.5rem] font-extrabold leading-none text-primary/[0.06]"
+                            class="pointer-events-none absolute right-1 top-2 text-[6.5rem] font-extrabold leading-none text-primary/[0.06]"
                             aria-hidden="true"
                         >
                             {index + 1}
