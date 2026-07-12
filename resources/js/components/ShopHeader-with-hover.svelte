@@ -1,7 +1,9 @@
 <script lang="ts">
     import { Link, page, router } from '@inertiajs/svelte';
+    import ArrowLeft from '@lucide/svelte/icons/arrow-left';
     import ChevronRight from '@lucide/svelte/icons/chevron-right';
     import LogOut from '@lucide/svelte/icons/log-out';
+    import Menu from '@lucide/svelte/icons/menu';
     import Search from '@lucide/svelte/icons/search';
     import Settings from '@lucide/svelte/icons/settings';
     import ShoppingCart from '@lucide/svelte/icons/shopping-cart';
@@ -81,6 +83,39 @@
         activeMenu = null;
     }
 
+    // Mobile: eigenes Slide-down-Panel unterhalb des Headers statt Sheet/
+    // Modal wie im Haupt-ShopHeader. mobilePanel === null zeigt die
+    // Oberpunkte, sonst die Unterpunkte des gewaehlten Mega-Menus mit
+    // Zurueck-Zeile.
+    let mobileNavOpen = $state(false);
+    let mobilePanel = $state<MegaMenuKey>(null);
+    let headerHeight = $state(0);
+
+    function toggleMobileNav() {
+        mobileNavOpen = !mobileNavOpen;
+
+        if (!mobileNavOpen) {
+            mobilePanel = null;
+        }
+    }
+
+    function closeMobileNav() {
+        mobileNavOpen = false;
+        mobilePanel = null;
+    }
+
+    $effect(() => {
+        if (typeof document === 'undefined') {
+            return;
+        }
+
+        document.body.style.overflow = mobileNavOpen ? 'hidden' : '';
+
+        return () => {
+            document.body.style.overflow = '';
+        };
+    });
+
     const auth = $derived(page.props.auth);
     const cart = $derived(page.props.cart as Cart);
 
@@ -138,6 +173,10 @@
     function handleKeydown(e: KeyboardEvent) {
         if (e.key === 'Escape') {
             isOpen = false;
+
+            if (mobileNavOpen) {
+                closeMobileNav();
+            }
         }
     }
 
@@ -157,7 +196,10 @@
 
 <svelte:window onclick={handleClickOutside} onkeydown={handleKeydown} />
 
-<header class="relative z-40 bg-white shadow-sm">
+<header
+    class="relative z-40 bg-white shadow-sm"
+    bind:clientHeight={headerHeight}
+>
     <!-- Top row: logo + search + icons -->
     <div class="border-b">
         <div
@@ -262,6 +304,23 @@
 
             <!-- Actions -->
             <div class="flex shrink-0 items-center gap-1">
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    class="md:hidden"
+                    onclick={toggleMobileNav}
+                    aria-expanded={mobileNavOpen}
+                    aria-label={mobileNavOpen
+                        ? 'Menü schließen'
+                        : 'Menü öffnen'}
+                >
+                    {#if mobileNavOpen}
+                        <X class="h-5 w-5" />
+                    {:else}
+                        <Menu class="h-5 w-5" />
+                    {/if}
+                </Button>
+
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         {#snippet children(props)}
@@ -366,8 +425,8 @@
         </div>
     </div>
 
-    <!-- Nav row + mega menu -->
-    <div class="relative">
+    <!-- Nav row + mega menu (Desktop) -->
+    <div class="relative hidden md:block">
         <div class="mx-auto max-w-7xl px-4 lg:px-8">
             <nav class="flex items-center">
                 {#each navItems as item (item.label)}
@@ -408,6 +467,17 @@
                 onmouseleave={scheduleClose}
             >
                 <div class="mx-auto max-w-7xl px-4 py-4 lg:px-8">
+                    <div class="flex flex-wrap">
+                        {#each megaMenus[activeMenu] as cat (cat.label)}
+                            <Link
+                                href={cat.href}
+                                onclick={closeMenu}
+                                class="border-l border-gray-300 px-5 py-1 text-sm font-medium text-[#1a3a5c] transition-colors hover:text-[#1a6bbf]"
+                            >
+                                {cat.label}
+                            </Link>
+                        {/each}
+                    </div>
                     <div class="mb-3 flex items-center justify-between">
                         <Link
                             href={navItems.find((n) => n.menu === activeMenu)
@@ -428,18 +498,75 @@
                             <X class="h-4 w-4" />
                         </button>
                     </div>
-                    <div class="flex flex-wrap">
-                        {#each megaMenus[activeMenu] as cat (cat.label)}
-                            <Link
-                                href={cat.href}
-                                onclick={closeMenu}
-                                class="border-l border-gray-300 px-5 py-1 text-sm font-medium text-[#1a3a5c] transition-colors hover:text-[#1a6bbf]"
-                            >
-                                {cat.label}
-                            </Link>
-                        {/each}
-                    </div>
                 </div>
+            </div>
+        {/if}
+    </div>
+
+    <!--
+        Mobile: eigenes Slide-down-Panel statt Sheet/Modal wie im Haupt-
+        ShopHeader. Bleibt immer im DOM (nicht {#if}), damit der Zu- und
+        Aufklapp-Uebergang in beide Richtungen animiert - sichtbar nur per
+        translate-y, dazu inert/aria-hidden im geschlossenen Zustand (blockt
+        Fokus und Klicks auf den unsichtbaren Inhalt). Hoehe = Rest des
+        Viewports unterhalb des Headers.
+    -->
+    <div
+        class="fixed inset-x-0 bottom-0 z-30 overflow-y-auto bg-white transition-transform duration-300 ease-in-out md:hidden {mobileNavOpen
+            ? 'translate-y-0'
+            : '-translate-y-full'}"
+        style={`top: ${headerHeight}px`}
+        aria-hidden={!mobileNavOpen}
+        inert={!mobileNavOpen}
+    >
+        {#if mobilePanel === null}
+            <nav class="flex flex-col divide-y">
+                {#each navItems as item (item.label)}
+                    {#if item.menu}
+                        <button
+                            type="button"
+                            class="flex items-center justify-between px-4 py-4 text-left text-base font-medium text-foreground"
+                            onclick={() => (mobilePanel = item.menu)}
+                        >
+                            {item.label}
+                            <ChevronRight
+                                class="size-4 text-muted-foreground"
+                            />
+                        </button>
+                    {:else}
+                        <Link
+                            href={item.href}
+                            class="px-4 py-4 text-base font-medium text-foreground"
+                            onclick={closeMobileNav}
+                        >
+                            {item.label}
+                        </Link>
+                    {/if}
+                {/each}
+            </nav>
+        {:else}
+            <div class="flex flex-col">
+                <button
+                    type="button"
+                    class="flex items-center gap-2 border-b px-4 py-4 text-left"
+                    onclick={() => (mobilePanel = null)}
+                >
+                    <ArrowLeft class="size-4 shrink-0 text-muted-foreground" />
+                    <span class="text-base font-semibold text-foreground">
+                        {navItems.find((n) => n.menu === mobilePanel)?.label}
+                    </span>
+                </button>
+                <nav class="flex flex-col divide-y">
+                    {#each megaMenus[mobilePanel ?? ''] ?? [] as cat (cat.label)}
+                        <Link
+                            href={cat.href}
+                            class="px-4 py-4 text-base text-foreground"
+                            onclick={closeMobileNav}
+                        >
+                            {cat.label}
+                        </Link>
+                    {/each}
+                </nav>
             </div>
         {/if}
     </div>
