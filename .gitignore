@@ -29,3 +29,7 @@ yarn-error.log
 /.zed
 .gitsecret/
 .gitsecret/
+
+# TEMPORARY
+lighthouse-report.html
+lighthouse-report.json
