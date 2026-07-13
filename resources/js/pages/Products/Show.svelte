@@ -296,7 +296,7 @@
                                 {#each product.images as image (image.id)}
                                     <Carousel.Item class="ps-0">
                                         <div
-                                            class="aspect-square w-full overflow-hidden rounded-[1.75rem] border border-border bg-[#f6f7f8]"
+                                            class="aspect-square w-full overflow-hidden rounded-[1.75rem] border border-border bg-white"
                                         >
                                             <img
                                                 src={image.url}
@@ -316,7 +316,7 @@
                                         type="button"
                                         onclick={() => (activeImageIndex = i)}
                                         class={cn(
-                                            'aspect-square overflow-hidden rounded-2xl border bg-[#f6f7f8] transition-colors',
+                                            'aspect-square overflow-hidden rounded-2xl border bg-white transition-colors',
                                             activeImageIndex === i
                                                 ? 'border-primary'
                                                 : 'border-border hover:border-border',
@@ -335,7 +335,7 @@
                     </div>
                 {:else}
                     <div
-                        class="flex aspect-square items-center justify-center rounded-[1.75rem] border border-border bg-[#f6f7f8]"
+                        class="flex aspect-square items-center justify-center rounded-[1.75rem] border border-border bg-white"
                     >
                         <ShoppingCart
                             class="size-20 text-border"

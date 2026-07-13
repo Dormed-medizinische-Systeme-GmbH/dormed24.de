@@ -20,7 +20,7 @@
     href={ProductController.show.url(product.id)}
     class="group overflow-hidden rounded-[1.4rem] border border-border bg-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-lg"
 >
-    <div class="aspect-square w-full overflow-hidden bg-[#f3f4f6]">
+    <div class="aspect-square w-full overflow-hidden bg-white">
         {#if product.images[0]}
             <img
                 src={product.images[0].url}
@@ -28,7 +28,7 @@
                 class="size-full object-contain object-center transition-transform duration-500 group-hover:scale-105"
             />
         {:else}
-            <div class="size-full bg-[#f3f4f6]"></div>
+            <div class="size-full bg-white"></div>
         {/if}
     </div>
     <div class="flex flex-col gap-1 px-4 pb-5 pt-4">
