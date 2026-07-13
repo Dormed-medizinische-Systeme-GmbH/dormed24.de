@@ -15,47 +15,47 @@
 
     let {
         title = 'Entdecken Sie unser Sortiment',
-        randomProducts = [],
+        products = [],
     }: {
         title?: string;
-        randomProducts?: ShowcaseProduct[];
+        products?: ShowcaseProduct[];
     } = $props();
 
     let activeProductIndex = $state(0);
     const activeProduct = $derived(
-        randomProducts[activeProductIndex] ?? randomProducts[0],
+        products[activeProductIndex] ?? products[0],
     );
 
     $effect(() => {
-        if (activeProductIndex >= randomProducts.length) {
+        if (activeProductIndex >= products.length) {
             activeProductIndex = 0;
         }
     });
 
     function showPreviousProduct() {
-        if (randomProducts.length === 0) {
+        if (products.length === 0) {
             return;
         }
 
         activeProductIndex =
             activeProductIndex === 0
-                ? randomProducts.length - 1
+                ? products.length - 1
                 : activeProductIndex - 1;
     }
 
     function showNextProduct() {
-        if (randomProducts.length === 0) {
+        if (products.length === 0) {
             return;
         }
 
         activeProductIndex =
-            activeProductIndex === randomProducts.length - 1
+            activeProductIndex === products.length - 1
                 ? 0
                 : activeProductIndex + 1;
     }
 </script>
 
-{#if randomProducts.length > 0 && activeProduct}
+{#if products.length > 0 && activeProduct}
     <section class="bg-muted">
         <div class="mx-auto max-w-7xl px-4 py-12 lg:px-8 lg:py-16">
             <h2
@@ -68,8 +68,8 @@
                 <ProductCard product={activeProduct} />
 
                 <div class="mt-12 flex items-center justify-between gap-6">
-                    <div class="flex items-center gap-2">
-                        {#each randomProducts as product, index (product.id)}
+                    <div class="flex flex-wrap items-center gap-2">
+                        {#each products as product, index (product.id)}
                             <button
                                 type="button"
                                 class={index === activeProductIndex
@@ -106,7 +106,7 @@
             <div
                 class="mt-12 hidden gap-x-5 gap-y-10 md:grid md:grid-cols-2 lg:grid-cols-4"
             >
-                {#each randomProducts as product (product.id)}
+                {#each products as product (product.id)}
                     <ProductCard {product} />
                 {/each}
             </div>

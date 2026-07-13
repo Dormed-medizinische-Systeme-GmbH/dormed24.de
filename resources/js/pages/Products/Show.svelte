@@ -54,7 +54,7 @@
         count: number;
     };
 
-    type RandomProduct = {
+    type SimilarProduct = {
         id: number;
         name: string;
         price: string;
@@ -66,12 +66,12 @@
         product,
         ratings,
         ratingSummary,
-        randomProducts = [],
+        similarProducts = [],
     }: {
         product: Product;
         ratings: Rating[];
         ratingSummary: RatingSummary;
-        randomProducts?: RandomProduct[];
+        similarProducts?: SimilarProduct[];
     } = $props();
 
     // svelte-ignore state_referenced_locally
@@ -783,7 +783,7 @@
         </div>
     </main>
 
-    <SortimentShowcase {randomProducts} />
+    <SortimentShowcase title="Ähnliche Produkte" products={similarProducts} />
 
     <AppFooter />
 </div>

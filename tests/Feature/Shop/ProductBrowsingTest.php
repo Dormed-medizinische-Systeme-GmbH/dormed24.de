@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Shop;
 
+use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -128,6 +129,42 @@ class ProductBrowsingTest extends TestCase
     public function test_show_returns_404_for_unknown_product(): void
     {
         $this->get('/products/999999')->assertNotFound();
+    }
+
+    public function test_show_lists_similar_products_from_the_same_category(): void
+    {
+        $category = Category::factory()->create();
+        $product = Product::factory()->create(['category_id' => $category->id]);
+        $sameCategoryProduct = Product::factory()->create(['category_id' => $category->id]);
+        Product::factory()->create(['category_id' => Category::factory()->create()->id]);
+
+        $this->get(route('products.show', $product))
+            ->assertOk()
+            ->assertInertia(
+                fn ($page) => $page
+                    ->has('similarProducts', 1)
+                    ->where('similarProducts.0.id', $sameCategoryProduct->id)
+            );
+    }
+
+    public function test_show_similar_products_excludes_the_current_product(): void
+    {
+        $category = Category::factory()->create();
+        $product = Product::factory()->create(['category_id' => $category->id]);
+
+        $this->get(route('products.show', $product))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->has('similarProducts', 0));
+    }
+
+    public function test_show_returns_no_similar_products_without_a_category(): void
+    {
+        $product = Product::factory()->create(['category_id' => null]);
+        Product::factory()->create(['category_id' => null]);
+
+        $this->get(route('products.show', $product))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->has('similarProducts', 0));
     }
 
     public function test_search_returns_matching_products_as_json(): void
