@@ -9,7 +9,7 @@
 <script lang="ts">
     import { Form } from '@inertiajs/svelte';
     import AppHead from '@/components/AppHead.svelte';
-    import InputError from '@/components/InputError.svelte';
+    import FormErrorsAlert from '@/components/FormErrorsAlert.svelte';
     // Passkey-Login bewusst deaktiviert, siehe Vermerk bei <PasskeyVerify /> weiter unten.
     // import PasskeyVerify from '@/components/PasskeyVerify.svelte';
     import PasswordInput from '@/components/PasswordInput.svelte';
@@ -65,7 +65,6 @@
                     autocomplete="email"
                     placeholder="email@beispiel.de"
                 />
-                <InputError message={errors.email} />
             </div>
 
             <div class="grid gap-2">
@@ -84,7 +83,6 @@
                     autocomplete="current-password"
                     placeholder="Passwort"
                 />
-                <InputError message={errors.password} />
             </div>
 
             <div class="flex items-center justify-between">
@@ -109,5 +107,7 @@
             Noch kein Konto?
             <TextLink href={register()}>Registrieren</TextLink>
         </div>
+
+        <FormErrorsAlert {errors} title="Anmeldung fehlgeschlagen." showDetails={false} />
     {/snippet}
 </Form>

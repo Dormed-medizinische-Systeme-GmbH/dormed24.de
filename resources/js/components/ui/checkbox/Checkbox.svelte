@@ -56,5 +56,5 @@
     {/if}
 </button>
 {#if name}
-    <input type="hidden" {name} {value} />
+    <input type="hidden" {name} value={checked ? (value ?? 'on') : ''} />
 {/if}

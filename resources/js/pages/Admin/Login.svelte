@@ -8,7 +8,7 @@
     import { Form } from '@inertiajs/svelte';
     import * as AdminLoginController from '@/actions/App/Http/Controllers/Admin/LoginController';
     import AppHead from '@/components/AppHead.svelte';
-    import InputError from '@/components/InputError.svelte';
+    import FormErrorsAlert from '@/components/FormErrorsAlert.svelte';
     import PasswordInput from '@/components/PasswordInput.svelte';
     import { Button } from '@/components/ui/button';
     import { Input } from '@/components/ui/input';
@@ -36,7 +36,6 @@
                     autocomplete="email"
                     placeholder="admin@example.com"
                 />
-                <InputError message={errors.email} />
             </div>
 
             <div class="grid gap-2">
@@ -48,7 +47,6 @@
                     autocomplete="current-password"
                     placeholder="Passwort"
                 />
-                <InputError message={errors.password} />
             </div>
 
             <Button type="submit" class="mt-4 w-full" disabled={processing}>
@@ -56,5 +54,7 @@
                 Anmelden
             </Button>
         </div>
+
+        <FormErrorsAlert {errors} title="Anmeldung fehlgeschlagen." showDetails={false} />
     {/snippet}
 </Form>

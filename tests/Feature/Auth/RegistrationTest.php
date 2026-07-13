@@ -31,9 +31,23 @@ class RegistrationTest extends TestCase
             'email' => 'test@example.com',
             'password' => 'password',
             'password_confirmation' => 'password',
+            'terms' => 'on',
         ]);
 
         $this->assertAuthenticated();
         $response->assertRedirect(route('home', absolute: false));
+    }
+
+    public function test_registration_requires_terms_acceptance()
+    {
+        $response = $this->post(route('register.store'), [
+            'name' => 'Test User',
+            'email' => 'test@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ]);
+
+        $response->assertSessionHasErrors('terms');
+        $this->assertGuest();
     }
 }

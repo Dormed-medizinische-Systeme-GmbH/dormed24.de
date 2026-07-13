@@ -67,6 +67,7 @@ class CheckoutVerificationTest extends TestCase
             'email' => 'neu@example.com',
             'password' => 'password',
             'password_confirmation' => 'password',
+            'terms' => 'on',
         ]);
 
         $customer = Customer::query()->where('email', 'neu@example.com')->firstOrFail();
