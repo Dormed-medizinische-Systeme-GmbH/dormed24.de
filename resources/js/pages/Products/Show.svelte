@@ -301,7 +301,7 @@
                                             <img
                                                 src={image.url}
                                                 alt={product.name}
-                                                class="size-full object-cover"
+                                                class="size-full object-contain"
                                             />
                                         </div>
                                     </Carousel.Item>
@@ -326,7 +326,7 @@
                                         <img
                                             src={image.url}
                                             alt=""
-                                            class="size-full object-cover"
+                                            class="size-full object-contain"
                                         />
                                     </button>
                                 {/each}

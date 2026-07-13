@@ -25,7 +25,7 @@
             <img
                 src={product.images[0].url}
                 alt={product.name}
-                class="size-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                class="size-full object-contain object-center transition-transform duration-500 group-hover:scale-105"
             />
         {:else}
             <div class="size-full bg-[#f3f4f6]"></div>
