@@ -55,6 +55,20 @@ class ProductController extends Controller
         $product->load(['category', 'manufacturer', 'ratings', 'images', 'variants']);
         $product->loadAvg('ratings', 'stars');
 
+        $randomProducts = Product::available()
+            ->whereKeyNot($product->id)
+            ->with(['images' => fn ($query) => $query->where('sort_order', 0)])
+            ->inRandomOrder()
+            ->limit(8)
+            ->get(['id', 'name', 'price'])
+            ->map(fn (Product $randomProduct) => [
+                'id' => $randomProduct->id,
+                'name' => $randomProduct->name,
+                'price' => $randomProduct->price,
+                'image_url' => $randomProduct->images->first()?->url,
+            ])
+            ->values();
+
         return Inertia::render('Products/Show', [
             'product' => array_merge($product->toArray(), [
                 'images' => $product->images->map(fn ($img) => [
@@ -81,6 +95,7 @@ class ProductController extends Controller
                     : null,
                 'count' => $product->ratings->count(),
             ],
+            'randomProducts' => $randomProducts,
         ]);
     }
 

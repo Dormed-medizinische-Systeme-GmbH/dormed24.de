@@ -11,6 +11,7 @@
     import AppHead from '@/components/AppHead.svelte';
     import InputError from '@/components/InputError.svelte';
     import ShopHeader from '@/components/ShopHeader.svelte';
+    import SortimentShowcase from '@/components/SortimentShowcase.svelte';
     import { Button } from '@/components/ui/button';
     import * as Carousel from '@/components/ui/carousel';
     import * as Empty from '@/components/ui/empty';
@@ -53,14 +54,23 @@
         count: number;
     };
 
+    type RandomProduct = {
+        id: number;
+        name: string;
+        price: string | null;
+        image_url: string | null;
+    };
+
     let {
         product,
         ratings,
         ratingSummary,
+        randomProducts = [],
     }: {
         product: Product;
         ratings: Rating[];
         ratingSummary: RatingSummary;
+        randomProducts?: RandomProduct[];
     } = $props();
 
     // svelte-ignore state_referenced_locally
@@ -771,6 +781,8 @@
             </div>
         </div>
     </main>
+
+    <SortimentShowcase {randomProducts} />
 
     <AppFooter />
 </div>
