@@ -354,7 +354,7 @@
     <!-- Nav row + mega menu (Desktop) -->
     <div class="relative hidden md:block">
         <div class="mx-auto max-w-7xl px-4 lg:px-8">
-            <nav class="flex items-center">
+            <nav class="flex items-center justify-center">
                 {#each navItems as item (item.label)}
                     {#if item.menu}
                         <button
@@ -393,7 +393,7 @@
                 onmouseleave={scheduleClose}
             >
                 <div class="mx-auto max-w-7xl px-4 py-4 lg:px-8">
-                    <div class="flex flex-wrap">
+                    <div class="flex flex-wrap justify-center">
                         {#each megaMenus[activeMenu] as cat (cat.label)}
                             <Link
                                 href={cat.href}
