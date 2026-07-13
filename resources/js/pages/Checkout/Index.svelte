@@ -225,6 +225,45 @@
 
                 <div class="w-full lg:w-80 xl:w-88">
                     <div class="rounded-lg border bg-white p-5">
+                        <h2 class="mb-4 text-lg font-bold text-foreground">
+                            Versandart
+                        </h2>
+                        <div class="flex flex-col gap-3">
+                            {#each cart.shipping_methods as method (method.id)}
+                                <label
+                                    class="flex cursor-pointer items-start gap-3"
+                                >
+                                    <input
+                                        type="radio"
+                                        name="shipping"
+                                        value={method.id}
+                                        checked={method.selected}
+                                        onchange={() =>
+                                            updateShipping(method.id)}
+                                        class="mt-0.5 accent-primary"
+                                    />
+                                    <span class="text-sm">
+                                        <span
+                                            class="font-semibold text-foreground"
+                                        >
+                                            {method.label}
+                                        </span>
+                                        <span class="text-muted-foreground">
+                                            — {formatPrice(method.price ?? 0)}*
+                                        </span>
+                                        {#if method.description}
+                                            <br />
+                                            <span class="text-muted-foreground"
+                                                >{method.description}</span
+                                            >
+                                        {/if}
+                                    </span>
+                                </label>
+                            {/each}
+                        </div>
+                    </div>
+
+                    <div class="mt-4 rounded-lg border bg-white p-5">
                         <h2 class="mb-4 text-xl font-bold text-foreground">
                             Zusammenfassung
                         </h2>
@@ -284,45 +323,6 @@
                                 </Link>
                             {/snippet}
                         </Button>
-                    </div>
-
-                    <div class="mt-4 rounded-lg border bg-white p-5">
-                        <h2 class="mb-4 text-lg font-bold text-foreground">
-                            Versandart
-                        </h2>
-                        <div class="flex flex-col gap-3">
-                            {#each cart.shipping_methods as method (method.id)}
-                                <label
-                                    class="flex cursor-pointer items-start gap-3"
-                                >
-                                    <input
-                                        type="radio"
-                                        name="shipping"
-                                        value={method.id}
-                                        checked={method.selected}
-                                        onchange={() =>
-                                            updateShipping(method.id)}
-                                        class="mt-0.5 accent-primary"
-                                    />
-                                    <span class="text-sm">
-                                        <span
-                                            class="font-semibold text-foreground"
-                                        >
-                                            {method.label}
-                                        </span>
-                                        <span class="text-muted-foreground">
-                                            — {formatPrice(method.price ?? 0)}*
-                                        </span>
-                                        {#if method.description}
-                                            <br />
-                                            <span class="text-muted-foreground"
-                                                >{method.description}</span
-                                            >
-                                        {/if}
-                                    </span>
-                                </label>
-                            {/each}
-                        </div>
                     </div>
 
                     <p class="mt-3 text-center text-xs text-muted-foreground">
