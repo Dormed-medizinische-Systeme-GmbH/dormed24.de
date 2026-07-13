@@ -81,34 +81,6 @@
     const RATINGS_PREVIEW_LIMIT = 3;
     let activeImageIndex = $state(0);
     let carouselApi = $state<any>();
-    let zoomActive = $state(false);
-    let cursorPct = $state({ x: 0.5, y: 0.5 });
-    let zoomPanel = $state<{
-        left: number;
-        top: number;
-        width: number;
-        height: number;
-    } | null>(null);
-
-    function handleZoomMouseEnter(e: MouseEvent) {
-        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-        const left = rect.right + 24;
-        const width = Math.max(320, window.innerWidth - left - 32);
-        zoomPanel = { left, top: rect.top, width, height: rect.height };
-        zoomActive = true;
-    }
-
-    function handleZoomMouseLeave() {
-        zoomActive = false;
-    }
-
-    function handleZoomMouseMove(e: MouseEvent) {
-        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-        cursorPct = {
-            x: Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)),
-            y: Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height)),
-        };
-    }
 
     const selectedVariant = $derived(
         hasVariants
@@ -324,11 +296,7 @@
                                 {#each product.images as image (image.id)}
                                     <Carousel.Item class="ps-0">
                                         <div
-                                            class="aspect-square w-full cursor-crosshair overflow-hidden rounded-[1.75rem] border border-border bg-[#f6f7f8]"
-                                            onmouseenter={handleZoomMouseEnter}
-                                            onmouseleave={handleZoomMouseLeave}
-                                            onmousemove={handleZoomMouseMove}
-                                            role="none"
+                                            class="aspect-square w-full overflow-hidden rounded-[1.75rem] border border-border bg-[#f6f7f8]"
                                         >
                                             <img
                                                 src={image.url}
@@ -806,16 +774,6 @@
 
     <AppFooter />
 </div>
-
-{#if zoomActive && zoomPanel && product.images[activeImageIndex]}
-    <div
-        class="pointer-events-none fixed z-50 hidden overflow-hidden rounded-xl border bg-muted shadow-2xl lg:block"
-        style="left: {zoomPanel.left}px; top: {zoomPanel.top}px; width: {zoomPanel.width}px; height: {zoomPanel.height}px; background-image: url('{product
-            .images[activeImageIndex]
-            .url}'); background-size: 280%; background-position: {cursorPct.x *
-            100}% {cursorPct.y * 100}%; background-repeat: no-repeat;"
-    ></div>
-{/if}
 
 <style>
     .star-wrapper {
