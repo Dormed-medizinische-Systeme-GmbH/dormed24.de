@@ -57,8 +57,9 @@
     type RandomProduct = {
         id: number;
         name: string;
-        price: string | null;
-        image_url: string | null;
+        price: string;
+        manufacturer: { id: number; name: string } | null;
+        images: ProductImage[];
     };
 
     let {

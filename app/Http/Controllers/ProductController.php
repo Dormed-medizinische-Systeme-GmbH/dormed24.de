@@ -57,16 +57,10 @@ class ProductController extends Controller
 
         $randomProducts = Product::available()
             ->whereKeyNot($product->id)
-            ->with(['images' => fn ($query) => $query->where('sort_order', 0)])
+            ->with(['manufacturer', 'images' => fn ($query) => $query->where('sort_order', 0)])
             ->inRandomOrder()
             ->limit(8)
-            ->get(['id', 'name', 'price'])
-            ->map(fn (Product $randomProduct) => [
-                'id' => $randomProduct->id,
-                'name' => $randomProduct->name,
-                'price' => $randomProduct->price,
-                'image_url' => $randomProduct->images->first()?->url,
-            ])
+            ->get()
             ->values();
 
         return Inertia::render('Products/Show', [
