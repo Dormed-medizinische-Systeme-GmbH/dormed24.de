@@ -24,21 +24,27 @@
 
     let carouselApi = $state<any>();
     let selectedIndex = $state(0);
+    let canScrollPrev = $state(false);
+    let canScrollNext = $state(false);
 
     $effect(() => {
         if (!carouselApi) {
             return;
         }
 
-        const syncSelectedIndex = () => {
+        const syncCarouselState = () => {
             selectedIndex = carouselApi.selectedScrollSnap();
+            canScrollPrev = carouselApi.canScrollPrev();
+            canScrollNext = carouselApi.canScrollNext();
         };
 
-        carouselApi.on('select', syncSelectedIndex);
-        syncSelectedIndex();
+        carouselApi.on('select', syncCarouselState);
+        carouselApi.on('reInit', syncCarouselState);
+        syncCarouselState();
 
         return () => {
-            carouselApi.off('select', syncSelectedIndex);
+            carouselApi.off('select', syncCarouselState);
+            carouselApi.off('reInit', syncCarouselState);
         };
     });
 </script>
@@ -67,40 +73,44 @@
                 </Carousel.Content>
             </Carousel.Root>
 
-            <div class="mt-8 flex items-center justify-between gap-6">
-                <div class="flex flex-wrap items-center gap-2">
-                    {#each products as product, index (product.id)}
+            {#if canScrollPrev || canScrollNext}
+                <div class="mt-8 flex items-center justify-between gap-6">
+                    <div class="flex flex-wrap items-center gap-2">
+                        {#each products as product, index (product.id)}
+                            <button
+                                type="button"
+                                class={index === selectedIndex
+                                    ? 'h-2 w-10 rounded-full bg-primary'
+                                    : 'size-2.5 rounded-full bg-muted-foreground/30'}
+                                aria-label={`${product.name} anzeigen`}
+                                aria-current={index === selectedIndex}
+                                onclick={() => carouselApi?.scrollTo(index)}
+                            ></button>
+                        {/each}
+                    </div>
+
+                    <div class="flex shrink-0 items-center gap-3">
                         <button
                             type="button"
-                            class={index === selectedIndex
-                                ? 'h-2 w-10 rounded-full bg-primary'
-                                : 'size-2.5 rounded-full bg-muted-foreground/30'}
-                            aria-label={`${product.name} anzeigen`}
-                            aria-current={index === selectedIndex}
-                            onclick={() => carouselApi?.scrollTo(index)}
-                        ></button>
-                    {/each}
+                            class="grid size-12 place-items-center rounded-full border bg-white text-foreground shadow-sm transition hover:bg-muted disabled:pointer-events-none disabled:opacity-40"
+                            aria-label="Vorheriges Produkt"
+                            disabled={!canScrollPrev}
+                            onclick={() => carouselApi?.scrollPrev()}
+                        >
+                            <ArrowLeft class="size-5" />
+                        </button>
+                        <button
+                            type="button"
+                            class="grid size-12 place-items-center rounded-full border bg-white text-foreground shadow-sm transition hover:bg-muted disabled:pointer-events-none disabled:opacity-40"
+                            aria-label="Nächstes Produkt"
+                            disabled={!canScrollNext}
+                            onclick={() => carouselApi?.scrollNext()}
+                        >
+                            <ArrowRight class="size-5" />
+                        </button>
+                    </div>
                 </div>
-
-                <div class="flex shrink-0 items-center gap-3">
-                    <button
-                        type="button"
-                        class="grid size-12 place-items-center rounded-full border bg-white text-foreground shadow-sm transition hover:bg-muted"
-                        aria-label="Vorheriges Produkt"
-                        onclick={() => carouselApi?.scrollPrev()}
-                    >
-                        <ArrowLeft class="size-5" />
-                    </button>
-                    <button
-                        type="button"
-                        class="grid size-12 place-items-center rounded-full border bg-white text-foreground shadow-sm transition hover:bg-muted"
-                        aria-label="Nächstes Produkt"
-                        onclick={() => carouselApi?.scrollNext()}
-                    >
-                        <ArrowRight class="size-5" />
-                    </button>
-                </div>
-            </div>
+            {/if}
         </div>
     </section>
 {/if}
