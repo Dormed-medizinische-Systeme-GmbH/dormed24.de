@@ -219,6 +219,7 @@
 <svelte:head>
     <!-- eslint-disable-next-line svelte/no-at-html-tags -- JSON-LD; "<" is escaped in organizationSchema -->
     {@html organizationJsonLdHtml}
+    <meta name="google-site-verification" content="RO3ODoXF_H3wJR7Y23UapHtLY09mJ35g9wfBh52pWec" />
 </svelte:head>
 
 <div class="min-h-screen bg-white">
