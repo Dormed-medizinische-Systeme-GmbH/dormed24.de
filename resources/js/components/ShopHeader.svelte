@@ -313,7 +313,7 @@
                             <span
                                 class="text-sm font-medium text-brand-secondary"
                             >
-                                {formatPrice(cart.total)}*
+                                {formatPrice(cart.subtotal)}*
                             </span>
                             <div class="relative">
                                 <ShoppingCart class="size-5" />

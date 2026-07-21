@@ -327,7 +327,7 @@
                         {/if}
                     </div>
                     <span class="text-sm font-medium text-[#1a3a5c]">
-                        {cart.total}*
+                        {cart.subtotal}*
                     </span>
                 </Button>
 
@@ -512,7 +512,7 @@
                             onclick={closeMobileNav}
                         >
                             <span class="mr-1 font-semibold">
-                                {cart.total}
+                                {cart.subtotal}
                             </span>
                             <ShoppingCart class="mr-2 size-4" />
                             Warenkorb
