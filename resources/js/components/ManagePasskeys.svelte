@@ -1,11 +1,11 @@
 <script lang="ts">
     import { router } from '@inertiajs/svelte';
     import KeyRound from '@lucide/svelte/icons/key-round';
-    import { destroy } from '@/actions/Laravel/Passkeys/Http/Controllers/PasskeyRegistrationController';
     import Heading from '@/components/Heading.svelte';
     import PasskeyItem from '@/components/PasskeyItem.svelte';
     import PasskeyRegister from '@/components/PasskeyRegister.svelte';
     import type { Passkey } from '@/types/auth';
+    import { destroy } from '@/actions/Laravel/Passkeys/Http/Controllers/PasskeyRegistrationController';
 
     export type Props = {
         canManagePasskeys?: boolean;

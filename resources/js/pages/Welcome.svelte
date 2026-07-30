@@ -10,11 +10,11 @@
     import Rocket from '@lucide/svelte/icons/rocket';
     import ShieldCheck from '@lucide/svelte/icons/shield-check';
     import Truck from '@lucide/svelte/icons/truck';
-    import * as ProductController from '@/actions/App/Http/Controllers/ProductController';
     import AppFooter from '@/components/AppFooter.svelte';
     import AppHead from '@/components/AppHead.svelte';
     import ShopHeader from '@/components/ShopHeader.svelte';
     import { formatPrice } from '@/lib/currency';
+    import * as ProductController from '@/actions/App/Http/Controllers/ProductController';
 
     const trustItems = [
         {
@@ -219,7 +219,10 @@
 <svelte:head>
     <!-- eslint-disable-next-line svelte/no-at-html-tags -- JSON-LD; "<" is escaped in organizationSchema -->
     {@html organizationJsonLdHtml}
-    <meta name="google-site-verification" content="RO3ODoXF_H3wJR7Y23UapHtLY09mJ35g9wfBh52pWec" />
+    <meta
+        name="google-site-verification"
+        content="RO3ODoXF_H3wJR7Y23UapHtLY09mJ35g9wfBh52pWec"
+    />
 </svelte:head>
 
 <div class="min-h-screen bg-white">

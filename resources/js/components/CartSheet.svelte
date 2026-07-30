@@ -14,8 +14,8 @@
         SheetTrigger,
     } from '@/components/ui/sheet';
     import { formatPrice } from '@/lib/currency';
-    import cartRoutes from '@/routes/cart';
     import type { Cart, CartItem } from '@/types';
+    import cartRoutes from '@/routes/cart';
 
     let { cart }: { cart: Cart } = $props();
 

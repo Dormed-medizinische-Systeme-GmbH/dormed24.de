@@ -20,8 +20,8 @@
     } from '@/components/ui/input-otp';
     import { Spinner } from '@/components/ui/spinner';
     import { twoFactorAuthState } from '@/lib/twoFactorAuth.svelte';
-    import { confirm } from '@/routes/two-factor';
     import type { TwoFactorConfigContent } from '@/types';
+    import { confirm } from '@/routes/two-factor';
 
     let {
         requiresConfirmation,

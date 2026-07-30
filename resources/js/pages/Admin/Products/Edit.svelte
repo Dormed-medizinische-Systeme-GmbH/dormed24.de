@@ -1,14 +1,22 @@
 <script module lang="ts">
     export const layout = {
-        breadcrumbs: [{ title: 'Produkte', href: '/admin/products' }, { title: 'Bearbeiten' }],
+        breadcrumbs: [
+            { title: 'Produkte', href: '/admin/products' },
+            { title: 'Bearbeiten' },
+        ],
     };
 </script>
 
 <script lang="ts">
     import { useForm, router } from '@inertiajs/svelte';
-    import { GripVertical, Trash2, ImagePlus, Star, Plus, Check } from '@lucide/svelte';
-    import * as AdminProductController from '@/actions/App/Http/Controllers/Admin/ProductController';
-    import * as AdminProductVariantController from '@/actions/App/Http/Controllers/Admin/ProductVariantController';
+    import {
+        GripVertical,
+        Trash2,
+        ImagePlus,
+        Star,
+        Plus,
+        Check,
+    } from '@lucide/svelte';
     import AppHead from '@/components/AppHead.svelte';
     import { Button } from '@/components/ui/button';
     import { Input } from '@/components/ui/input';
@@ -16,6 +24,8 @@
     import * as Select from '@/components/ui/select';
     import * as Tabs from '@/components/ui/tabs';
     import { cn } from '@/lib/utils';
+    import * as AdminProductController from '@/actions/App/Http/Controllers/Admin/ProductController';
+    import * as AdminProductVariantController from '@/actions/App/Http/Controllers/Admin/ProductVariantController';
 
     type ProductImage = {
         id: number;
@@ -51,24 +61,32 @@
         product,
         manufacturers,
         categories,
-    }: { product: Product; manufacturers: Manufacturer[]; categories: Category[] } = $props();
+    }: {
+        product: Product;
+        manufacturers: Manufacturer[];
+        categories: Category[];
+    } = $props();
 
     // svelte-ignore state_referenced_locally
     const form = useForm({
         name: product.name,
         description: product.description ?? '',
         price: product.price,
-        manufacturer_id: product.manufacturer_id ? String(product.manufacturer_id) : '',
+        manufacturer_id: product.manufacturer_id
+            ? String(product.manufacturer_id)
+            : '',
         category_id: product.category_id ? String(product.category_id) : '',
         is_available: product.is_available,
     });
 
     const selectedManufacturerLabel = $derived(
-        manufacturers.find((m) => String(m.id) === form.manufacturer_id)?.name ?? 'Hersteller wählen',
+        manufacturers.find((m) => String(m.id) === form.manufacturer_id)
+            ?.name ?? 'Hersteller wählen',
     );
 
     const selectedCategoryLabel = $derived(
-        categories.find((c) => String(c.id) === form.category_id)?.name ?? 'Kategorie wählen',
+        categories.find((c) => String(c.id) === form.category_id)?.name ??
+            'Kategorie wählen',
     );
 
     function submit(e: SubmitEvent) {
@@ -138,10 +156,9 @@
         reordered.splice(to, 0, moved);
         images = reordered;
 
-        router.patch(
-            `/admin/products/${product.id}/images/reorder`,
-            { ids: reordered.map((img) => img.id) },
-        );
+        router.patch(`/admin/products/${product.id}/images/reorder`, {
+            ids: reordered.map((img) => img.id),
+        });
 
         draggedId = null;
         dragOverId = null;
@@ -166,7 +183,11 @@
 
         router.post(
             AdminProductVariantController.store.url(product.id),
-            { label: newVariant.label, price: newVariant.price, is_default: newVariant.is_default },
+            {
+                label: newVariant.label,
+                price: newVariant.price,
+                is_default: newVariant.is_default,
+            },
             {
                 onSuccess: () => {
                     newVariant = { label: '', price: '', is_default: false };
@@ -177,13 +198,24 @@
 
     function startEditVariant(variant: ProductVariant) {
         editingVariantId = variant.id;
-        editVariant = { label: variant.label, price: variant.price, is_default: variant.is_default };
+        editVariant = {
+            label: variant.label,
+            price: variant.price,
+            is_default: variant.is_default,
+        };
     }
 
     function saveVariant(variantId: number) {
         router.put(
-            AdminProductVariantController.update.url({ product: product.id, variant: variantId }),
-            { label: editVariant.label, price: editVariant.price, is_default: editVariant.is_default },
+            AdminProductVariantController.update.url({
+                product: product.id,
+                variant: variantId,
+            }),
+            {
+                label: editVariant.label,
+                price: editVariant.price,
+                is_default: editVariant.is_default,
+            },
             {
                 onSuccess: () => {
                     editingVariantId = null;
@@ -193,7 +225,12 @@
     }
 
     function deleteVariant(variantId: number) {
-        router.delete(AdminProductVariantController.destroy.url({ product: product.id, variant: variantId }));
+        router.delete(
+            AdminProductVariantController.destroy.url({
+                product: product.id,
+                variant: variantId,
+            }),
+        );
     }
 </script>
 
@@ -203,7 +240,9 @@
     <div class="flex items-center justify-between">
         <div>
             <h1 class="text-xl font-semibold">{product.name}</h1>
-            <p class="mt-0.5 text-sm text-muted-foreground">Produkt bearbeiten</p>
+            <p class="mt-0.5 text-sm text-muted-foreground">
+                Produkt bearbeiten
+            </p>
         </div>
     </div>
 
@@ -213,7 +252,9 @@
             <Tabs.Trigger value="bilder">
                 Bilder
                 {#if images.length > 0}
-                    <span class="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-xs font-medium tabular-nums">
+                    <span
+                        class="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-xs font-medium tabular-nums"
+                    >
                         {images.length}
                     </span>
                 {/if}
@@ -221,7 +262,9 @@
             <Tabs.Trigger value="variationen">
                 Variationen
                 {#if variants.length > 0}
-                    <span class="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-xs font-medium tabular-nums">
+                    <span
+                        class="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-xs font-medium tabular-nums"
+                    >
                         {variants.length}
                     </span>
                 {/if}
@@ -239,7 +282,9 @@
                         placeholder="Produktname"
                     />
                     {#if form.errors.name}
-                        <p class="text-sm text-destructive">{form.errors.name}</p>
+                        <p class="text-sm text-destructive">
+                            {form.errors.name}
+                        </p>
                     {/if}
                 </div>
 
@@ -254,7 +299,9 @@
                         placeholder="0.00"
                     />
                     {#if form.errors.price}
-                        <p class="text-sm text-destructive">{form.errors.price}</p>
+                        <p class="text-sm text-destructive">
+                            {form.errors.price}
+                        </p>
                     {/if}
                 </div>
 
@@ -266,29 +313,40 @@
                         </Select.Trigger>
                         <Select.Content>
                             {#each categories as c (c.id)}
-                                <Select.Item value={String(c.id)}>{c.name}</Select.Item>
+                                <Select.Item value={String(c.id)}
+                                    >{c.name}</Select.Item
+                                >
                             {/each}
                         </Select.Content>
                     </Select.Root>
                     {#if form.errors.category_id}
-                        <p class="text-sm text-destructive">{form.errors.category_id}</p>
+                        <p class="text-sm text-destructive">
+                            {form.errors.category_id}
+                        </p>
                     {/if}
                 </div>
 
                 <div class="flex flex-col gap-2">
                     <Label>Hersteller</Label>
-                    <Select.Root type="single" bind:value={form.manufacturer_id}>
+                    <Select.Root
+                        type="single"
+                        bind:value={form.manufacturer_id}
+                    >
                         <Select.Trigger class="w-full">
                             {selectedManufacturerLabel}
                         </Select.Trigger>
                         <Select.Content>
                             {#each manufacturers as m (m.id)}
-                                <Select.Item value={String(m.id)}>{m.name}</Select.Item>
+                                <Select.Item value={String(m.id)}
+                                    >{m.name}</Select.Item
+                                >
                             {/each}
                         </Select.Content>
                     </Select.Root>
                     {#if form.errors.manufacturer_id}
-                        <p class="text-sm text-destructive">{form.errors.manufacturer_id}</p>
+                        <p class="text-sm text-destructive">
+                            {form.errors.manufacturer_id}
+                        </p>
                     {/if}
                 </div>
 
@@ -302,14 +360,20 @@
                         class="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                     ></textarea>
                     {#if form.errors.description}
-                        <p class="text-sm text-destructive">{form.errors.description}</p>
+                        <p class="text-sm text-destructive">
+                            {form.errors.description}
+                        </p>
                     {/if}
                 </div>
 
-                <div class="flex items-center justify-between rounded-lg border bg-card p-4">
+                <div
+                    class="flex items-center justify-between rounded-lg border bg-card p-4"
+                >
                     <div>
                         <p class="text-sm font-medium">Verfügbarkeit</p>
-                        <p class="text-xs text-muted-foreground">Produkt ist im Shop bestellbar</p>
+                        <p class="text-xs text-muted-foreground">
+                            Produkt ist im Shop bestellbar
+                        </p>
                     </div>
                     <button
                         type="button"
@@ -317,10 +381,14 @@
                         aria-label="Verfügbarkeit umschalten"
                         aria-checked={form.is_available}
                         onclick={() => (form.is_available = !form.is_available)}
-                        class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring {form.is_available ? 'bg-primary' : 'bg-input'}"
+                        class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring {form.is_available
+                            ? 'bg-primary'
+                            : 'bg-input'}"
                     >
                         <span
-                            class="pointer-events-none inline-block size-5 rounded-full bg-white shadow-lg ring-0 transition-transform {form.is_available ? 'translate-x-5' : 'translate-x-0'}"
+                            class="pointer-events-none inline-block size-5 rounded-full bg-white shadow-lg ring-0 transition-transform {form.is_available
+                                ? 'translate-x-5'
+                                : 'translate-x-0'}"
                         ></span>
                     </button>
                 </div>
@@ -346,12 +414,16 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <h2 class="text-base font-semibold">Produktbilder</h2>
-                        <p class="text-sm text-muted-foreground">{images.length}/5 Bilder · Reihenfolge per Drag &amp; Drop ändern</p>
+                        <p class="text-sm text-muted-foreground">
+                            {images.length}/5 Bilder · Reihenfolge per Drag
+                            &amp; Drop ändern
+                        </p>
                     </div>
                     <label
                         class={cn(
                             'flex cursor-pointer items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-accent',
-                            (images.length >= 5 || uploading) && 'pointer-events-none opacity-50',
+                            (images.length >= 5 || uploading) &&
+                                'pointer-events-none opacity-50',
                         )}
                     >
                         <ImagePlus class="size-4" />
@@ -367,11 +439,16 @@
                 </div>
 
                 {#if images.length === 0}
-                    <div class="flex h-32 items-center justify-center rounded-lg border border-dashed border-input text-sm text-muted-foreground">
+                    <div
+                        class="flex h-32 items-center justify-center rounded-lg border border-dashed border-input text-sm text-muted-foreground"
+                    >
                         Noch keine Bilder hochgeladen
                     </div>
                 {:else}
-                    <div role="list" class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    <div
+                        role="list"
+                        class="grid grid-cols-2 gap-3 sm:grid-cols-3"
+                    >
                         {#each images as image (image.id)}
                             <div
                                 role="listitem"
@@ -383,7 +460,9 @@
                                 class={cn(
                                     'group relative overflow-hidden rounded-lg border border-input bg-muted transition-opacity',
                                     draggedId === image.id && 'opacity-40',
-                                    dragOverId === image.id && draggedId !== image.id && 'ring-2 ring-primary',
+                                    dragOverId === image.id &&
+                                        draggedId !== image.id &&
+                                        'ring-2 ring-primary',
                                 )}
                             >
                                 <img
@@ -393,12 +472,16 @@
                                     draggable="false"
                                 />
 
-                                <div class="absolute left-1 top-1 cursor-grab rounded bg-black/50 p-0.5 text-white opacity-0 transition-opacity group-hover:opacity-100">
+                                <div
+                                    class="absolute left-1 top-1 cursor-grab rounded bg-black/50 p-0.5 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                                >
                                     <GripVertical class="size-4" />
                                 </div>
 
                                 {#if image.sort_order === 0}
-                                    <div class="absolute bottom-1 left-1 flex items-center gap-1 rounded bg-primary px-1.5 py-0.5 text-xs font-medium text-primary-foreground">
+                                    <div
+                                        class="absolute bottom-1 left-1 flex items-center gap-1 rounded bg-primary px-1.5 py-0.5 text-xs font-medium text-primary-foreground"
+                                    >
                                         <Star class="size-3" />
                                         Hauptbild
                                     </div>
@@ -423,36 +506,86 @@
             <div class="mt-6 flex max-w-2xl flex-col gap-4">
                 <div>
                     <h2 class="text-base font-semibold">Variationen</h2>
-                    <p class="text-sm text-muted-foreground">Optionale Preisvarianten — z.B. Packungsgrößen. Ohne Variationen gilt der Produktpreis.</p>
+                    <p class="text-sm text-muted-foreground">
+                        Optionale Preisvarianten — z.B. Packungsgrößen. Ohne
+                        Variationen gilt der Produktpreis.
+                    </p>
                 </div>
 
                 {#if variants.length > 0}
                     <div class="flex flex-col gap-2">
                         {#each variants as variant (variant.id)}
                             {#if editingVariantId === variant.id}
-                                <div class="flex items-center gap-2 rounded-lg border border-primary bg-muted/40 p-3">
-                                    <Input class="flex-1" bind:value={editVariant.label} placeholder="Label" />
-                                    <Input class="w-28" type="number" step="0.01" min="0" bind:value={editVariant.price} placeholder="Preis" />
-                                    <label class="flex cursor-pointer select-none items-center gap-1.5 text-sm text-muted-foreground">
-                                        <input type="checkbox" bind:checked={editVariant.is_default} class="accent-primary" />
+                                <div
+                                    class="flex items-center gap-2 rounded-lg border border-primary bg-muted/40 p-3"
+                                >
+                                    <Input
+                                        class="flex-1"
+                                        bind:value={editVariant.label}
+                                        placeholder="Label"
+                                    />
+                                    <Input
+                                        class="w-28"
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        bind:value={editVariant.price}
+                                        placeholder="Preis"
+                                    />
+                                    <label
+                                        class="flex cursor-pointer select-none items-center gap-1.5 text-sm text-muted-foreground"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            bind:checked={
+                                                editVariant.is_default
+                                            }
+                                            class="accent-primary"
+                                        />
                                         Standard
                                     </label>
-                                    <Button size="sm" onclick={() => saveVariant(variant.id)}>Speichern</Button>
-                                    <Button size="sm" variant="ghost" onclick={() => (editingVariantId = null)}>Abbrechen</Button>
+                                    <Button
+                                        size="sm"
+                                        onclick={() => saveVariant(variant.id)}
+                                        >Speichern</Button
+                                    >
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onclick={() =>
+                                            (editingVariantId = null)}
+                                        >Abbrechen</Button
+                                    >
                                 </div>
                             {:else}
-                                <div class="flex items-center gap-3 rounded-lg border bg-card px-4 py-2.5">
-                                    <span class="flex-1 text-sm font-medium">{variant.label}</span>
+                                <div
+                                    class="flex items-center gap-3 rounded-lg border bg-card px-4 py-2.5"
+                                >
+                                    <span class="flex-1 text-sm font-medium"
+                                        >{variant.label}</span
+                                    >
                                     {#if variant.is_default}
-                                        <span class="flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                                        <span
+                                            class="flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
+                                        >
                                             <Check class="size-3" /> Standard
                                         </span>
                                     {/if}
-                                    <span class="w-20 text-right text-sm tabular-nums text-muted-foreground">{Number(variant.price).toFixed(2)} €</span>
-                                    <Button size="sm" variant="ghost" onclick={() => startEditVariant(variant)}>Bearbeiten</Button>
+                                    <span
+                                        class="w-20 text-right text-sm tabular-nums text-muted-foreground"
+                                        >{Number(variant.price).toFixed(2)} €</span
+                                    >
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onclick={() =>
+                                            startEditVariant(variant)}
+                                        >Bearbeiten</Button
+                                    >
                                     <button
                                         type="button"
-                                        onclick={() => deleteVariant(variant.id)}
+                                        onclick={() =>
+                                            deleteVariant(variant.id)}
                                         class="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                                     >
                                         <Trash2 class="size-4" />
@@ -462,16 +595,37 @@
                         {/each}
                     </div>
                 {:else}
-                    <div class="flex h-20 items-center justify-center rounded-lg border border-dashed border-input text-sm text-muted-foreground">
+                    <div
+                        class="flex h-20 items-center justify-center rounded-lg border border-dashed border-input text-sm text-muted-foreground"
+                    >
                         Noch keine Variationen angelegt
                     </div>
                 {/if}
 
-                <div class="flex items-center gap-2 rounded-lg border bg-muted/40 p-3">
-                    <Input class="flex-1" bind:value={newVariant.label} placeholder="Label (z.B. 8er-Pack)" />
-                    <Input class="w-28" type="number" step="0.01" min="0" bind:value={newVariant.price} placeholder="Preis" />
-                    <label class="flex cursor-pointer select-none items-center gap-1.5 text-sm text-muted-foreground">
-                        <input type="checkbox" bind:checked={newVariant.is_default} class="accent-primary" />
+                <div
+                    class="flex items-center gap-2 rounded-lg border bg-muted/40 p-3"
+                >
+                    <Input
+                        class="flex-1"
+                        bind:value={newVariant.label}
+                        placeholder="Label (z.B. 8er-Pack)"
+                    />
+                    <Input
+                        class="w-28"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        bind:value={newVariant.price}
+                        placeholder="Preis"
+                    />
+                    <label
+                        class="flex cursor-pointer select-none items-center gap-1.5 text-sm text-muted-foreground"
+                    >
+                        <input
+                            type="checkbox"
+                            bind:checked={newVariant.is_default}
+                            class="accent-primary"
+                        />
                         Standard
                     </label>
                     <Button

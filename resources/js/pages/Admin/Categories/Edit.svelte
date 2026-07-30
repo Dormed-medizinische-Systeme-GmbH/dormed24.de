@@ -1,16 +1,19 @@
 <script module lang="ts">
     export const layout = {
-        breadcrumbs: [{ title: 'Kategorien', href: '/admin/categories' }, { title: 'Bearbeiten' }],
+        breadcrumbs: [
+            { title: 'Kategorien', href: '/admin/categories' },
+            { title: 'Bearbeiten' },
+        ],
     };
 </script>
 
 <script lang="ts">
     import { useForm } from '@inertiajs/svelte';
-    import * as AdminCategoryController from '@/actions/App/Http/Controllers/Admin/CategoryController';
     import AppHead from '@/components/AppHead.svelte';
     import { Button } from '@/components/ui/button';
     import { Input } from '@/components/ui/input';
     import { Label } from '@/components/ui/label';
+    import * as AdminCategoryController from '@/actions/App/Http/Controllers/Admin/CategoryController';
 
     type Category = {
         id: number;
@@ -42,7 +45,11 @@
     <form onsubmit={submit} class="flex max-w-2xl flex-col gap-6">
         <div class="flex flex-col gap-2">
             <Label for="name">Name</Label>
-            <Input id="name" bind:value={form.name} placeholder="Kategoriename" />
+            <Input
+                id="name"
+                bind:value={form.name}
+                placeholder="Kategoriename"
+            />
             {#if form.errors.name}
                 <p class="text-sm text-destructive">{form.errors.name}</p>
             {/if}
@@ -50,7 +57,11 @@
 
         <div class="flex flex-col gap-2">
             <Label for="slug">Slug</Label>
-            <Input id="slug" bind:value={form.slug} placeholder="kategorie-slug" />
+            <Input
+                id="slug"
+                bind:value={form.slug}
+                placeholder="kategorie-slug"
+            />
             {#if form.errors.slug}
                 <p class="text-sm text-destructive">{form.errors.slug}</p>
             {/if}
@@ -66,7 +77,9 @@
                 class="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             ></textarea>
             {#if form.errors.description}
-                <p class="text-sm text-destructive">{form.errors.description}</p>
+                <p class="text-sm text-destructive">
+                    {form.errors.description}
+                </p>
             {/if}
         </div>
 
@@ -74,7 +87,11 @@
             <Button type="submit" disabled={form.processing}>
                 {form.processing ? 'Speichert…' : 'Speichern'}
             </Button>
-            <Button type="button" variant="outline" onclick={() => history.back()}>
+            <Button
+                type="button"
+                variant="outline"
+                onclick={() => history.back()}
+            >
                 Abbrechen
             </Button>
         </div>

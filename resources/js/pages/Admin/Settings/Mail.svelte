@@ -11,12 +11,12 @@
     import { useForm } from '@inertiajs/svelte';
     import { Loader2 } from '@lucide/svelte';
     import { toast } from 'svelte-sonner';
-    import * as AdminSettingController from '@/actions/App/Http/Controllers/Admin/SettingController';
     import AppHead from '@/components/AppHead.svelte';
     import { Button } from '@/components/ui/button';
     import { Input } from '@/components/ui/input';
     import { Label } from '@/components/ui/label';
     import { fetchJson } from '@/lib/http';
+    import * as AdminSettingController from '@/actions/App/Http/Controllers/Admin/SettingController';
     import { check as mailCheck } from '@/routes/admin/settings/mail';
 
     let {

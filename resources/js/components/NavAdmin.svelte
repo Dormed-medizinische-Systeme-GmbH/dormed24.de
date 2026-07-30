@@ -2,7 +2,6 @@
     import { page, router } from '@inertiajs/svelte';
     import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
     import LogOut from '@lucide/svelte/icons/log-out';
-    import * as AdminLoginController from '@/actions/App/Http/Controllers/Admin/LoginController';
     import {
         DropdownMenu,
         DropdownMenuContent,
@@ -17,6 +16,7 @@
         SidebarMenuItem,
         useSidebar,
     } from '@/components/ui/sidebar';
+    import * as AdminLoginController from '@/actions/App/Http/Controllers/Admin/LoginController';
 
     const admin = $derived((page.props.auth as any).admin);
     const { isMobile, state: sidebarState } = useSidebar();
@@ -39,9 +39,16 @@
                             aria-expanded={props['aria-expanded']}
                             data-state={props['data-state']}
                         >
-                            <div class="grid flex-1 text-left text-sm leading-tight">
-                                <span class="truncate font-medium">{admin.name}</span>
-                                <span class="truncate text-xs text-muted-foreground">{admin.email}</span>
+                            <div
+                                class="grid flex-1 text-left text-sm leading-tight"
+                            >
+                                <span class="truncate font-medium"
+                                    >{admin.name}</span
+                                >
+                                <span
+                                    class="truncate text-xs text-muted-foreground"
+                                    >{admin.email}</span
+                                >
                             </div>
                             <ChevronsUpDown class="ml-auto size-4" />
                         </SidebarMenuButton>
@@ -49,14 +56,18 @@
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                     class="w-full min-w-0 rounded-lg"
-                    side={$sidebarState === 'collapsed' && !$isMobile ? 'left' : 'top'}
+                    side={$sidebarState === 'collapsed' && !$isMobile
+                        ? 'left'
+                        : 'top'}
                     align="end"
                     sideOffset={4}
                 >
                     <DropdownMenuLabel class="p-0 font-normal">
                         <div class="px-2 py-1.5 text-left text-sm">
                             <span class="block font-medium">{admin.name}</span>
-                            <span class="block text-xs text-muted-foreground">{admin.email}</span>
+                            <span class="block text-xs text-muted-foreground"
+                                >{admin.email}</span
+                            >
                         </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
@@ -66,8 +77,9 @@
                                 type="button"
                                 class={props.class}
                                 onclick={() => {
- props.onClick?.(); logout(); 
-}}
+                                    props.onClick?.();
+                                    logout();
+                                }}
                             >
                                 <LogOut class="mr-2 size-4" />
                                 Abmelden

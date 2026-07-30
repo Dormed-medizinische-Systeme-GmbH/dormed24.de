@@ -17,12 +17,15 @@
     } = $props();
 
     const messages = $derived(
-        Object.values(errors).filter((message): message is string => Boolean(message)),
+        Object.values(errors).filter((message): message is string =>
+            Boolean(message),
+        ),
     );
 
     let dismissed = $state(false);
 
     $effect(() => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- reactivity dependency for $effect
         messages;
         dismissed = false;
 

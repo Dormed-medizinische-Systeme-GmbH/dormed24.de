@@ -10,9 +10,9 @@
     import { Checkbox } from '@/components/ui/checkbox';
     import { Separator } from '@/components/ui/separator';
     import { formatPrice } from '@/lib/currency';
+    import type { AddressData, Cart, Customer } from '@/types';
     import { login } from '@/routes';
     import checkout from '@/routes/checkout';
-    import type { AddressData, Cart, Customer } from '@/types';
 
     let {
         cart,
