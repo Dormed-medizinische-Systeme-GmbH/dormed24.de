@@ -10,9 +10,9 @@ class MailSeeder extends Seeder
     public function run(): void
     {
         $settings = [
-            'mail.smtp_host'     => env('MAIL_HOST'),
-            'mail.smtp_port'     => env('MAIL_PORT'),
-            'mail.smtp_user'     => env('MAIL_USERNAME'),
+            'mail.smtp_host' => env('MAIL_HOST'),
+            'mail.smtp_port' => env('MAIL_PORT'),
+            'mail.smtp_user' => env('MAIL_USERNAME'),
             'mail.smtp_password' => env('MAIL_PASSWORD'),
         ];
 

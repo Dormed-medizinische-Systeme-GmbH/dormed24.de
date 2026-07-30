@@ -32,7 +32,6 @@ class CustomerController extends Controller
         ]);
     }
 
-
     public function show(Customer $customer): Response
     {
         $customer->load(['addresses', 'orders' => fn ($q) => $q->with('items')->latest()->limit(10)]);
@@ -41,5 +40,4 @@ class CustomerController extends Controller
             'customer' => $customer,
         ]);
     }
-
 }
