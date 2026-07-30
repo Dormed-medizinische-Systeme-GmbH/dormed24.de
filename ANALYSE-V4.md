@@ -352,13 +352,16 @@ Thumbnail-Pipeline mit `srcset`. Für 1.0 reicht (a). ~2–4 h.
 
 ## 🚀 Launch-Checkliste (Delta zu README/V3 — dort Punkte 1–7 unverändert gültig)
 
-1. **CI-Gate nachziehen (Carry-over V3):** `tests.yml` fährt PHPStan + Tests +
+1. ~~**CI-Gate nachziehen (Carry-over V3):** `tests.yml` fährt PHPStan + Tests +
    Build, aber **kein `svelte-check`** (`composer types:check` = PHPStan;
    `npm run types:check` = svelte-check — Namenskollision beachten). Und
    `lint.yml` ruft `npm run format`/`npm run lint` (write/fix-Varianten) auf —
    Formatverstöße failen den Build nicht. Auf `format:check`/`lint:check` +
    `npm run types:check` umstellen, sonst driftet das in V3 mühsam
-   grüngemachte Gate wieder.
+   grüngemachte Gate wieder.~~ ✅ (30.07.2026 — `lint.yml` auf
+   `lint:check`/`format:check` umgestellt, `svelte-check`-Schritt
+   (inkl. Wayfinder-Generierung) ergänzt; aufgelaufene Pint-/Prettier-/
+   ESLint-Drift in separaten Commits bereinigt.)
 2. **DB-Backup-Strategie** (SQLite-Datei) — dritter Carry-over in Folge,
    vor Launch entscheiden (simpelster Start: nächtliches
    `sqlite3 .backup`-Cron + Offsite-Kopie, zusammen mit `storage/app/public`).
