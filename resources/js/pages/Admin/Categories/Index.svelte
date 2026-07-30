@@ -22,7 +22,6 @@
         SortingState,
         VisibilityState,
     } from '@tanstack/table-core';
-    import * as AdminCategoryController from '@/actions/App/Http/Controllers/Admin/CategoryController';
     import AppHead from '@/components/AppHead.svelte';
     import { Button } from '@/components/ui/button';
     import { Checkbox } from '@/components/ui/checkbox';
@@ -40,6 +39,7 @@
     import { Input } from '@/components/ui/input';
     import * as Table from '@/components/ui/table';
     import CategoryActions from './CategoryActions.svelte';
+    import * as AdminCategoryController from '@/actions/App/Http/Controllers/Admin/CategoryController';
 
     type Category = {
         id: number;

@@ -15,11 +15,9 @@ export function toUrl(
 
 // Standard shadcn-svelte helper types, expected by the components under
 // components/ui (shadcn add --all).
- 
-export type WithoutChild<T> = T extends { child?: any }
-    ? Omit<T, 'child'>
-    : T;
- 
+
+export type WithoutChild<T> = T extends { child?: any } ? Omit<T, 'child'> : T;
+
 export type WithoutChildren<T> = T extends { children?: any }
     ? Omit<T, 'children'>
     : T;

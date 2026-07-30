@@ -22,7 +22,6 @@
         SortingState,
         VisibilityState,
     } from '@tanstack/table-core';
-    import * as AdminProductController from '@/actions/App/Http/Controllers/Admin/ProductController';
     import AppHead from '@/components/AppHead.svelte';
     import { Button } from '@/components/ui/button';
     import { Checkbox } from '@/components/ui/checkbox';
@@ -43,6 +42,7 @@
     import AvailabilityBadge from './AvailabilityBadge.svelte';
     import ProductActions from './ProductActions.svelte';
     import ProductCell from './ProductCell.svelte';
+    import * as AdminProductController from '@/actions/App/Http/Controllers/Admin/ProductController';
 
     type Product = {
         id: number;

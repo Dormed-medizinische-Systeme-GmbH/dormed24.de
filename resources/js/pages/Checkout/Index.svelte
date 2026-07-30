@@ -10,9 +10,9 @@
     import { Button } from '@/components/ui/button';
     import * as Empty from '@/components/ui/empty';
     import { formatPrice } from '@/lib/currency';
+    import type { Cart, CartItem } from '@/types';
     import cartRoutes from '@/routes/cart';
     import checkout from '@/routes/checkout';
-    import type { Cart, CartItem } from '@/types';
 
     let { cart }: { cart: Cart } = $props();
 

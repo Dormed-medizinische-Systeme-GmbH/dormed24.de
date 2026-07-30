@@ -27,6 +27,7 @@
     import { formatPrice } from '@/lib/currency';
     import { fetchJson } from '@/lib/http';
     import { orderStatusBadgeClass, orderStatusLabel } from '@/lib/orderStatus';
+    import type { AddressData, Customer } from '@/types';
     import { logout } from '@/routes';
     import {
         edit as addressesEdit,
@@ -35,7 +36,6 @@
     import customerRoutes from '@/routes/customer';
     import { update as profileUpdate } from '@/routes/profile';
     import { edit as securityEdit } from '@/routes/security';
-    import type { AddressData, Customer } from '@/types';
 
     type Pane = 'orders' | 'addresses' | 'profile' | 'security';
 

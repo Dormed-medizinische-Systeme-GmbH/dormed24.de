@@ -13,7 +13,6 @@
 
 <script lang="ts">
     import { Form, page } from '@inertiajs/svelte';
-    import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
     import AppHead from '@/components/AppHead.svelte';
     import Heading from '@/components/Heading.svelte';
     import InputError from '@/components/InputError.svelte';
@@ -21,6 +20,7 @@
     import { Button } from '@/components/ui/button';
     import { Input } from '@/components/ui/input';
     import { Label } from '@/components/ui/label';
+    import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
     import { send } from '@/routes/verification';
 
     // Settings-Seiten laufen hinter der auth-Middleware — user ist hier immer gesetzt.
@@ -85,7 +85,8 @@
 
                     {#if page.props.status === 'verification-link-sent'}
                         <div class="mt-2 text-sm font-medium text-green-600">
-                            Ein neuer Bestätigungslink wurde an Ihre E-Mail-Adresse gesendet.
+                            Ein neuer Bestätigungslink wurde an Ihre
+                            E-Mail-Adresse gesendet.
                         </div>
                     {/if}
                 </div>

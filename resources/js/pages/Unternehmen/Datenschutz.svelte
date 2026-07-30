@@ -28,8 +28,8 @@
             Datenschutzerklärung
         </h1>
         <p class="mb-8 text-sm text-muted-foreground">
-            Stand: 01.01.2025 · dormed24.de, ein Angebot der Dormed
-            medizinische Systeme GmbH
+            Stand: 01.01.2025 · dormed24.de, ein Angebot der Dormed medizinische
+            Systeme GmbH
         </p>
 
         <p class="mb-8 text-sm text-muted-foreground">

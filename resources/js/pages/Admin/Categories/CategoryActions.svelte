@@ -3,7 +3,6 @@
     import Ellipsis from '@lucide/svelte/icons/ellipsis';
     import Pencil from '@lucide/svelte/icons/pencil';
     import Trash2 from '@lucide/svelte/icons/trash-2';
-    import * as AdminCategoryController from '@/actions/App/Http/Controllers/Admin/CategoryController';
     import { Button } from '@/components/ui/button';
     import {
         DropdownMenu,
@@ -12,13 +11,14 @@
         DropdownMenuSeparator,
         DropdownMenuTrigger,
     } from '@/components/ui/dropdown-menu';
+    import * as AdminCategoryController from '@/actions/App/Http/Controllers/Admin/CategoryController';
 
     let { category }: { category: { id: number; name: string } } = $props();
 
     function destroy() {
         if (!confirm(`Kategorie „${category.name}" wirklich löschen?`)) {
-return;
-}
+            return;
+        }
 
         router.delete(AdminCategoryController.destroy.url(category.id));
     }
@@ -27,7 +27,13 @@ return;
 <DropdownMenu>
     <DropdownMenuTrigger asChild>
         {#snippet children(props)}
-            <Button {...props} variant="ghost" size="icon" class="size-8" aria-label="Aktionen">
+            <Button
+                {...props}
+                variant="ghost"
+                size="icon"
+                class="size-8"
+                aria-label="Aktionen"
+            >
                 <Ellipsis class="size-4" />
             </Button>
         {/snippet}
@@ -35,14 +41,21 @@ return;
     <DropdownMenuContent align="end">
         <DropdownMenuItem asChild>
             {#snippet children(props)}
-                <a class={props.class} href={AdminCategoryController.edit.url(category.id)} onclick={props.onClick}>
+                <a
+                    class={props.class}
+                    href={AdminCategoryController.edit.url(category.id)}
+                    onclick={props.onClick}
+                >
                     <Pencil class="mr-2 size-4" />
                     Bearbeiten
                 </a>
             {/snippet}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onclick={destroy} class="text-destructive focus:text-destructive">
+        <DropdownMenuItem
+            onclick={destroy}
+            class="text-destructive focus:text-destructive"
+        >
             <Trash2 class="mr-2 size-4" />
             Löschen
         </DropdownMenuItem>

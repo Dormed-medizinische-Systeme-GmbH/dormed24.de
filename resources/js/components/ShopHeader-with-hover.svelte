@@ -8,13 +8,13 @@
     import User from '@lucide/svelte/icons/user';
     import X from '@lucide/svelte/icons/x';
     import { slide } from 'svelte/transition';
-    import * as ProductController from '@/actions/App/Http/Controllers/ProductController';
     import { Button } from '@/components/ui/button';
     import { Input } from '@/components/ui/input';
     import { toUrl } from '@/lib/utils';
+    import type { Cart } from '@/types';
+    import * as ProductController from '@/actions/App/Http/Controllers/ProductController';
     import cartRoutes from '@/routes/cart';
     import { edit as editProfile } from '@/routes/profile';
-    import type { Cart } from '@/types';
 
     type MegaMenuKey = 'artikelgruppen' | 'verbrauchsartikel' | null;
     type NavCategory = { id: number; name: string; slug: string };

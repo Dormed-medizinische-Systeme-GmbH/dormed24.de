@@ -66,7 +66,9 @@
             >
                 <Carousel.Content>
                     {#each products as product (product.id)}
-                        <Carousel.Item class="basis-full md:basis-1/2 lg:basis-1/4">
+                        <Carousel.Item
+                            class="basis-full md:basis-1/2 lg:basis-1/4"
+                        >
                             <ProductCard {product} />
                         </Carousel.Item>
                     {/each}

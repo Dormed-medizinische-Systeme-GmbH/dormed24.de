@@ -11,12 +11,12 @@
     import { useForm } from '@inertiajs/svelte';
     import { Loader2 } from '@lucide/svelte';
     import { toast } from 'svelte-sonner';
-    import * as AdminSettingController from '@/actions/App/Http/Controllers/Admin/SettingController';
     import AppHead from '@/components/AppHead.svelte';
     import { Button } from '@/components/ui/button';
     import { Input } from '@/components/ui/input';
     import { Label } from '@/components/ui/label';
     import { fetchJson } from '@/lib/http';
+    import * as AdminSettingController from '@/actions/App/Http/Controllers/Admin/SettingController';
     import { check as payPalCheck } from '@/routes/admin/settings/paypal';
 
     let {
@@ -122,9 +122,7 @@
                     <Label for="pp_client_id">Client ID</Label>
                     <Input
                         id="pp_client_id"
-                        bind:value={
-                            form.settings['paypal.sandbox.client_id']
-                        }
+                        bind:value={form.settings['paypal.sandbox.client_id']}
                     />
                 </div>
                 <div class="flex flex-col gap-1.5">
@@ -153,9 +151,7 @@
                     <Label for="pp_merchant_id">Merchant ID</Label>
                     <Input
                         id="pp_merchant_id"
-                        bind:value={
-                            form.settings['paypal.sandbox.merchant_id']
-                        }
+                        bind:value={form.settings['paypal.sandbox.merchant_id']}
                     />
                 </div>
             </div>
@@ -185,14 +181,10 @@
                     <Input
                         id="pp_live_client_secret"
                         type="password"
-                        placeholder={hasSensitive[
-                            'paypal.live.client_secret'
-                        ]
+                        placeholder={hasSensitive['paypal.live.client_secret']
                             ? '••••••••'
                             : ''}
-                        bind:value={
-                            form.settings['paypal.live.client_secret']
-                        }
+                        bind:value={form.settings['paypal.live.client_secret']}
                     />
                 </div>
                 <div class="flex flex-col gap-1.5">
@@ -207,9 +199,7 @@
                     <Label for="pp_live_merchant_id">Merchant ID</Label>
                     <Input
                         id="pp_live_merchant_id"
-                        bind:value={
-                            form.settings['paypal.live.merchant_id']
-                        }
+                        bind:value={form.settings['paypal.live.merchant_id']}
                     />
                 </div>
             </div>

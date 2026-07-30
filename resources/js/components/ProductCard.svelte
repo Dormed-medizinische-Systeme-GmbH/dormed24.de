@@ -1,7 +1,7 @@
 <script lang="ts">
     import { Link } from '@inertiajs/svelte';
-    import * as ProductController from '@/actions/App/Http/Controllers/ProductController';
     import { formatPrice } from '@/lib/currency';
+    import * as ProductController from '@/actions/App/Http/Controllers/ProductController';
 
     type ProductImage = { id: number; url: string; sort_order: number };
 

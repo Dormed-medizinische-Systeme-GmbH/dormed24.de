@@ -1,16 +1,19 @@
 <script module lang="ts">
     export const layout = {
-        breadcrumbs: [{ title: 'Kategorien', href: '/admin/categories' }, { title: 'Neue Kategorie' }],
+        breadcrumbs: [
+            { title: 'Kategorien', href: '/admin/categories' },
+            { title: 'Neue Kategorie' },
+        ],
     };
 </script>
 
 <script lang="ts">
     import { useForm } from '@inertiajs/svelte';
-    import * as AdminCategoryController from '@/actions/App/Http/Controllers/Admin/CategoryController';
     import AppHead from '@/components/AppHead.svelte';
     import { Button } from '@/components/ui/button';
     import { Input } from '@/components/ui/input';
     import { Label } from '@/components/ui/label';
+    import * as AdminCategoryController from '@/actions/App/Http/Controllers/Admin/CategoryController';
 
     const form = useForm({
         name: '',
@@ -26,7 +29,10 @@
     function slugify(value: string): string {
         return value
             .toLowerCase()
-            .replace(/[äöüß]/g, (c) => ({ ä: 'ae', ö: 'oe', ü: 'ue', ß: 'ss' })[c] ?? c)
+            .replace(
+                /[äöüß]/g,
+                (c) => ({ ä: 'ae', ö: 'oe', ü: 'ue', ß: 'ss' })[c] ?? c,
+            )
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/^-|-$/g, '');
     }
@@ -45,7 +51,10 @@
                 bind:value={form.name}
                 placeholder="Kategoriename"
                 oninput={() => {
-                    if (!form.slug || form.slug === slugify(form.name.slice(0, -1))) {
+                    if (
+                        !form.slug ||
+                        form.slug === slugify(form.name.slice(0, -1))
+                    ) {
                         form.slug = slugify(form.name);
                     }
                 }}
@@ -57,7 +66,11 @@
 
         <div class="flex flex-col gap-2">
             <Label for="slug">Slug</Label>
-            <Input id="slug" bind:value={form.slug} placeholder="kategorie-slug" />
+            <Input
+                id="slug"
+                bind:value={form.slug}
+                placeholder="kategorie-slug"
+            />
             {#if form.errors.slug}
                 <p class="text-sm text-destructive">{form.errors.slug}</p>
             {/if}
@@ -73,7 +86,9 @@
                 class="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             ></textarea>
             {#if form.errors.description}
-                <p class="text-sm text-destructive">{form.errors.description}</p>
+                <p class="text-sm text-destructive">
+                    {form.errors.description}
+                </p>
             {/if}
         </div>
 
@@ -81,7 +96,11 @@
             <Button type="submit" disabled={form.processing}>
                 {form.processing ? 'Erstellt…' : 'Erstellen'}
             </Button>
-            <Button type="button" variant="outline" onclick={() => history.back()}>
+            <Button
+                type="button"
+                variant="outline"
+                onclick={() => history.back()}
+            >
                 Abbrechen
             </Button>
         </div>

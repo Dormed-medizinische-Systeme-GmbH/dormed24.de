@@ -8,12 +8,12 @@
     import PackageCheck from '@lucide/svelte/icons/package-check';
     import ShieldCheck from '@lucide/svelte/icons/shield-check';
     import Truck from '@lucide/svelte/icons/truck';
-    import * as ProductController from '@/actions/App/Http/Controllers/ProductController';
     import AppHead from '@/components/AppHead.svelte';
     import ShopHeaderWithHover from '@/components/ShopHeader-with-hover.svelte';
     import TestAppFooter from '@/components/TestAppFooter.svelte';
     import { Card, CardContent } from '@/components/ui/card';
     import { formatPrice } from '@/lib/currency';
+    import * as ProductController from '@/actions/App/Http/Controllers/ProductController';
 
     const trustItems = [
         {
