@@ -24,9 +24,13 @@
     <ShopHeader />
 
     <main class="flex-1 mx-auto max-w-7xl px-4 py-10 lg:px-8">
-        <h1 class="mb-8 text-2xl font-bold text-brand-secondary">
+        <h1 class="mb-2 text-2xl font-bold text-brand-secondary">
             Datenschutzerklärung
         </h1>
+        <p class="mb-8 text-sm text-muted-foreground">
+            Stand: 01.01.2025 · dormed24.de, ein Angebot der Dormed
+            medizinische Systeme GmbH
+        </p>
 
         <p class="mb-8 text-sm text-muted-foreground">
             Wir freuen uns über Ihren Besuch auf unserer Webseite und Ihr
@@ -584,7 +588,7 @@
                     <Link
                         href="/unternehmen/datenschutz"
                         class="text-brand-accent hover:underline"
-                        >dormed-shop.test/unternehmen/datenschutz</Link
+                        >dormed24.de/unternehmen/datenschutz</Link
                     >
                     abgerufen und ausgedruckt werden.
                 </p>
