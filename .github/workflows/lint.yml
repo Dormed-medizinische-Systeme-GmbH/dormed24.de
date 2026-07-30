@@ -46,13 +46,28 @@ jobs:
           npm install
 
       - name: Run Pint
-        run: composer lint
+        run: composer lint:check
 
       - name: Format Frontend
-        run: npm run format
+        run: npm run format:check
 
       - name: Lint Frontend
-        run: npm run lint
+        run: npm run lint:check
+
+      - name: Copy Environment File
+        run: cp .env.example .env
+
+      - name: Generate Application Key
+        run: php artisan key:generate
+
+      - name: Generate Wayfinder Routes
+        # svelte-check importiert @/routes + @/actions - die sind gitignored
+        # und werden sonst nur vom Vite-Plugin beim Build erzeugt (siehe
+        # tests.yml). --with-form ist Pflicht, siehe AGENTS.md.
+        run: php artisan wayfinder:generate --with-form
+
+      - name: Type-Check Frontend
+        run: npm run types:check
 
       # - name: Commit Changes
       #   uses: stefanzweifel/git-auto-commit-action@v7
