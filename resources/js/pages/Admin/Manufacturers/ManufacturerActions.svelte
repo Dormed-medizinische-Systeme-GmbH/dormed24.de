@@ -3,6 +3,7 @@
     import Ellipsis from '@lucide/svelte/icons/ellipsis';
     import Pencil from '@lucide/svelte/icons/pencil';
     import Trash2 from '@lucide/svelte/icons/trash-2';
+    import * as AdminManufacturerController from '@/actions/App/Http/Controllers/Admin/ManufacturerController';
     import { Button } from '@/components/ui/button';
     import {
         DropdownMenu,
@@ -11,7 +12,6 @@
         DropdownMenuSeparator,
         DropdownMenuTrigger,
     } from '@/components/ui/dropdown-menu';
-    import * as AdminManufacturerController from '@/actions/App/Http/Controllers/Admin/ManufacturerController';
 
     let { manufacturer }: { manufacturer: { id: number; name: string } } =
         $props();

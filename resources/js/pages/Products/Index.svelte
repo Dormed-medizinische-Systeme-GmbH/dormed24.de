@@ -1,10 +1,10 @@
 <script lang="ts">
     import { InfiniteScroll, Link, router } from '@inertiajs/svelte';
+    import * as ProductController from '@/actions/App/Http/Controllers/ProductController';
     import AppFooter from '@/components/AppFooter.svelte';
     import AppHead from '@/components/AppHead.svelte';
     import ProductCard from '@/components/ProductCard.svelte';
     import ShopHeader from '@/components/ShopHeader.svelte';
-    import * as ProductController from '@/actions/App/Http/Controllers/ProductController';
 
     type ProductImage = { id: number; url: string; sort_order: number };
 

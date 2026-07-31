@@ -13,6 +13,7 @@
 
 <script lang="ts">
     import { Form, page } from '@inertiajs/svelte';
+    import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
     import AppHead from '@/components/AppHead.svelte';
     import Heading from '@/components/Heading.svelte';
     import InputError from '@/components/InputError.svelte';
@@ -20,7 +21,6 @@
     import { Button } from '@/components/ui/button';
     import { Input } from '@/components/ui/input';
     import { Label } from '@/components/ui/label';
-    import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
     import { send } from '@/routes/verification';
 
     // Settings-Seiten laufen hinter der auth-Middleware — user ist hier immer gesetzt.

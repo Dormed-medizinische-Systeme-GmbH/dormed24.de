@@ -6,6 +6,7 @@
     import ShoppingCart from '@lucide/svelte/icons/shopping-cart';
     import User from '@lucide/svelte/icons/user';
     import X from '@lucide/svelte/icons/x';
+    import * as ProductController from '@/actions/App/Http/Controllers/ProductController';
     import AppLogo from '@/components/AppLogo.svelte';
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     import CartSheet from '@/components/CartSheet.svelte'; // benötigt für auskommentierte Sidebar-Variante unten
@@ -22,10 +23,9 @@
     import UserSettingsDialog from '@/components/UserSettingsDialog.svelte';
     import { formatPrice } from '@/lib/currency';
     import { toUrl } from '@/lib/utils';
-    import type { Cart } from '@/types';
-    import * as ProductController from '@/actions/App/Http/Controllers/ProductController';
     import cartRoutes from '@/routes/cart';
     import { edit as editProfile } from '@/routes/profile';
+    import type { Cart } from '@/types';
 
     type NavCategory = { id: number; name: string; slug: string };
 

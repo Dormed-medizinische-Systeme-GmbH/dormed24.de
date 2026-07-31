@@ -10,11 +10,11 @@
     import Rocket from '@lucide/svelte/icons/rocket';
     import ShieldCheck from '@lucide/svelte/icons/shield-check';
     import Truck from '@lucide/svelte/icons/truck';
+    import * as ProductController from '@/actions/App/Http/Controllers/ProductController';
     import AppFooter from '@/components/AppFooter.svelte';
     import AppHead from '@/components/AppHead.svelte';
     import ShopHeader from '@/components/ShopHeader.svelte';
     import { formatPrice } from '@/lib/currency';
-    import * as ProductController from '@/actions/App/Http/Controllers/ProductController';
 
     const trustItems = [
         {

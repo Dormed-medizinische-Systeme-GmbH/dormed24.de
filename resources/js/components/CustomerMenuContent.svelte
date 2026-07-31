@@ -9,9 +9,9 @@
         DropdownMenuSeparator,
     } from '@/components/ui/dropdown-menu';
     import { toUrl } from '@/lib/utils';
-    import type { Customer } from '@/types';
     import { logout } from '@/routes';
     import { edit } from '@/routes/profile';
+    import type { Customer } from '@/types';
 
     let {
         user,

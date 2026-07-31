@@ -22,6 +22,7 @@
         SortingState,
         VisibilityState,
     } from '@tanstack/table-core';
+    import * as AdminManufacturerController from '@/actions/App/Http/Controllers/Admin/ManufacturerController';
     import AppHead from '@/components/AppHead.svelte';
     import { Button } from '@/components/ui/button';
     import { Checkbox } from '@/components/ui/checkbox';
@@ -39,7 +40,6 @@
     import { Input } from '@/components/ui/input';
     import * as Table from '@/components/ui/table';
     import ManufacturerActions from './ManufacturerActions.svelte';
-    import * as AdminManufacturerController from '@/actions/App/Http/Controllers/Admin/ManufacturerController';
 
     type Manufacturer = {
         id: number;

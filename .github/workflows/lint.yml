@@ -45,6 +45,21 @@ jobs:
           composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
           npm install
 
+      - name: Copy Environment File
+        run: cp .env.example .env
+
+      - name: Generate Application Key
+        run: php artisan key:generate
+
+      - name: Generate Wayfinder Routes
+        # Muss VOR ESLint/svelte-check/Vitest laufen: @/routes + @/actions
+        # sind gitignored und werden sonst nur vom Vite-Plugin beim Build
+        # erzeugt (siehe tests.yml). Ohne sie sind diese Imports fuer den
+        # eslint-import-resolver nicht aufloesbar - import/order ueberspringt
+        # sie dann stillschweigend, statt Reihenfolge-Verstoesse zu melden.
+        # --with-form ist Pflicht, siehe AGENTS.md.
+        run: php artisan wayfinder:generate --with-form
+
       - name: Run Pint
         run: composer lint:check
 
@@ -54,20 +69,11 @@ jobs:
       - name: Lint Frontend
         run: npm run lint:check
 
-      - name: Copy Environment File
-        run: cp .env.example .env
-
-      - name: Generate Application Key
-        run: php artisan key:generate
-
-      - name: Generate Wayfinder Routes
-        # svelte-check importiert @/routes + @/actions - die sind gitignored
-        # und werden sonst nur vom Vite-Plugin beim Build erzeugt (siehe
-        # tests.yml). --with-form ist Pflicht, siehe AGENTS.md.
-        run: php artisan wayfinder:generate --with-form
-
       - name: Type-Check Frontend
         run: npm run types:check
+
+      - name: Test Frontend
+        run: npm run test
 
       # - name: Commit Changes
       #   uses: stefanzweifel/git-auto-commit-action@v7
