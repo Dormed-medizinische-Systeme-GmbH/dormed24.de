@@ -17,7 +17,11 @@ if (isSvelteCheck) {
 export default defineConfig({
     plugins: [
         laravel({
-            input: ['resources/app.css', 'resources/js/app.ts'],
+            input: [
+                'resources/app.css',
+                'resources/js/app.ts',
+                'resources/js/consent.js',
+            ],
             // SSR-Eingang: dieselbe app.ts wie fürs Client-Rendering. Der
             // @inertiajs/vite-Plugin wrappt sie beim `vite build --ssr`
             // automatisch mit Server-Bootstrap. Ohne diese Zeile würde das

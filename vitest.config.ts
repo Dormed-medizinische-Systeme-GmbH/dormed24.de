@@ -14,6 +14,11 @@ export default defineConfig({
     },
     test: {
         environment: 'jsdom',
+        // Off by default in Vitest (CSS is mocked for speed) - needed here
+        // because CookieBanner.svelte's visibility is asserted via its
+        // actual compiled <style> rules (display: none/block), not inline
+        // styles or classes alone.
+        css: true,
         // Svelte transitions (fly, fade, ...) drive their outro via
         // requestAnimationFrame, which jsdom only implements when the
         // document is "visual" - without this, unmount-on-dismiss tests
