@@ -9,12 +9,12 @@
 
 <script lang="ts">
     import { useForm } from '@inertiajs/svelte';
+    import * as AdminProductController from '@/actions/App/Http/Controllers/Admin/ProductController';
     import AppHead from '@/components/AppHead.svelte';
     import { Button } from '@/components/ui/button';
     import { Input } from '@/components/ui/input';
     import { Label } from '@/components/ui/label';
     import * as Select from '@/components/ui/select';
-    import * as AdminProductController from '@/actions/App/Http/Controllers/Admin/ProductController';
 
     type Manufacturer = { id: number; name: string };
     type Category = { id: number; name: string };

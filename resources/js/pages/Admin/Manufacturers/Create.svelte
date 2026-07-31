@@ -9,11 +9,11 @@
 
 <script lang="ts">
     import { useForm } from '@inertiajs/svelte';
+    import * as AdminManufacturerController from '@/actions/App/Http/Controllers/Admin/ManufacturerController';
     import AppHead from '@/components/AppHead.svelte';
     import { Button } from '@/components/ui/button';
     import { Input } from '@/components/ui/input';
     import { Label } from '@/components/ui/label';
-    import * as AdminManufacturerController from '@/actions/App/Http/Controllers/Admin/ManufacturerController';
 
     const form = useForm({
         name: '',

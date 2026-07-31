@@ -6,6 +6,7 @@
 
 <script lang="ts">
     import { Form } from '@inertiajs/svelte';
+    import * as AdminLoginController from '@/actions/App/Http/Controllers/Admin/LoginController';
     import AppHead from '@/components/AppHead.svelte';
     import FormErrorsAlert from '@/components/FormErrorsAlert.svelte';
     import PasswordInput from '@/components/PasswordInput.svelte';
@@ -13,7 +14,6 @@
     import { Input } from '@/components/ui/input';
     import { Label } from '@/components/ui/label';
     import { Spinner } from '@/components/ui/spinner';
-    import * as AdminLoginController from '@/actions/App/Http/Controllers/Admin/LoginController';
 </script>
 
 <AppHead title="Admin Login" />

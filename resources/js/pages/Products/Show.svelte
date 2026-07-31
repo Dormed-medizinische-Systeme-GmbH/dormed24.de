@@ -5,6 +5,8 @@
     import Plus from '@lucide/svelte/icons/plus';
     import ShoppingCart from '@lucide/svelte/icons/shopping-cart';
     import Star from '@lucide/svelte/icons/star';
+    import * as CategoryController from '@/actions/App/Http/Controllers/CategoryController';
+    import * as ProductController from '@/actions/App/Http/Controllers/ProductController';
     import AppFooter from '@/components/AppFooter.svelte';
     import AppHead from '@/components/AppHead.svelte';
     import InputError from '@/components/InputError.svelte';
@@ -18,8 +20,6 @@
     import { Textarea } from '@/components/ui/textarea';
     import { formatPrice } from '@/lib/currency';
     import { cn } from '@/lib/utils';
-    import * as CategoryController from '@/actions/App/Http/Controllers/CategoryController';
-    import * as ProductController from '@/actions/App/Http/Controllers/ProductController';
     import cartRoutes from '@/routes/cart';
 
     type ProductImage = { id: number; url: string; sort_order: number };

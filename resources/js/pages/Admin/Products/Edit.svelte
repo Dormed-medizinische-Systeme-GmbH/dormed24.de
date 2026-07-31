@@ -17,6 +17,8 @@
         Plus,
         Check,
     } from '@lucide/svelte';
+    import * as AdminProductController from '@/actions/App/Http/Controllers/Admin/ProductController';
+    import * as AdminProductVariantController from '@/actions/App/Http/Controllers/Admin/ProductVariantController';
     import AppHead from '@/components/AppHead.svelte';
     import { Button } from '@/components/ui/button';
     import { Input } from '@/components/ui/input';
@@ -24,8 +26,6 @@
     import * as Select from '@/components/ui/select';
     import * as Tabs from '@/components/ui/tabs';
     import { cn } from '@/lib/utils';
-    import * as AdminProductController from '@/actions/App/Http/Controllers/Admin/ProductController';
-    import * as AdminProductVariantController from '@/actions/App/Http/Controllers/Admin/ProductVariantController';
 
     type ProductImage = {
         id: number;
