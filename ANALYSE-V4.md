@@ -376,10 +376,17 @@ Thumbnail-Pipeline mit `srcset`. Für 1.0 reicht (a). ~2–4 h.
   bleibt `refunded`, keine Mails~~ ✅ (10.07.2026 — plus Webhook-Betrags- und
   markPaid-Guard-Tests).
 - ~~**S-2:** `afterPayment` mit fremdem Token → kein Capture, Redirect.~~ ✅ (10.07.2026)
-- **Manueller PayPal-Sandbox-Browsertest** — Carry-over seit V2 (CSRF in
-  PHPUnit deaktiviert, Button-Flow serverseitig nicht testbar). Nach dem
-  B1-Fix **Pflicht**, weil sich die Fehlerpfad-UX geändert hat (422 statt
-  Redirect auf Success).
+- ~~**Manueller PayPal-Sandbox-Browsertest** — Carry-over seit V2 (CSRF in
+  PHPUnit deaktiviert, Button-Flow serverseitig nicht testbar).~~ Bewusst
+  ausgemustert (30.07.2026): `fetchJson()` (`resources/js/lib/http.ts`)
+  wurde code-seitig geprüft und liest/sendet das XSRF-Cookie korrekt; ein
+  echter Klick-Test gegen einen PayPal-Sandbox-Account bräuchte entweder
+  echte Sandbox-Credentials im Testlauf oder einen separaten
+  Live-Server-Prozess (Laravels `runningUnitTests()`-CSRF-Bypass lässt sich
+  aus PHPUnit heraus nicht umgehen) — beides für jetzt zurückgestellt.
+  Statt einer einmaligen manuellen Verifikation wird stattdessen
+  clientseitiges Testing (Vitest) eingeführt, um Frontend-Logik dauerhaft
+  automatisiert abzudecken.
 - ~~Nach Q-2: Test „Produkt-Löschen räumt Bildverzeichnis".~~ ✅ (10.07.2026)
 
 ## Empfohlene Reihenfolge

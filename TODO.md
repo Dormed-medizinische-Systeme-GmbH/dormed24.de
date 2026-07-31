@@ -12,7 +12,7 @@
 - **Zertifikat/Domain-Übergang zurückstellen:** `APP_URL` läuft aktuell übergangsweise auf `https://test.dormed.de` (gültiges TLS-Zertifikat), eigentliche Zieldomain ist `test.dormed24.de`. Sobald dafür ein echtes Zertifikat existiert: `APP_URL` in der Server-`.env` zurückstellen, danach `php artisan optimize:clear && php artisan optimize` (sonst bleibt der alte Wert gecacht — ist uns schon einmal passiert).
 - **Admin-Account prüfen/anlegen:** `php artisan add:admin` auf dem Server — Status nicht verifiziert.
 - **DB-Backup-Strategie klären** (SQLite-Datei, keine Automatisierung vorhanden).
-- `lint.yml` ist aktuell ein weiches Gate (nutzt `--fix`/`--write`, scheitert nicht an Formatierungs-Drift). Scharf machen: einmal `npm run format` + `vendor/bin/pint` committen, dann in `lint.yml` auf die `:check`-Varianten umstellen (`composer ci:check` bündelt das Gate schon).
+- ~~`lint.yml` ist aktuell ein weiches Gate...~~ ✅ (30.07.2026 — auf `:check`-Varianten umgestellt, `svelte-check` + `vitest` ergänzt, Formatierungs-/Lint-Drift einmalig bereinigt.)
 - SSH-Deploy-Key ist aktuell ein Account-Key (Zugriff auf alle Repos von `DormedGmbH`). Auf einen repo-gebundenen, read-only **Deploy Key** umstellen (least privilege).
 
 ---
@@ -23,6 +23,15 @@
 
 **Dateien:** `UpdateProductRequest`, `UpdateCategoryRequest`, `StoreRatingRequest`, etc.
 Nur Route-Ebene schützt. Für feinere Permissions später Laravel Policies einführen.
+
+---
+
+## Testing
+
+- [x] Serverseitig (PHPUnit, `tests/Unit` + `tests/Feature`) bereits umfangreich vorhanden.
+- [x] Clientseitig eingeführt (30.07.2026): Vitest + `@testing-library/svelte` + jsdom, `npm run test`, läuft in `lint.yml` mit. Siehe `resources/js/testing/setup.ts` für die jsdom-Workarounds (Web-Animations-API-Stub für `svelte/transition`).
+- [ ] **Vollständige Client-Abdeckung** — bisher nur `lib/currency.ts`, `lib/http.ts` und `FormErrorsAlert.svelte` getestet. Restliche Komponenten/Pages (Checkout-Flow, PayPal-Button, Cart, Admin-Formulare, Auth-Formulare, ...) sind offen — laufende Aufgabe, schrittweise abzuarbeiten.
+- Der manuelle PayPal-Sandbox-Browsertest (CSRF-Punkt aus ANALYSE-V4) ist bewusst nicht mehr auf der Liste — siehe ANALYSE-V4.md für die Begründung.
 
 ---
 
