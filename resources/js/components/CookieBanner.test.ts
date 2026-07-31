@@ -1,51 +1,89 @@
-import { fireEvent, render, screen } from '@testing-library/svelte';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { render, screen } from '@testing-library/svelte';
+import { describe, expect, it } from 'vitest';
 import CookieBanner from '@/components/CookieBanner.svelte';
 
+// CookieBanner.svelte is markup/CSS only - all consent logic and visibility
+// toggling is wired up externally by resources/js/consent.js, see
+// consent.test.ts. These tests only verify the hooks it depends on exist.
+
 describe('CookieBanner', () => {
-    beforeEach(() => {
-        sessionStorage.clear();
-    });
-
-    it('shows the banner when it has not been dismissed before', () => {
+    it('renders the dialog with the id and aria-label consent.js looks for', () => {
         render(CookieBanner);
 
-        expect(screen.getByText(/Wir verwenden Cookies/)).toBeInTheDocument();
+        const banner = document.getElementById('consent-banner');
+
+        expect(banner).toBeInTheDocument();
+        expect(banner).toHaveAttribute('role', 'dialog');
+        expect(banner).toHaveAttribute('aria-label', 'Cookie-Einstellungen');
     });
 
-    it('stays hidden when it was already dismissed in this session', () => {
-        sessionStorage.setItem('cookie-banner-dismissed', '1');
+    it('is hidden by default until consent.js adds the --visible class', () => {
+        render(CookieBanner);
 
+        const banner = document.getElementById('consent-banner') as HTMLElement;
+
+        expect(getComputedStyle(banner).display).toBe('none');
+
+        banner.classList.add('consent-banner--visible');
+
+        expect(getComputedStyle(banner).display).toBe('block');
+    });
+
+    it('exposes the three main action buttons as data hooks', () => {
         render(CookieBanner);
 
         expect(
-            screen.queryByText(/Wir verwenden Cookies/),
-        ).not.toBeInTheDocument();
+            document.querySelector('[data-consent-accept-all]'),
+        ).toBeInTheDocument();
+        expect(
+            document.querySelector('[data-consent-accept-necessary]'),
+        ).toBeInTheDocument();
+        expect(
+            document.querySelector('[data-consent-toggle-preferences]'),
+        ).toBeInTheDocument();
     });
 
-    it('hides the banner and remembers the dismissal when "Nur notwendige" is clicked', async () => {
+    it('renders a preferences panel, hidden until toggled open', () => {
         render(CookieBanner);
 
-        await fireEvent.click(
-            screen.getByRole('button', { name: 'Nur notwendige' }),
-        );
+        const panel = document.querySelector(
+            '[data-consent-preferences]',
+        ) as HTMLElement;
 
-        expect(
-            screen.queryByText(/Wir verwenden Cookies/),
-        ).not.toBeInTheDocument();
-        expect(sessionStorage.getItem('cookie-banner-dismissed')).toBe('1');
+        expect(panel).toBeInTheDocument();
+        expect(getComputedStyle(panel).display).toBe('none');
+
+        panel.classList.add('consent-banner__preferences--open');
+
+        expect(getComputedStyle(panel).display).toBe('block');
     });
 
-    it('hides the banner when "Alle Cookies erlauben" is clicked', async () => {
+    it('exposes analytics/marketing category checkboxes and a save button', () => {
         render(CookieBanner);
 
-        await fireEvent.click(
-            screen.getByRole('button', { name: 'Alle Cookies erlauben' }),
-        );
-
         expect(
-            screen.queryByText(/Wir verwenden Cookies/),
-        ).not.toBeInTheDocument();
-        expect(sessionStorage.getItem('cookie-banner-dismissed')).toBe('1');
+            document.querySelector('[data-consent-category="analytics"]'),
+        ).toBeInTheDocument();
+        expect(
+            document.querySelector('[data-consent-category="marketing"]'),
+        ).toBeInTheDocument();
+        expect(
+            document.querySelector('[data-consent-save-preferences]'),
+        ).toBeInTheDocument();
+    });
+
+    it('renders the necessary-cookies checkbox as always checked and disabled', () => {
+        render(CookieBanner);
+
+        // hidden: true - the preferences panel is display:none until
+        // toggled open, which correctly excludes it from the a11y tree by
+        // default; we only care about its attributes here, not visibility.
+        const necessary = screen.getByRole('checkbox', {
+            name: /Notwendig/,
+            hidden: true,
+        });
+
+        expect(necessary).toBeChecked();
+        expect(necessary).toBeDisabled();
     });
 });

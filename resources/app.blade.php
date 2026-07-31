@@ -10,7 +10,7 @@
 
         @fonts
 
-        @vite(['resources/app.css', 'resources/js/app.ts'])
+        @vite(['resources/app.css', 'resources/js/app.ts', 'resources/js/consent.js'])
         <x-inertia::head>
             <title>{{ config('app.name', 'Laravel') }}</title>
         </x-inertia::head>
