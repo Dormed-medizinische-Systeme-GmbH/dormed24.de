@@ -23,7 +23,6 @@
     let dismissed = $state(false);
 
     $effect(() => {
-        messages;
         dismissed = false;
 
         if (messages.length === 0) {

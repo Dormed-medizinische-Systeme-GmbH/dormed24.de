@@ -12,14 +12,20 @@
 # bereits selbst mit, daher aendert sich am Build-Ablauf nichts.
 providers = ["php"]
 
-# Node-Version fest auf 20 pinnen (siehe .nvmrc / package.json "engines").
+# Node-Version fest auf 22 pinnen.
 #
 # Grund: Ohne diese Vorgabe waehlt Nixpacks fuer den PHP-Provider eigenmaechtig
 # eine neuere Node-Major-Version (beobachtet: nodejs_24), unabhaengig von
 # .nvmrc. Auf Hosts mit einem aelteren gepinnten Nixpacks-Build-Image
 # existiert dieses Nix-Package im dort eingefrorenen nixpkgs-Snapshot noch
 # nicht, was den Build sofort abbrechen laesst:
-# "error: undefined variable 'nodejs_24'". nodejs_20 ist alt genug, um in
-# praktisch jedem Nixpacks-Snapshot vorhanden zu sein.
+# "error: undefined variable 'nodejs_24'".
+#
+# nodejs_20 war KEINE gueltige Alternative: der eingefrorene Snapshot liefert
+# exakt Node 20.18.1, aber Vite/rolldown (via vite.config.ts) verlangen
+# ">=20.19 || >=22.12" - mit 20.18.1 bricht "npm run build" beim Laden der
+# rolldown-Native-Bindings ab ("Cannot find native binding"). nodejs_22 ist in
+# diesem Snapshot (Stand ~April 2025) bereits >=22.12 und damit alt genug fuer
+# den Snapshot, aber neu genug fuer Vite.
 [variables]
-NIXPACKS_NODE_VERSION = "20"
+NIXPACKS_NODE_VERSION = "22"
