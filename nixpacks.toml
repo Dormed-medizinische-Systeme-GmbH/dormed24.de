@@ -1,0 +1,13 @@
+# Erzwingt ausschliesslich den PHP-Provider von Nixpacks.
+#
+# Grund: Nixpacks/Coolify erkennt wegen des gleichzeitigen Vorhandenseins von
+# composer.json UND package.json im Root faelschlich eine zweite, Node-basierte
+# "static site" und generiert dafuer einen zusaetzlichen "location /"-Block in
+# der nginx-Config - das kollidiert mit dem vom PHP-Provider generierten
+# Laravel-Routing-Block und fuehrt zum Absturz
+# ("nginx: [emerg] duplicate location "/""). Bekannter, von Coolify als
+# "not planned" geschlossener Bug: https://github.com/coollabsio/coolify/issues/7867
+#
+# Der PHP-Provider fuehrt npm ci/npm run build fuer den Asset-Build ohnehin
+# bereits selbst mit, daher aendert sich am Build-Ablauf nichts.
+providers = ["php"]
