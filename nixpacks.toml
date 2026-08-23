@@ -11,3 +11,15 @@
 # Der PHP-Provider fuehrt npm ci/npm run build fuer den Asset-Build ohnehin
 # bereits selbst mit, daher aendert sich am Build-Ablauf nichts.
 providers = ["php"]
+
+# Node-Version fest auf 20 pinnen (siehe .nvmrc / package.json "engines").
+#
+# Grund: Ohne diese Vorgabe waehlt Nixpacks fuer den PHP-Provider eigenmaechtig
+# eine neuere Node-Major-Version (beobachtet: nodejs_24), unabhaengig von
+# .nvmrc. Auf Hosts mit einem aelteren gepinnten Nixpacks-Build-Image
+# existiert dieses Nix-Package im dort eingefrorenen nixpkgs-Snapshot noch
+# nicht, was den Build sofort abbrechen laesst:
+# "error: undefined variable 'nodejs_24'". nodejs_20 ist alt genug, um in
+# praktisch jedem Nixpacks-Snapshot vorhanden zu sein.
+[variables]
+NIXPACKS_NODE_VERSION = "20"
