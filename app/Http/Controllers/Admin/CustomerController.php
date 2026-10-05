@@ -24,14 +24,12 @@ class CustomerController extends Controller
                     });
                 })
                 ->latest()
-                ->paginate(20)
-                ->withQueryString(),
+                ->get(),
             'filters' => [
                 'search' => $search,
             ],
         ]);
     }
-
 
     public function show(Customer $customer): Response
     {
@@ -41,5 +39,4 @@ class CustomerController extends Controller
             'customer' => $customer,
         ]);
     }
-
 }
