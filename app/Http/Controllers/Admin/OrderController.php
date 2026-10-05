@@ -18,7 +18,7 @@ class OrderController extends Controller
     public function index(): Response
     {
         return Inertia::render('Admin/Orders/Index', [
-            'orders' => Order::with('customer')->latest()->paginate(20),
+            'orders' => Order::with('customer')->latest()->get(),
         ]);
     }
 

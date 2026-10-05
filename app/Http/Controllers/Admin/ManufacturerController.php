@@ -14,7 +14,7 @@ class ManufacturerController extends Controller
     public function index(): Response
     {
         return Inertia::render('Admin/Manufacturers/Index', [
-            'manufacturers' => Manufacturer::latest()->paginate(20),
+            'manufacturers' => Manufacturer::latest()->get(),
         ]);
     }
 

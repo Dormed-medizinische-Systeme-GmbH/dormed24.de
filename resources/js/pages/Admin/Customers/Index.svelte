@@ -39,22 +39,11 @@
         created_at: string;
     };
 
-    type Paginator = {
-        data: Customer[];
-        total: number;
-        current_page: number;
-        last_page: number;
-        from: number | null;
-        to: number | null;
-        prev_page_url: string | null;
-        next_page_url: string | null;
-    };
-
     type Filters = {
         search: string;
     };
 
-    let { customers, filters }: { customers: Paginator; filters: Filters } =
+    let { customers, filters }: { customers: Customer[]; filters: Filters } =
         $props();
 
     // Lokal editierbares Suchfeld: re-derived, sobald der Server neue Filter
@@ -67,17 +56,6 @@
         router.get('/admin/customers', term === '' ? {} : { search: term }, {
             preserveScroll: true,
             replace: true,
-        });
-    }
-
-    function visitPage(url: string | null) {
-        if (!url) {
-            return;
-        }
-
-        router.visit(url, {
-            preserveScroll: true,
-            preserveState: true,
         });
     }
 
@@ -136,7 +114,7 @@
 
     const table = createSvelteTable({
         get data() {
-            return customers.data;
+            return customers;
         },
         columns,
         getCoreRowModel: getCoreRowModel(),
@@ -164,7 +142,7 @@
     <div class="flex items-center justify-between">
         <h1 class="text-xl font-semibold">Kunden</h1>
         <span class="text-sm text-muted-foreground"
-            >{customers.total} gesamt</span
+            >{customers.length} gesamt</span
         >
     </div>
 
@@ -267,26 +245,5 @@
                 {Object.keys(rowSelection).length} ausgewählt
             {/if}
         </span>
-        <div class="flex items-center gap-2">
-            <span class="text-sm text-muted-foreground">
-                {#if customers.from !== null && customers.to !== null}
-                    {customers.from}–{customers.to} von {customers.total}
-                {:else}
-                    0 von {customers.total}
-                {/if}
-            </span>
-            <Button
-                variant="outline"
-                size="sm"
-                onclick={() => visitPage(customers.prev_page_url)}
-                disabled={!customers.prev_page_url}>Zurück</Button
-            >
-            <Button
-                variant="outline"
-                size="sm"
-                onclick={() => visitPage(customers.next_page_url)}
-                disabled={!customers.next_page_url}>Weiter</Button
-            >
-        </div>
     </div>
 </div>

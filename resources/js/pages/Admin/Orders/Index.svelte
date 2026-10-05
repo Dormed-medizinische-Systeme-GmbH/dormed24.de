@@ -10,13 +10,11 @@
     import {
         getCoreRowModel,
         getFilteredRowModel,
-        getPaginationRowModel,
         getSortedRowModel,
     } from '@tanstack/table-core';
     import type {
         ColumnDef,
         ColumnFiltersState,
-        PaginationState,
         RowSelectionState,
         SortingState,
         VisibilityState,
@@ -49,14 +47,7 @@
         created_at: string;
     };
 
-    type Paginator = {
-        data: Order[];
-        total: number;
-        current_page: number;
-        last_page: number;
-    };
-
-    let { orders }: { orders: Paginator } = $props();
+    let { orders }: { orders: Order[] } = $props();
 
     const formatDate = (date: string) =>
         new Date(date).toLocaleDateString('de-DE', {
@@ -132,18 +123,16 @@
     let sorting = $state<SortingState>([]);
     let columnFilters = $state<ColumnFiltersState>([]);
     let rowSelection = $state<RowSelectionState>({});
-    let pagination = $state<PaginationState>({ pageIndex: 0, pageSize: 15 });
     let columnVisibility = $state<VisibilityState>({});
 
     const table = createSvelteTable({
         get data() {
-            return orders.data;
+            return orders;
         },
         columns,
         getCoreRowModel: getCoreRowModel(),
         getSortedRowModel: getSortedRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
         onSortingChange: (u) => {
             sorting = typeof u === 'function' ? u(sorting) : u;
         },
@@ -152,9 +141,6 @@
         },
         onRowSelectionChange: (u) => {
             rowSelection = typeof u === 'function' ? u(rowSelection) : u;
-        },
-        onPaginationChange: (u) => {
-            pagination = typeof u === 'function' ? u(pagination) : u;
         },
         onColumnVisibilityChange: (u) => {
             columnVisibility =
@@ -170,9 +156,6 @@
             get rowSelection() {
                 return rowSelection;
             },
-            get pagination() {
-                return pagination;
-            },
             get columnVisibility() {
                 return columnVisibility;
             },
@@ -185,7 +168,8 @@
 <div class="flex h-full flex-1 flex-col gap-4 p-4">
     <div class="flex items-center justify-between">
         <h1 class="text-xl font-semibold">Bestellungen</h1>
-        <span class="text-sm text-muted-foreground">{orders.total} gesamt</span>
+        <span class="text-sm text-muted-foreground">{orders.length} gesamt</span
+        >
     </div>
 
     <div class="flex items-center gap-2">
@@ -288,22 +272,5 @@
                 {Object.keys(rowSelection).length} ausgewählt
             {/if}
         </span>
-        <div class="flex items-center gap-2">
-            <span class="text-sm text-muted-foreground">
-                Seite {table.getState().pagination.pageIndex + 1} von {table.getPageCount()}
-            </span>
-            <Button
-                variant="outline"
-                size="sm"
-                onclick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}>Zurück</Button
-            >
-            <Button
-                variant="outline"
-                size="sm"
-                onclick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}>Weiter</Button
-            >
-        </div>
     </div>
 </div>
