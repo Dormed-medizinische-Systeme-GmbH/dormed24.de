@@ -85,7 +85,7 @@ class AdminLoginTest extends TestCase
 
     public function test_login_is_impossible_without_admin_env(): void
     {
-        config(['auth.admin' => ['name' => 'Admin', 'email' => null, 'password' => null]]);
+        config(['auth.admin' => ['email' => null, 'password' => null]]);
 
         $this->post(route('admin.login.store'), [
             'email' => self::ADMIN_EMAIL,
@@ -98,7 +98,6 @@ class AdminLoginTest extends TestCase
     public function test_plaintext_admin_password_in_env_is_rejected(): void
     {
         config(['auth.admin' => [
-            'name' => 'Admin',
             'email' => self::ADMIN_EMAIL,
             'password' => self::ADMIN_PASSWORD,
         ]]);
@@ -139,7 +138,7 @@ class AdminLoginTest extends TestCase
             ->assertOk()
             ->assertInertia(
                 fn ($page) => $page->where('auth.admin', [
-                    'name' => 'Test Admin',
+                    'name' => 'Admin',
                     'email' => self::ADMIN_EMAIL,
                 ])->etc()
             );

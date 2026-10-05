@@ -35,12 +35,11 @@ abstract class TestCase extends BaseTestCase
         $passwordHash = Hash::make($password);
 
         config(['auth.admin' => [
-            'name' => 'Test Admin',
             'email' => $email,
             'password' => $passwordHash,
         ]]);
 
-        return new EnvAdmin('Test Admin', $email, $passwordHash);
+        return new EnvAdmin('Admin', $email, $passwordHash);
     }
 
     protected function actingAsAdmin(): static

@@ -9,14 +9,13 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * User-Provider für den `admin`-Guard: genau ein Admin aus der Konfiguration
- * (config('auth.admin'), gespeist aus ADMIN_NAME / ADMIN_EMAIL /
- * ADMIN_PASSWORD). ADMIN_PASSWORD muss ein bcrypt-Hash sein, erzeugt mit
+ * (config('auth.admin'), gespeist aus ADMIN_EMAIL / ADMIN_PASSWORD). ADMIN_PASSWORD muss ein bcrypt-Hash sein, erzeugt mit
  * `php artisan admin:hash-password`. Fehlt etwas, ist kein Admin-Login möglich.
  */
 final class EnvAdminUserProvider implements UserProvider
 {
     /**
-     * @param  array{name?: string|null, email?: string|null, password?: string|null}  $config
+     * @param  array{email?: string|null, password?: string|null}  $config
      */
     public function __construct(
         private readonly Hasher $hasher,
@@ -96,7 +95,7 @@ final class EnvAdminUserProvider implements UserProvider
         }
 
         return new EnvAdmin(
-            name: trim((string) ($this->config['name'] ?? '')) ?: 'Admin',
+            name: 'Admin',
             email: $email,
             passwordHash: $passwordHash,
         );

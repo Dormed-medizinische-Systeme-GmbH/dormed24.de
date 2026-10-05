@@ -7,8 +7,8 @@ use Illuminate\Contracts\Support\Arrayable;
 use JsonSerializable;
 
 /**
- * Der eine Shop-Admin. Kommt aus der Env (ADMIN_NAME / ADMIN_EMAIL /
- * ADMIN_PASSWORD), nicht aus der Datenbank. Identifier ist die
+ * Der eine Shop-Admin. Kommt aus der Env (ADMIN_EMAIL / ADMIN_PASSWORD),
+ * nicht aus der Datenbank. Der Name ist fest "Admin" (nur Anzeige im Panel). Identifier ist die
  * (kleingeschriebene) E-Mail: Wird sie geändert, sind alte Sessions ungültig.
  *
  * @implements Arrayable<string, string>

@@ -38,7 +38,7 @@ Engine: **SQLite** (Entwicklung) — Produktionsumgebung: MySQL/MariaDB-kompatib
 
 ## users
 
-**Veraltet.** Wird nicht mehr gelesen: Der einzige Admin kommt aus der Env (`ADMIN_NAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, siehe `config/auth.php` → `admin`). Die Tabelle kann nach dem Umstieg per Migration entfernt werden.
+**Veraltet.** Wird nicht mehr gelesen: Der einzige Admin kommt aus der Env (`ADMIN_EMAIL`, `ADMIN_PASSWORD`, siehe `config/auth.php` → `admin`). Die Tabelle kann nach dem Umstieg per Migration entfernt werden.
 
 | Spalte           | Typ           | Nullable | Default | Hinweis              |
 |------------------|---------------|----------|---------|----------------------|
