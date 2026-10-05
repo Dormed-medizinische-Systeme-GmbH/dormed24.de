@@ -109,18 +109,6 @@ parameters:
 			path: app/Http/Controllers/Admin/SettingController.php
 
 		-
-			message: '#^Parameter \#1 \$customer of method App\\Support\\Orders\\OrderManager\:\:createFromCart\(\) expects App\\Models\\Customer, App\\Models\\Customer\|App\\Models\\User\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Http/Controllers/CheckoutController.php
-
-		-
-			message: '#^Call to an undefined method App\\Models\\Customer\|App\\Models\\User\:\:orders\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: app/Http/Controllers/CustomerOrderController.php
-
-		-
 			message: '#^Unable to resolve the template type TFlatMapKey in call to method Illuminate\\Support\\Collection\<\(int\|string\),mixed\>\:\:flatMap\(\)$#'
 			identifier: argument.templateType
 			count: 1
@@ -175,40 +163,10 @@ parameters:
 			path: app/Http/Controllers/PayPalController.php
 
 		-
-			message: '#^Parameter \#1 \$customer of method App\\Http\\Controllers\\PayPalController\:\:cancelStalePendingPayPalOrders\(\) expects App\\Models\\Customer, App\\Models\\Customer\|App\\Models\\User\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Http/Controllers/PayPalController.php
-
-		-
-			message: '#^Parameter \#1 \$customer of method App\\Support\\Orders\\OrderManager\:\:createFromCart\(\) expects App\\Models\\Customer, App\\Models\\Customer\|App\\Models\\User\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Http/Controllers/PayPalController.php
-
-		-
 			message: '#^Access to an undefined property App\\Models\\Product\:\:\$ratings_avg_stars\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Http/Controllers/ProductController.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Customer\|App\\Models\\User\:\:\$email_verified_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Settings/ProfileController.php
-
-		-
-			message: '#^Call to an undefined method App\\Models\\Customer\|App\\Models\\User\:\:hasEnabledTwoFactorAuthentication\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: app/Http/Controllers/Settings/SecurityController.php
-
-		-
-			message: '#^Call to an undefined method App\\Models\\Customer\|App\\Models\\User\:\:passkeys\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: app/Http/Controllers/Settings/SecurityController.php
 
 		-
 			message: '#^Method App\\Http\\Requests\\Admin\\StoreCategoryRequest\:\:rules\(\) return type has no value type specified in iterable type array\.$#'

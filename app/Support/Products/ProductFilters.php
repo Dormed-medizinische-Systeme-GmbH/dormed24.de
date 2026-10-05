@@ -44,7 +44,7 @@ final class ProductFilters
             ->groupBy('manufacturer_id')
             ->pluck('aggregate', 'manufacturer_id');
 
-        $manufacturerOptions = Manufacturer::query()
+        $manufacturerOptions = array_values(Manufacturer::query()
             ->whereKey($countsByManufacturer->keys()->all())
             ->orderBy('name')
             ->get(['id', 'name'])
@@ -53,18 +53,16 @@ final class ProductFilters
                 'name' => $manufacturer->name,
                 'count' => (int) $countsByManufacturer[$manufacturer->id],
             ])
-            ->values()
-            ->all();
+            ->all());
 
         $availableIds = array_column($manufacturerOptions, 'id');
 
-        $manufacturerIds = collect(Arr::wrap($request->query('hersteller', [])))
+        $manufacturerIds = array_values(collect(Arr::wrap($request->query('hersteller', [])))
             ->filter(fn (mixed $id) => is_scalar($id) && ctype_digit((string) $id))
             ->map(fn (mixed $id) => (int) $id)
             ->filter(fn (int $id) => in_array($id, $availableIds, true))
             ->unique()
-            ->values()
-            ->all();
+            ->all());
 
         return new self($manufacturerIds, $manufacturerOptions, $scope->clone()->reorder()->count());
     }

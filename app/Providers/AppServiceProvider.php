@@ -8,6 +8,7 @@ use App\Models\Setting;
 use App\Support\Cart\SessionCartStore;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Contracts\Hashing\Hasher;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Date;
@@ -39,8 +40,8 @@ class AppServiceProvider extends ServiceProvider
         $this->configureFromDatabase();
 
         Auth::provider('env-admin', fn (Application $app): EnvAdminUserProvider => new EnvAdminUserProvider(
-            $app['hash'],
-            (array) $app['config']->get('auth.admin', []),
+            $app->make(Hasher::class),
+            (array) config('auth.admin', []),
         ));
     }
 
