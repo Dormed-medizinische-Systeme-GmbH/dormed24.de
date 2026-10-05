@@ -4,18 +4,12 @@ namespace Tests\Feature\Admin;
 
 use App\Models\Product;
 use App\Models\ProductVariant;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ProductVariantControllerTest extends TestCase
 {
     use RefreshDatabase;
-
-    private function actingAsAdmin(): static
-    {
-        return $this->actingAs(User::factory()->admin()->create(), 'admin');
-    }
 
     public function test_store_requires_admin(): void
     {

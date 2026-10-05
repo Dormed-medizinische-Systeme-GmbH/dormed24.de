@@ -3,7 +3,6 @@
 namespace Tests\Feature\Admin;
 
 use App\Models\Setting;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -13,7 +12,7 @@ class SettingControllerTest extends TestCase
 
     private function asAdmin(): static
     {
-        return $this->actingAs(User::factory()->admin()->create(), 'admin');
+        return $this->actingAsAdmin();
     }
 
     public function test_update_stores_whitelisted_settings(): void

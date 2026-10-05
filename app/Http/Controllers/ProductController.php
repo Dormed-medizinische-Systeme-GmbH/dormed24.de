@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Support\Products\ProductFilters;
 use App\Support\Products\ProductSort;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -34,9 +35,13 @@ class ProductController extends Controller
         $query = $request->string('q')->trim();
         [$sort, $column, $direction] = ProductSort::fromRequest($request);
 
-        $baseQuery = Product::available()
+        $scope = Product::available()
+            ->when($query->isNotEmpty(), fn ($q) => $this->whereNameLike($q, $query->toString()));
+
+        $filters = ProductFilters::fromRequest($request, $scope);
+
+        $baseQuery = $filters->apply($scope->clone())
             ->with(['manufacturer', 'images' => fn ($q) => $q->where('sort_order', 0)])
-            ->when($query->isNotEmpty(), fn ($q) => $this->whereNameLike($q, $query->toString()))
             ->orderBy($column, $direction)
             ->orderBy('id');
 
@@ -47,6 +52,7 @@ class ProductController extends Controller
             'total' => $total,
             'query' => $query->toString(),
             'sort' => $sort,
+            ...$filters->toProps(),
         ]);
     }
 

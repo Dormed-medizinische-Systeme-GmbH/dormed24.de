@@ -3,7 +3,6 @@
 namespace Tests\Feature\Admin;
 
 use App\Models\Customer;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -38,18 +37,14 @@ class AdminAccessTest extends TestCase
     #[DataProvider('guardedRoutes')]
     public function test_authenticated_admin_can_access(string $routeName): void
     {
-        $admin = User::factory()->admin()->create();
-
-        $this->actingAs($admin, 'admin')
+        $this->actingAsAdmin()
             ->get(route($routeName))
             ->assertOk();
     }
 
     public function test_settings_index_redirects_to_general(): void
     {
-        $admin = User::factory()->admin()->create();
-
-        $this->actingAs($admin, 'admin')
+        $this->actingAsAdmin()
             ->get(route('admin.settings.index'))
             ->assertRedirect('/admin/settings/general');
     }
@@ -63,41 +58,25 @@ class AdminAccessTest extends TestCase
             ->assertRedirect(route('admin.login'));
     }
 
-    public function test_non_admin_user_is_denied_admin_access(): void
+    public function test_hash_password_command_prints_env_line_with_bcrypt_hash(): void
     {
-        $user = User::factory()->create(['is_admin' => false]);
-
-        $this->actingAs($user, 'admin')
-            ->get(route('admin.dashboard'))
-            ->assertRedirect(route('admin.login'));
-    }
-
-    public function test_is_admin_is_not_mass_assignable(): void
-    {
-        // Das Privileg-Flag darf nie aus (potenziell request-basierten)
-        // Massenzuweisungen gesetzt werden.
-        $user = new User;
-        $user->fill([
-            'name' => 'Eve',
-            'email' => 'eve@example.com',
-            'password' => 'secret-password',
-            'is_admin' => true,
-        ]);
-
-        $this->assertFalse((bool) $user->is_admin);
-    }
-
-    public function test_add_admin_command_creates_a_flagged_admin(): void
-    {
-        $this->artisan('add:admin')
-            ->expectsQuestion('Name', 'Neuer Admin')
-            ->expectsQuestion('E-Mail', 'neuer-admin@dormed24.de')
-            ->expectsQuestion('Passwort', 'ein-sicheres-passwort')
+        $this->artisan('admin:hash-password')
+            ->expectsQuestion('Neues Admin-Passwort (mind. 12 Zeichen)', 'ein-sicheres-passwort')
+            ->expectsQuestion('Passwort wiederholen', 'ein-sicheres-passwort')
+            ->expectsOutputToContain("ADMIN_PASSWORD='$2y$")
             ->assertSuccessful();
+    }
 
-        $user = User::query()->where('email', 'neuer-admin@dormed24.de')->first();
-
-        $this->assertNotNull($user);
-        $this->assertTrue((bool) $user->is_admin);
+    public function test_hash_password_command_rejects_short_and_mismatching_passwords(): void
+    {
+        $this->artisan('admin:hash-password')
+            ->expectsQuestion('Neues Admin-Passwort (mind. 12 Zeichen)', 'zu-kurz')
+            ->expectsOutputToContain('mindestens 12 Zeichen')
+            ->expectsQuestion('Neues Admin-Passwort (mind. 12 Zeichen)', 'ein-sicheres-passwort')
+            ->expectsQuestion('Passwort wiederholen', 'ein-anderes-passwort')
+            ->expectsOutputToContain('stimmen nicht überein')
+            ->expectsQuestion('Neues Admin-Passwort (mind. 12 Zeichen)', 'ein-sicheres-passwort')
+            ->expectsQuestion('Passwort wiederholen', 'ein-sicheres-passwort')
+            ->assertSuccessful();
     }
 }

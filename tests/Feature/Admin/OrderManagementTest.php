@@ -7,7 +7,6 @@ use App\Mail\OrderConfirmationMail;
 use App\Mail\PaymentConfirmationMail;
 use App\Models\Order;
 use App\Models\Payment;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
@@ -15,11 +14,6 @@ use Tests\TestCase;
 class OrderManagementTest extends TestCase
 {
     use RefreshDatabase;
-
-    private function actingAsAdmin(): static
-    {
-        return $this->actingAs(User::factory()->admin()->create(), 'admin');
-    }
 
     public function test_index_lists_orders(): void
     {

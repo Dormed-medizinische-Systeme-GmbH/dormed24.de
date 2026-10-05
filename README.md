@@ -28,7 +28,7 @@ Zwei getrennte Bereiche mit **zwei unabhängigen Auth-Guards**:
 | Bereich | Guard | Model | Login | Besonderheiten |
 | --- | --- | --- | --- | --- |
 | Shop-Frontend | `web` | `Customer` | `/login` (Fortify) | 2FA, Passkeys, E-Mail-Verifikation |
-| Admin-Panel | `admin` | `User` | `/admin/login` | `EnsureAdmin` prüft Login **und** `is_admin`-Flag |
+| Admin-Panel | `admin` | `EnvAdmin` (aus der Env) | `/admin/login` | genau ein Admin über `ADMIN_EMAIL` / `ADMIN_PASSWORD` (Hash via `php artisan admin:hash-password`) |
 
 Zentrale Klassen (die „Geschäftslogik-Ecke"):
 

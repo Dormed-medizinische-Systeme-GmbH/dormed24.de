@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\Customer;
-use App\Models\User;
 
 return [
 
@@ -28,10 +27,23 @@ return [
             'model' => env('AUTH_MODEL', Customer::class),
         ],
 
+        // Genau ein Admin, aus der Env statt aus der Datenbank (siehe 'admin' unten).
         'admins' => [
-            'driver' => 'eloquent',
-            'model' => User::class,
+            'driver' => 'env-admin',
         ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Shop-Admin
+    |--------------------------------------------------------------------------
+    | Der einzige Admin-Zugang. ADMIN_PASSWORD ist ein bcrypt-Hash, erzeugt mit
+    | `php artisan admin:hash-password` (Klartext wird nicht akzeptiert). Ohne
+    | ADMIN_EMAIL oder ADMIN_PASSWORD ist kein Admin-Login möglich.
+    */
+    'admin' => [
+        'email' => env('ADMIN_EMAIL'),
+        'password' => env('ADMIN_PASSWORD'),
     ],
 
     'passwords' => [

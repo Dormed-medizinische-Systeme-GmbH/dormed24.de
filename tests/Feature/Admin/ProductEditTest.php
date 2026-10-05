@@ -5,7 +5,6 @@ namespace Tests\Feature\Admin;
 use App\Models\Manufacturer;
 use App\Models\Order;
 use App\Models\Product;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -13,13 +12,6 @@ use Tests\TestCase;
 class ProductEditTest extends TestCase
 {
     use RefreshDatabase;
-
-    private function actingAsAdmin(): static
-    {
-        $admin = User::factory()->admin()->create();
-
-        return $this->actingAs($admin, 'admin');
-    }
 
     public function test_edit_page_requires_admin(): void
     {

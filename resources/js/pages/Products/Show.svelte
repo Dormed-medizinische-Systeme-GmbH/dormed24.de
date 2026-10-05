@@ -1,6 +1,5 @@
 <script lang="ts">
     import { Form, Link, router } from '@inertiajs/svelte';
-    import ChevronRight from '@lucide/svelte/icons/chevron-right';
     import Minus from '@lucide/svelte/icons/minus';
     import Plus from '@lucide/svelte/icons/plus';
     import ShoppingCart from '@lucide/svelte/icons/shopping-cart';
@@ -10,6 +9,7 @@
     import AppFooter from '@/components/AppFooter.svelte';
     import AppHead from '@/components/AppHead.svelte';
     import InputError from '@/components/InputError.svelte';
+    import ShopBreadcrumbs from '@/components/ShopBreadcrumbs.svelte';
     import ShopHeader from '@/components/ShopHeader.svelte';
     import SortimentShowcase from '@/components/SortimentShowcase.svelte';
     import { Button } from '@/components/ui/button';
@@ -271,27 +271,23 @@
     <ShopHeader />
 
     <main class="mx-auto flex-1 max-w-7xl px-4 py-6 lg:px-8">
-        <nav
-            class="mb-8 flex items-center gap-1.5 text-sm text-muted-foreground"
-        >
-            <Link
-                href={ProductController.index.url()}
-                class="hover:text-brand-accent"
-            >
-                Alle Produkte
-            </Link>
-            {#if product.category}
-                <ChevronRight class="size-3.5 shrink-0" />
-                <Link
-                    href={CategoryController.show.url(product.category.slug)}
-                    class="text-muted-foreground hover:text-brand-accent"
-                >
-                    {product.category.name}
-                </Link>
-            {/if}
-            <ChevronRight class="size-3.5 shrink-0" />
-            <span class="truncate text-foreground">{product.name}</span>
-        </nav>
+        <ShopBreadcrumbs
+            class="mb-8"
+            items={[
+                { title: 'Alle Produkte', href: ProductController.index.url() },
+                ...(product.category
+                    ? [
+                          {
+                              title: product.category.name,
+                              href: CategoryController.show.url(
+                                  product.category.slug,
+                              ),
+                          },
+                      ]
+                    : []),
+                { title: product.name },
+            ]}
+        />
 
         <div class="grid gap-12 lg:grid-cols-2 lg:items-start">
             <div class="w-full">
@@ -396,14 +392,6 @@
                                 : 'Noch keine Bewertungen'}
                         </span>
                     </div>
-
-                    {#if product.description}
-                        <p
-                            class="max-w-2xl whitespace-pre-line text-base leading-8 text-muted-foreground"
-                        >
-                            {product.description}
-                        </p>
-                    {/if}
 
                     <div class="flex flex-wrap items-end gap-4">
                         <span

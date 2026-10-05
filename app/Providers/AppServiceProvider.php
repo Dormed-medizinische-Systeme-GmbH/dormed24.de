@@ -2,11 +2,14 @@
 
 namespace App\Providers;
 
+use App\Auth\EnvAdminUserProvider;
 use App\Contracts\CartStore;
 use App\Models\Setting;
 use App\Support\Cart\SessionCartStore;
 use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
@@ -34,6 +37,11 @@ class AppServiceProvider extends ServiceProvider
 
         $this->configureDefaults();
         $this->configureFromDatabase();
+
+        Auth::provider('env-admin', fn (Application $app): EnvAdminUserProvider => new EnvAdminUserProvider(
+            $app['hash'],
+            (array) $app['config']->get('auth.admin', []),
+        ));
     }
 
     /**

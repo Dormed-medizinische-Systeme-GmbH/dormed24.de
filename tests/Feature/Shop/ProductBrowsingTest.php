@@ -3,6 +3,7 @@
 namespace Tests\Feature\Shop;
 
 use App\Models\Category;
+use App\Models\Manufacturer;
 use App\Models\Product;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -90,6 +91,119 @@ class ProductBrowsingTest extends TestCase
         $this->get(route('products.index', ['sort' => 'price_desc']))
             ->assertOk()
             ->assertInertia(fn ($page) => $page->where('sort', 'price_desc'));
+    }
+
+    public function test_index_exposes_manufacturer_filter_options_with_counts(): void
+    {
+        $sony = Manufacturer::factory()->create(['name' => 'Sony']);
+        $mindray = Manufacturer::factory()->create(['name' => 'Mindray']);
+        Product::factory()->count(2)->for($sony)->create();
+        Product::factory()->for($mindray)->create();
+        Product::factory()->for($mindray)->create(['is_available' => false]);
+        Product::factory()->create(['manufacturer_id' => null]);
+
+        $this->get(route('products.index'))
+            ->assertOk()
+            ->assertInertia(
+                fn ($page) => $page
+                    ->where('filters.manufacturers', [])
+                    ->where('filterOptions.total', 4)
+                    ->has('filterOptions.manufacturers', 2)
+                    ->where('filterOptions.manufacturers.0', ['id' => $mindray->id, 'name' => 'Mindray', 'count' => 1])
+                    ->where('filterOptions.manufacturers.1', ['id' => $sony->id, 'name' => 'Sony', 'count' => 2])
+            );
+    }
+
+    public function test_index_filters_by_manufacturer(): void
+    {
+        $sony = Manufacturer::factory()->create();
+        $mindray = Manufacturer::factory()->create();
+        Product::factory()->count(2)->for($sony)->create();
+        Product::factory()->for($mindray)->create();
+
+        $this->get(route('products.index', ['hersteller' => [$sony->id]]))
+            ->assertOk()
+            ->assertInertia(
+                fn ($page) => $page
+                    ->where('total', 2)
+                    ->where('filters.manufacturers', [$sony->id])
+                    ->where('filterOptions.total', 3)
+                    ->has('filterOptions.manufacturers', 2)
+            );
+    }
+
+    public function test_index_combines_multiple_manufacturers_with_or(): void
+    {
+        $sony = Manufacturer::factory()->create();
+        $mindray = Manufacturer::factory()->create();
+        Product::factory()->for($sony)->create();
+        Product::factory()->for($mindray)->create();
+        Product::factory()->create();
+
+        $this->get(route('products.index', ['hersteller' => [$sony->id, $mindray->id]]))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->where('total', 2));
+    }
+
+    public function test_index_ignores_invalid_and_foreign_manufacturer_ids(): void
+    {
+        $sony = Manufacturer::factory()->create();
+        $withoutProducts = Manufacturer::factory()->create();
+        Product::factory()->count(2)->for($sony)->create();
+
+        $this->get(route('products.index', ['hersteller' => ['abc', '-1', $withoutProducts->id, 999999]]))
+            ->assertOk()
+            ->assertInertia(
+                fn ($page) => $page
+                    ->where('total', 2)
+                    ->where('filters.manufacturers', [])
+            );
+    }
+
+    public function test_index_ignores_scalar_manufacturer_parameter_format(): void
+    {
+        $sony = Manufacturer::factory()->create();
+        Product::factory()->for($sony)->create();
+        Product::factory()->create();
+
+        $this->get(route('products.index', ['hersteller' => (string) $sony->id]))
+            ->assertOk()
+            ->assertInertia(
+                fn ($page) => $page
+                    ->where('total', 1)
+                    ->where('filters.manufacturers', [$sony->id])
+            );
+    }
+
+    public function test_index_manufacturer_options_follow_the_search_query(): void
+    {
+        $sony = Manufacturer::factory()->create();
+        $mindray = Manufacturer::factory()->create();
+        Product::factory()->for($sony)->create(['name' => 'Druckerpapier UPP-110S']);
+        Product::factory()->for($mindray)->create(['name' => 'Ultraschallsystem MU7']);
+
+        $this->get(route('products.index', ['q' => 'Druckerpapier']))
+            ->assertOk()
+            ->assertInertia(
+                fn ($page) => $page
+                    ->has('filterOptions.manufacturers', 1)
+                    ->where('filterOptions.manufacturers.0.id', $sony->id)
+                    ->where('filterOptions.total', 1)
+            );
+    }
+
+    public function test_index_specialty_filter_is_not_wired_yet(): void
+    {
+        Product::factory()->count(2)->create();
+
+        $this->get(route('products.index', ['fachrichtung' => ['kardiologie']]))
+            ->assertOk()
+            ->assertInertia(
+                fn ($page) => $page
+                    ->where('total', 2)
+                    ->where('filters.specialties', [])
+                    ->where('filterOptions.specialties', [])
+            );
     }
 
     public function test_show_renders_product(): void

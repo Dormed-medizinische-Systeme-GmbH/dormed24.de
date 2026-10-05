@@ -10,7 +10,7 @@ Engine: **SQLite** (Entwicklung) — Produktionsumgebung: MySQL/MariaDB-kompatib
 
 | Tabelle               | Zweck                                      |
 |-----------------------|--------------------------------------------|
-| `users`               | Admin-Nutzer (internes Panel)              |
+| `users`               | Veraltet – Admin kommt aus der Env (ADMIN_*) |
 | `customers`           | Shop-Kunden (Frontend-Auth via Fortify)    |
 | `products`            | Produkte                                   |
 | `product_variants`    | Produktvarianten mit absolutem Endpreis    |
@@ -38,7 +38,7 @@ Engine: **SQLite** (Entwicklung) — Produktionsumgebung: MySQL/MariaDB-kompatib
 
 ## users
 
-Admin-Nutzer. Kein Fortify, kein Passkey. Auth über `ensure.admin`-Middleware.
+**Veraltet.** Wird nicht mehr gelesen: Der einzige Admin kommt aus der Env (`ADMIN_EMAIL`, `ADMIN_PASSWORD`, siehe `config/auth.php` → `admin`). Die Tabelle kann nach dem Umstieg per Migration entfernt werden.
 
 | Spalte           | Typ           | Nullable | Default | Hinweis              |
 |------------------|---------------|----------|---------|----------------------|
