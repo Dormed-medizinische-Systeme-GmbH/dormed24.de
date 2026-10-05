@@ -23,7 +23,7 @@ final class Categories
                 name: $entry['name'],
                 description: $entry['description'] ?? null,
             ),
-            array_values($entries),
+            $entries,
         );
     }
 
