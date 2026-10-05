@@ -18,10 +18,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $category_slug Slug aus config/categories.php
  * @property string $name
  * @property string|null $description
+ * @property list<array{label: string, value: string}>|null $technical_specs
  * @property string $price
  * @property bool $is_available
  */
-#[Fillable(['manufacturer_id', 'category_slug', 'name', 'description', 'price', 'is_available'])]
+#[Fillable(['manufacturer_id', 'category_slug', 'name', 'description', 'technical_specs', 'price', 'is_available'])]
 class Product extends Model
 {
     /** @use HasFactory<ProductFactory> */
@@ -32,6 +33,7 @@ class Product extends Model
         return [
             'price' => 'decimal:2',
             'is_available' => 'boolean',
+            'technical_specs' => 'array',
         ];
     }
 

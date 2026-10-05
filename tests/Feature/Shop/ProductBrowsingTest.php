@@ -239,6 +239,35 @@ class ProductBrowsingTest extends TestCase
             );
     }
 
+    public function test_show_exposes_technical_specs_in_order(): void
+    {
+        $product = Product::factory()->create([
+            'technical_specs' => [
+                ['label' => 'Gewicht', 'value' => '2,4 kg'],
+                ['label' => 'Frequenz', 'value' => '2–5 MHz'],
+            ],
+        ]);
+
+        $this->get(route('products.show', $product))
+            ->assertOk()
+            ->assertInertia(
+                fn ($page) => $page
+                    ->where('product.technical_specs', [
+                        ['label' => 'Gewicht', 'value' => '2,4 kg'],
+                        ['label' => 'Frequenz', 'value' => '2–5 MHz'],
+                    ])
+            );
+    }
+
+    public function test_show_exposes_empty_technical_specs_when_none_are_set(): void
+    {
+        $product = Product::factory()->create();
+
+        $this->get(route('products.show', $product))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->where('product.technical_specs', []));
+    }
+
     public function test_show_returns_404_for_unknown_product(): void
     {
         $this->get('/products/999999')->assertNotFound();

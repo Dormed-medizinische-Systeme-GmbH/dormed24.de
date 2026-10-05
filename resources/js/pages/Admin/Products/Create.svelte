@@ -8,6 +8,7 @@
     import { useForm } from '@inertiajs/svelte';
     import * as AdminProductController from '@/actions/App/Http/Controllers/Admin/ProductController';
     import AppHead from '@/components/AppHead.svelte';
+    import TechnicalSpecsEditor from '@/components/TechnicalSpecsEditor.svelte';
     import { Button } from '@/components/ui/button';
     import { Input } from '@/components/ui/input';
     import { Label } from '@/components/ui/label';
@@ -21,6 +22,7 @@
     const form = useForm({
         name: '',
         description: '',
+        technical_specs: [] as { label: string; value: string }[],
         price: '',
         manufacturer_id: '',
         category_slug: '',
@@ -68,6 +70,8 @@
                 <p class="text-sm text-destructive">{form.errors.description}</p>
             {/if}
         </div>
+
+        <TechnicalSpecsEditor bind:specs={form.technical_specs} errors={form.errors} />
 
         <div class="flex flex-col gap-2">
             <Label for="price">Preis (€)</Label>

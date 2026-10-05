@@ -74,6 +74,7 @@ class ProductController extends Controller
         return Inertia::render('Products/Show', [
             'product' => array_merge($product->toArray(), [
                 'category' => $product->category()?->toArray(),
+                'technical_specs' => $product->technical_specs ?? [],
                 'images' => $product->images->map(fn ($img) => [
                     'id' => $img->id,
                     'url' => $img->url,
