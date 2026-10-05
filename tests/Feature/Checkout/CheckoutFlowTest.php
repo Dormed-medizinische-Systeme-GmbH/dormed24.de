@@ -241,7 +241,10 @@ class CheckoutFlowTest extends TestCase
     public function test_success_page_renders_for_own_order(): void
     {
         $customer = Customer::factory()->create();
+        // Status fest setzen: Die Factory würfelt ihn, und cancelled/failed
+        // leiten (gewollt) auf die Fehlerseite um.
         $order = Order::factory()->for($customer)->create([
+            'status' => 'pending',
             'total_amount' => '20.00',
             'shipping_amount' => '0.00',
             'shipping_address' => $this->completeAddress(),
