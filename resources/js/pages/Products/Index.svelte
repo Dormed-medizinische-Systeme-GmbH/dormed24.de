@@ -1,10 +1,18 @@
 <script lang="ts">
-    import { InfiniteScroll, Link, router } from '@inertiajs/svelte';
+    import { InfiniteScroll, Link } from '@inertiajs/svelte';
     import * as ProductController from '@/actions/App/Http/Controllers/ProductController';
     import AppFooter from '@/components/AppFooter.svelte';
     import AppHead from '@/components/AppHead.svelte';
     import ProductCard from '@/components/ProductCard.svelte';
+    import ProductFilterChips from '@/components/ProductFilterChips.svelte';
+    import ProductFilterSheet from '@/components/ProductFilterSheet.svelte';
+    import ShopBreadcrumbs from '@/components/ShopBreadcrumbs.svelte';
     import ShopHeader from '@/components/ShopHeader.svelte';
+    import { visitWithManufacturerFilter } from '@/lib/productFilters';
+    import type {
+        ProductListFilterOptions,
+        ProductListFilters,
+    } from '@/lib/productFilters';
 
     type ProductImage = { id: number; url: string; sort_order: number };
 
@@ -19,29 +27,28 @@
 
     let {
         products,
-        total,
         query,
-        sort = 'name_asc',
+        filters,
+        filterOptions,
     }: {
         products: { data: Product[] };
-        total: number;
         query: string;
-        sort: string;
+        filters: ProductListFilters;
+        filterOptions: ProductListFilterOptions;
     } = $props();
 
-    const sortOptions = [
-        { value: 'name_asc', label: 'Name A-Z' },
-        { value: 'name_desc', label: 'Name Z-A' },
-        { value: 'price_asc', label: 'Preis aufsteigend' },
-        { value: 'price_desc', label: 'Preis absteigend' },
-    ];
-
-    function onSortChange(value: string) {
-        const url = new URL(window.location.href);
-        url.searchParams.set('sort', value);
-        url.searchParams.delete('page');
-        router.visit(url.toString(), { preserveScroll: false });
-    }
+    const hasActiveFilters = $derived(filters.manufacturers.length > 0);
+    const breadcrumbs = $derived(
+        query
+            ? [
+                  {
+                      title: 'Alle Produkte',
+                      href: ProductController.index.url(),
+                  },
+                  { title: `Suche „${query}"` },
+              ]
+            : [{ title: 'Alle Produkte' }],
+    );
 </script>
 
 <AppHead
@@ -55,49 +62,47 @@
 <div class="flex min-h-screen flex-col bg-muted">
     <ShopHeader />
 
-    <main class="mx-auto flex-1 max-w-7xl px-4 py-8 lg:px-8">
-        <div class="mb-6 flex items-center justify-between gap-4">
-            <div>
-                {#if query}
-                    <h1 class="text-xl font-semibold text-foreground">
-                        Suchergebnisse für „{query}"
-                    </h1>
-                    <p class="mt-1 text-sm text-muted-foreground">
-                        {total}
-                        {total === 1 ? 'Ergebnis' : 'Ergebnisse'}
-                    </p>
-                {:else}
-                    <h1 class="text-xl font-semibold text-foreground">
-                        Alle Produkte
-                    </h1>
-                    <p class="mt-1 text-sm text-muted-foreground">
-                        {total} Produkte
-                    </p>
-                {/if}
-            </div>
-            <select
-                value={sort}
-                onchange={(e) => onSortChange(e.currentTarget.value)}
-                class="rounded border border-border bg-white px-3 py-2 text-sm text-muted-foreground shadow-sm focus:border-primary focus:outline-none"
-            >
-                {#each sortOptions as option (option.value)}
-                    <option value={option.value}>{option.label}</option>
-                {/each}
-            </select>
+    <main class="mx-auto w-full flex-1 max-w-7xl px-4 py-6 lg:px-8">
+        <h1 class="sr-only">
+            {query ? `Suchergebnisse für „${query}"` : 'Alle Produkte'}
+        </h1>
+
+        <div
+            class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+        >
+            <ShopBreadcrumbs items={breadcrumbs} />
+            {#if filterOptions.total > 0}
+                <ProductFilterSheet {filters} {filterOptions} />
+            {/if}
         </div>
+
+        <ProductFilterChips {filters} {filterOptions} />
 
         {#if products.data.length === 0}
             <div class="py-16 text-center">
-                <p class="text-muted-foreground">
-                    Keine Produkte gefunden{query ? ` für „${query}"` : ''}.
-                </p>
-                {#if query}
-                    <Link
-                        href={ProductController.index.url()}
+                {#if hasActiveFilters}
+                    <p class="text-muted-foreground">
+                        Keine Produkte passen zu dieser Filterauswahl.
+                    </p>
+                    <button
+                        type="button"
+                        onclick={() => visitWithManufacturerFilter([])}
                         class="mt-4 inline-block text-sm text-brand-accent hover:underline"
                     >
-                        Alle Produkte anzeigen
-                    </Link>
+                        Filter zurücksetzen
+                    </button>
+                {:else}
+                    <p class="text-muted-foreground">
+                        Keine Produkte gefunden{query ? ` für „${query}"` : ''}.
+                    </p>
+                    {#if query}
+                        <Link
+                            href={ProductController.index.url()}
+                            class="mt-4 inline-block text-sm text-brand-accent hover:underline"
+                        >
+                            Alle Produkte anzeigen
+                        </Link>
+                    {/if}
                 {/if}
             </div>
         {:else}

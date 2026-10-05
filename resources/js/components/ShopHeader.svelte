@@ -31,10 +31,10 @@
 
     const navCategories = $derived(page.props.navCategories as NavCategory[]);
 
-    const staticNavStart = [
-        { label: 'Startseite', href: '/' },
-        { label: 'Alle Produkte', href: '/products' },
-    ];
+    // Startseite ist über das Logo erreichbar und steht vorne in jeder Breadcrumb.
+    const staticNavStart = [{ label: 'Alle Produkte', href: '/products' }];
+
+    let mobileMenuOpen = $state(false);
 
     const auth = $derived(page.props.auth);
     const cart = $derived(page.props.cart as Cart);
@@ -144,7 +144,7 @@
 <svelte:window onclick={handleClickOutside} onkeydown={handleKeydown} />
 
 <TestModeBanner />
-<header class="relative z-40 bg-white shadow-sm">
+<header class="sticky top-0 z-40 bg-white shadow-sm">
     <!-- Top row: logo + search + icons -->
     <div class="border-b">
         <div
@@ -266,7 +266,7 @@
             <!-- Actions -->
             <div class="flex shrink-0 items-center gap-1">
                 <!-- Mobile: burger menu -->
-                <Sheet>
+                <Sheet bind:open={mobileMenuOpen}>
                     <SheetTrigger asChild>
                         {#snippet children(props)}
                             <Button
@@ -280,7 +280,7 @@
                             </Button>
                         {/snippet}
                     </SheetTrigger>
-                    <SheetContent side="left" class="w-72">
+                    <SheetContent side="left" class="w-72 pb-0">
                         <SheetTitle class="sr-only">Navigation</SheetTitle>
                         <Link href="/" class="inline-flex">
                             <AppLogo />
@@ -303,6 +303,42 @@
                                 </Link>
                             {/each}
                         </nav>
+
+                        <!-- Zusätzlich zu den Header-Icons: Konto + Warenkorb mit Wert -->
+                        <div
+                            class="-mx-6 mt-auto flex flex-col gap-2 border-t p-4"
+                        >
+                            <Link
+                                href={accountHref}
+                                onclick={() => (mobileMenuOpen = false)}
+                                class="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border bg-white px-4 text-sm font-semibold text-brand-secondary transition hover:bg-muted"
+                            >
+                                <User class="size-4" />
+                                {auth?.user ? 'Profil' : 'Anmelden'}
+                            </Link>
+                            <Link
+                                href={cartRoutes.index.url()}
+                                onclick={() => (mobileMenuOpen = false)}
+                                class="inline-flex h-10 w-full items-center justify-between gap-3 rounded-lg bg-primary px-4 text-sm font-semibold text-white transition hover:bg-primary/90"
+                            >
+                                <span class="inline-flex items-center gap-2">
+                                    <span class="relative">
+                                        <ShoppingCart class="size-4" />
+                                        {#if cart.count > 0}
+                                            <span
+                                                class="absolute -right-2 -top-2 flex size-4 items-center justify-center rounded-full bg-brand-accent text-[10px] font-bold text-white"
+                                            >
+                                                {cart.count}
+                                            </span>
+                                        {/if}
+                                    </span>
+                                    Warenkorb
+                                </span>
+                                <span class="tabular-nums">
+                                    {formatPrice(cart.subtotal)}*
+                                </span>
+                            </Link>
+                        </div>
                     </SheetContent>
                 </Sheet>
 

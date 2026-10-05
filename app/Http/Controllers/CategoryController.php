@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\Product;
+use App\Support\Products\ProductFilters;
 use App\Support\Products\ProductSort;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -14,8 +16,11 @@ class CategoryController extends Controller
     {
         [$sort, $column, $direction] = ProductSort::fromRequest($request);
 
-        $baseQuery = $category->products()
-            ->available()
+        $scope = Product::available()->whereBelongsTo($category);
+
+        $filters = ProductFilters::fromRequest($request, $scope);
+
+        $baseQuery = $filters->apply($scope->clone())
             ->with(['manufacturer', 'images' => fn ($q) => $q->where('sort_order', 0)])
             ->orderBy($column, $direction)
             ->orderBy('id');
@@ -32,6 +37,7 @@ class CategoryController extends Controller
             'products' => Inertia::scroll(fn () => $baseQuery->paginate(24)),
             'total' => $total,
             'sort' => $sort,
+            ...$filters->toProps(),
         ]);
     }
 }
