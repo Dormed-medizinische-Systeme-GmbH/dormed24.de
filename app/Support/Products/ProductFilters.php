@@ -65,14 +65,13 @@ final class ProductFilters
             ->groupBy('manufacturer_id')
             ->pluck('aggregate', 'manufacturer_id');
 
-        $manufacturerOptions = $manufacturerNames
+        $manufacturerOptions = array_values($manufacturerNames
             ->map(fn (string $name, int $id) => [
                 'id' => $id,
                 'name' => $name,
                 'count' => (int) ($manufacturerCounts[$id] ?? 0),
             ])
-            ->values()
-            ->all();
+            ->all());
 
         $specialtyCounts = self::specialtyValuesIn($withManufacturers)->flatten()->countBy();
 

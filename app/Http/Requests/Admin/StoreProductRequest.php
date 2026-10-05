@@ -92,7 +92,7 @@ class StoreProductRequest extends FormRequest
     private function specialtyCategoryNames(): string
     {
         return implode(', ', array_map(
-            fn (string $slug): string => Categories::find($slug)?->name ?? $slug,
+            fn (string $slug): string => Categories::find($slug)->name ?? $slug,
             Categories::slugsWithSpecialties(),
         ));
     }
