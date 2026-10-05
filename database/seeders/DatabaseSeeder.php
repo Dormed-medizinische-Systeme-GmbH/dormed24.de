@@ -17,8 +17,8 @@ class DatabaseSeeder extends Seeder
         ]);
 
         if (! app()->isProduction()) {
+            // Admin-Zugang kommt aus der Env (ADMIN_EMAIL / ADMIN_PASSWORD), nicht aus dem Seeder.
             $this->call([
-                UserSeeder::class,
                 CustomerSeeder::class,
                 RatingSeeder::class,
             ]);

@@ -16,13 +16,9 @@ class EnsureAdmin
     {
         $guard = Auth::guard('admin');
 
+        // Der admin-Guard kennt nur den einen Env-Admin (EnvAdminUserProvider);
+        // ein eingeloggter User auf diesem Guard ist damit automatisch Admin.
         if (! $guard->check()) {
-            return redirect()->route('admin.login');
-        }
-
-        if (! $guard->user()->is_admin) {
-            $guard->logout();
-
             return redirect()->route('admin.login');
         }
 

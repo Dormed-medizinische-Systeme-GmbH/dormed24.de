@@ -3,18 +3,12 @@
 namespace Tests\Feature\Admin;
 
 use App\Models\Manufacturer;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ManufacturerManagementTest extends TestCase
 {
     use RefreshDatabase;
-
-    private function actingAsAdmin(): static
-    {
-        return $this->actingAs(User::factory()->admin()->create(), 'admin');
-    }
 
     public function test_index_lists_manufacturers(): void
     {

@@ -23,7 +23,8 @@ class LoginController extends Controller
             'password' => ['required'],
         ]);
 
-        if (! Auth::guard('admin')->attempt($credentials, $request->boolean('remember'))) {
+        // Kein "Angemeldet bleiben": der Env-Admin hat keinen Speicherort für ein Remember-Token.
+        if (! Auth::guard('admin')->attempt($credentials)) {
             return back()->withErrors([
                 'email' => __('auth.failed'),
             ]);

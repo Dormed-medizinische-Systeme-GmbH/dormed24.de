@@ -4,18 +4,12 @@ namespace Tests\Feature\Admin;
 
 use App\Models\Customer;
 use App\Models\Order;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class CustomerManagementTest extends TestCase
 {
     use RefreshDatabase;
-
-    private function actingAsAdmin(): static
-    {
-        return $this->actingAs(User::factory()->admin()->create(), 'admin');
-    }
 
     public function test_index_lists_customers(): void
     {

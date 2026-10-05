@@ -3,7 +3,6 @@
 namespace Tests\Feature\Admin;
 
 use App\Models\Order;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -26,10 +25,9 @@ class DashboardControllerTest extends TestCase
         Order::factory()->create(['status' => 'failed', 'total_amount' => '500.00', 'is_test' => false]);
         Order::factory()->create(['status' => 'cancelled', 'total_amount' => '500.00', 'is_test' => false]);
 
-        $admin = User::factory()->admin()->create();
         $today = now()->toDateString();
 
-        $response = $this->actingAs($admin, 'admin')->get(route('admin.dashboard'));
+        $response = $this->actingAsAdmin()->get(route('admin.dashboard'));
         $response->assertOk();
 
         $chartData = collect($response->viewData('page')['props']['chartData']);
