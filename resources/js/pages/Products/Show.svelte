@@ -30,10 +30,12 @@
         is_default: boolean;
     };
 
+    type TechnicalSpec = { label: string; value: string };
     type Product = {
         id: number;
         name: string;
         description: string | null;
+        technical_specs: TechnicalSpec[];
         price: string;
         is_available: boolean;
         category: { name: string; slug: string } | null;
@@ -86,7 +88,9 @@
         defaultVariant ? String(defaultVariant.id) : '',
     );
     let quantity = $state(1);
-    let activeTab = $state<'beschreibung' | 'bewertungen'>('beschreibung');
+    let activeTab = $state<'beschreibung' | 'technische-daten' | 'bewertungen'>(
+        'beschreibung',
+    );
     let ratingStars = $state(5);
     let showAllRatings = $state(false);
     const RATINGS_PREVIEW_LIMIT = 3;
@@ -503,6 +507,17 @@
                 <button
                     class={cn(
                         'px-6 py-3 text-sm font-semibold transition-colors',
+                        activeTab === 'technische-daten'
+                            ? 'border-b-2 border-brand-accent text-brand-accent'
+                            : 'text-muted-foreground hover:text-foreground',
+                    )}
+                    onclick={() => (activeTab = 'technische-daten')}
+                >
+                    Technische Daten
+                </button>
+                <button
+                    class={cn(
+                        'px-6 py-3 text-sm font-semibold transition-colors',
                         activeTab === 'bewertungen'
                             ? 'border-b-2 border-brand-accent text-brand-accent'
                             : 'text-muted-foreground hover:text-foreground',
@@ -530,6 +545,43 @@
                         {:else}
                             <p class="text-sm text-muted-foreground">
                                 Keine Beschreibung vorhanden.
+                            </p>
+                        {/if}
+                    </div>
+                {:else if activeTab === 'technische-daten'}
+                    <div class="max-w-3xl">
+                        <h2 class="mb-4 text-lg font-bold text-foreground">
+                            Technische Daten "{product.name}"
+                        </h2>
+                        {#if product.technical_specs.length > 0}
+                            <div
+                                class="overflow-hidden rounded-xl border border-border bg-white"
+                            >
+                                <table class="w-full text-sm">
+                                    <tbody>
+                                        {#each product.technical_specs as spec, index (index)}
+                                            <tr
+                                                class="border-b border-border last:border-b-0 even:bg-muted/40"
+                                            >
+                                                <th
+                                                    scope="row"
+                                                    class="w-2/5 px-4 py-3 text-left align-top font-semibold text-foreground"
+                                                >
+                                                    {spec.label}
+                                                </th>
+                                                <td
+                                                    class="whitespace-pre-line px-4 py-3 text-muted-foreground"
+                                                >
+                                                    {spec.value}
+                                                </td>
+                                            </tr>
+                                        {/each}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {:else}
+                            <p class="text-sm text-muted-foreground">
+                                Keine technischen Daten vorhanden.
                             </p>
                         {/if}
                     </div>

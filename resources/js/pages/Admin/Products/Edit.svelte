@@ -10,6 +10,7 @@
     import * as AdminProductController from '@/actions/App/Http/Controllers/Admin/ProductController';
     import * as AdminProductVariantController from '@/actions/App/Http/Controllers/Admin/ProductVariantController';
     import AppHead from '@/components/AppHead.svelte';
+    import TechnicalSpecsEditor from '@/components/TechnicalSpecsEditor.svelte';
     import { Button } from '@/components/ui/button';
     import { Input } from '@/components/ui/input';
     import { Label } from '@/components/ui/label';
@@ -36,6 +37,7 @@
         id: number;
         name: string;
         description: string | null;
+        technical_specs: { label: string; value: string }[] | null;
         price: string;
         manufacturer_id: number | null;
         category_slug: string | null;
@@ -57,6 +59,7 @@
     const form = useForm({
         name: product.name,
         description: product.description ?? '',
+        technical_specs: (product.technical_specs ?? []).map((spec) => ({ ...spec })),
         price: product.price,
         manufacturer_id: product.manufacturer_id ? String(product.manufacturer_id) : '',
         category_slug: product.category_slug ?? '',
@@ -305,6 +308,8 @@
                         <p class="text-sm text-destructive">{form.errors.description}</p>
                     {/if}
                 </div>
+
+                <TechnicalSpecsEditor bind:specs={form.technical_specs} errors={form.errors} />
 
                 <div class="flex items-center justify-between rounded-lg border bg-card p-4">
                     <div>

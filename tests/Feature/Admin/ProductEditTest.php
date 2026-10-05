@@ -102,6 +102,115 @@ class ProductEditTest extends TestCase
         $this->assertSame('zubehoer', $product->refresh()->category_slug);
     }
 
+    public function test_technical_specs_can_be_saved_in_order(): void
+    {
+        $product = Product::factory()->create();
+
+        $this->actingAsAdmin()
+            ->put(route('admin.products.update', $product), [
+                'name' => $product->name,
+                'price' => '19.99',
+                'is_available' => true,
+                'technical_specs' => [
+                    ['label' => ' Gewicht ', 'value' => '2,4 kg '],
+                    ['label' => '', 'value' => ''],
+                    ['label' => 'Frequenz', 'value' => '2–5 MHz'],
+                ],
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame([
+            ['label' => 'Gewicht', 'value' => '2,4 kg'],
+            ['label' => 'Frequenz', 'value' => '2–5 MHz'],
+        ], $product->refresh()->technical_specs);
+    }
+
+    public function test_technical_specs_can_be_created_with_product(): void
+    {
+        $this->actingAsAdmin()
+            ->post(route('admin.products.store'), [
+                'name' => 'Sonde C5',
+                'price' => '199.00',
+                'is_available' => true,
+                'technical_specs' => [['label' => 'Frequenz', 'value' => '2–5 MHz']],
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(
+            [['label' => 'Frequenz', 'value' => '2–5 MHz']],
+            Product::query()->where('name', 'Sonde C5')->sole()->technical_specs,
+        );
+    }
+
+    public function test_technical_specs_can_be_cleared(): void
+    {
+        $product = Product::factory()->create([
+            'technical_specs' => [['label' => 'Gewicht', 'value' => '2,4 kg']],
+        ]);
+
+        $this->actingAsAdmin()
+            ->put(route('admin.products.update', $product), [
+                'name' => $product->name,
+                'price' => '19.99',
+                'is_available' => true,
+                'technical_specs' => [],
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame([], $product->refresh()->technical_specs);
+    }
+
+    public function test_technical_spec_row_needs_label_and_value(): void
+    {
+        $product = Product::factory()->create();
+
+        $this->actingAsAdmin()
+            ->put(route('admin.products.update', $product), [
+                'name' => $product->name,
+                'price' => '19.99',
+                'is_available' => true,
+                'technical_specs' => [
+                    ['label' => 'Gewicht', 'value' => ''],
+                    ['label' => '', 'value' => '2–5 MHz'],
+                ],
+            ])
+            ->assertSessionHasErrors(['technical_specs.0.value', 'technical_specs.1.label']);
+
+        $this->assertNull($product->refresh()->technical_specs);
+    }
+
+    public function test_technical_specs_reject_unexpected_shapes(): void
+    {
+        $product = Product::factory()->create();
+
+        $this->actingAsAdmin()
+            ->put(route('admin.products.update', $product), [
+                'name' => $product->name,
+                'price' => '19.99',
+                'is_available' => true,
+                'technical_specs' => [
+                    ['label' => 'Gewicht', 'value' => '2,4 kg', 'extra' => 'x'],
+                    'kein-array',
+                ],
+            ])
+            ->assertSessionHasErrors(['technical_specs.0', 'technical_specs.1']);
+    }
+
+    public function test_edit_page_exposes_technical_specs(): void
+    {
+        $product = Product::factory()->create([
+            'technical_specs' => [['label' => 'Gewicht', 'value' => '2,4 kg']],
+        ]);
+
+        $this->actingAsAdmin()
+            ->get(route('admin.products.edit', $product))
+            ->assertOk()
+            ->assertInertia(
+                fn ($page) => $page
+                    ->where('product.technical_specs', [['label' => 'Gewicht', 'value' => '2,4 kg']])
+            );
+    }
+
     public function test_update_requires_admin(): void
     {
         $product = Product::factory()->create();
