@@ -45,7 +45,7 @@
                       title: 'Alle Produkte',
                       href: ProductController.index.url(),
                   },
-                  { title: `Suche „${query}"` },
+                  { title: `Suche „${query}"`, inSchema: false },
               ]
             : [{ title: 'Alle Produkte' }],
     );
