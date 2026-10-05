@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreProductRequest;
-use App\Models\Category;
 use App\Models\Manufacturer;
 use App\Models\Product;
+use App\Support\Catalog\Categories;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -25,7 +25,7 @@ class ProductController extends Controller
     {
         return Inertia::render('Admin/Products/Create', [
             'manufacturers' => Manufacturer::orderBy('name')->get(['id', 'name']),
-            'categories' => Category::orderBy('name')->get(['id', 'name']),
+            'categories' => Categories::options(),
         ]);
     }
 
@@ -40,9 +40,9 @@ class ProductController extends Controller
     public function edit(Product $product): Response
     {
         return Inertia::render('Admin/Products/Edit', [
-            'product' => $product->load('manufacturer', 'category', 'images', 'variants'),
+            'product' => $product->load('manufacturer', 'images', 'variants'),
             'manufacturers' => Manufacturer::orderBy('name')->get(['id', 'name']),
-            'categories' => Category::orderBy('name')->get(['id', 'name']),
+            'categories' => Categories::options(),
         ]);
     }
 

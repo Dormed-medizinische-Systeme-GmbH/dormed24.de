@@ -35,6 +35,33 @@ return [
     |
     */
 
+    /*
+    |--------------------------------------------------------------------------
+    | SMTP-Zugangsdaten je Betriebsmodus
+    |--------------------------------------------------------------------------
+    | Ausschließlich aus der Env, nicht aus der Datenbank. Welcher Satz aktiv
+    | ist (sandbox/live), entscheidet App\Support\PaymentMode (live nur bei
+    | APP_ENV=production und APP_DEBUG=false). Ist für den aktiven Modus kein
+    | Host gesetzt, bleibt der Mailer aus MAIL_MAILER (z. B. "log") aktiv.
+    | Übernommen in AppServiceProvider::configureMailForMode().
+    */
+    'modes' => [
+        'sandbox' => [
+            'host' => env('MAIL_SANDBOX_HOST'),
+            'port' => env('MAIL_SANDBOX_PORT', 587),
+            'username' => env('MAIL_SANDBOX_USERNAME'),
+            'password' => env('MAIL_SANDBOX_PASSWORD'),
+            'from_address' => env('MAIL_SANDBOX_FROM_ADDRESS'),
+        ],
+        'live' => [
+            'host' => env('MAIL_LIVE_HOST'),
+            'port' => env('MAIL_LIVE_PORT', 587),
+            'username' => env('MAIL_LIVE_USERNAME'),
+            'password' => env('MAIL_LIVE_PASSWORD'),
+            'from_address' => env('MAIL_LIVE_FROM_ADDRESS'),
+        ],
+    ],
+
     'mailers' => [
 
         'smtp' => [

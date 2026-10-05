@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\CustomerController as AdminCustomerController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\LoginController;
@@ -38,12 +37,6 @@ Route::middleware('ensure.admin')->prefix('admin')->name('admin.')->group(functi
     Route::delete('/products/{product}/variants/{variant}', [ProductVariantController::class, 'destroy'])->name('products.variants.destroy');
     Route::get('/customers', [AdminCustomerController::class, 'index'])->name('customers.index');
     Route::get('/customers/{customer}', [AdminCustomerController::class, 'show'])->name('customers.show');
-    Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
-    Route::get('/categories/create', [CategoryController::class, 'create'])->name('categories.create');
-    Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
-    Route::get('/categories/{category}/edit', [CategoryController::class, 'edit'])->name('categories.edit');
-    Route::put('/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
-    Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
     Route::get('/manufacturers', [ManufacturerController::class, 'index'])->name('manufacturers.index');
     Route::get('/manufacturers/create', [ManufacturerController::class, 'create'])->name('manufacturers.create');
     Route::post('/manufacturers', [ManufacturerController::class, 'store'])->name('manufacturers.store');
@@ -56,13 +49,9 @@ Route::middleware('ensure.admin')->prefix('admin')->name('admin.')->group(functi
     Route::post('/orders/{order}/refund', [OrderController::class, 'refund'])->name('orders.refund');
     Route::redirect('/settings', '/admin/settings/general')->name('settings.index');
     Route::get('/settings/general', [SettingController::class, 'showGeneral'])->name('settings.general');
-    Route::get('/settings/mail', [SettingController::class, 'showMail'])->name('settings.mail');
-    Route::get('/settings/payment', [SettingController::class, 'showPayment'])->name('settings.payment');
     Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
     Route::get('/settings/shipping', [ShippingMethodController::class, 'index'])->name('settings.shipping');
     Route::post('/settings/shipping', [ShippingMethodController::class, 'store'])->name('settings.shipping.store');
     Route::put('/settings/shipping/{shippingMethod}', [ShippingMethodController::class, 'update'])->name('settings.shipping.update');
     Route::delete('/settings/shipping/{shippingMethod}', [ShippingMethodController::class, 'destroy'])->name('settings.shipping.destroy');
-    Route::post('/settings/mail/check', [SettingController::class, 'checkMail'])->name('settings.mail.check');
-    Route::post('/settings/paypal/check', [SettingController::class, 'checkPayPal'])->name('settings.paypal.check');
 });

@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Category;
 use App\Models\Product;
+use App\Support\Catalog\Categories;
 use App\Support\Products\ProductFilters;
 use App\Support\Products\ProductSort;
 use Illuminate\Http\Request;
@@ -12,11 +12,13 @@ use Inertia\Response;
 
 class CategoryController extends Controller
 {
-    public function show(Request $request, Category $category): Response
+    public function show(Request $request, string $category): Response
     {
+        $definition = Categories::find($category) ?? abort(404);
+
         [$sort, $column, $direction] = ProductSort::fromRequest($request);
 
-        $scope = Product::available()->whereBelongsTo($category);
+        $scope = Product::available()->where('category_slug', $definition->slug);
 
         $filters = ProductFilters::fromRequest($request, $scope);
 
@@ -28,12 +30,7 @@ class CategoryController extends Controller
         $total = $baseQuery->count();
 
         return Inertia::render('Products/ByCategory', [
-            'category' => [
-                'id' => $category->id,
-                'name' => $category->name,
-                'slug' => $category->slug,
-                'description' => $category->description,
-            ],
+            'category' => $definition->toArray(),
             'products' => Inertia::scroll(fn () => $baseQuery->paginate(24)),
             'total' => $total,
             'sort' => $sort,

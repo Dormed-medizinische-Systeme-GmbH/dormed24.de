@@ -14,13 +14,6 @@ class Setting extends Model
 
     protected $fillable = ['key', 'value'];
 
-    protected static array $encryptedKeys = [
-        'mail.smtp_password',
-        'paypal.sandbox.client_secret',
-        'paypal.live.client_secret',
-        'paypal.webhook_id',
-    ];
-
     /**
      * Per-request memo of raw (undecrypted) DB values, keyed by setting key.
      * Every request is a fresh PHP process (no Octane), so this never leaks
@@ -38,27 +31,11 @@ class Setting extends Model
             self::$memo[$key] = static::query()->find($key)?->value;
         }
 
-        $value = self::$memo[$key] ?? $default;
-
-        if ($value !== null && in_array($key, static::$encryptedKeys, true)) {
-            try {
-                return decrypt($value);
-            } catch (\Throwable $e) {
-                report($e);
-
-                return null;
-            }
-        }
-
-        return $value;
+        return self::$memo[$key] ?? $default;
     }
 
     public static function set(string $key, ?string $value): void
     {
-        if ($value !== null && in_array($key, static::$encryptedKeys, true)) {
-            $value = encrypt($value);
-        }
-
         static::updateOrCreate(['key' => $key], ['value' => $value]);
 
         self::$memo[$key] = $value;

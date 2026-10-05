@@ -17,7 +17,7 @@
     import type { Cart } from '@/types';
 
     type MegaMenuKey = 'artikelgruppen' | 'verbrauchsartikel' | null;
-    type NavCategory = { id: number; name: string; slug: string };
+    type NavCategory = { slug: string; name: string };
 
     // TEST-DATEN: Diese Navigationsstruktur (zwei Mega-Menu-Gruppen) ist
     // erfunden, es gibt aktuell nur eine flache Kategorie-Liste im Backend

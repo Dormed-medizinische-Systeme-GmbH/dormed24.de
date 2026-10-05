@@ -28,7 +28,8 @@ Nur Route-Ebene schützt. Für feinere Permissions später Laravel Policies einf
 
 ## UI/UX — Kundenbereich
 
-- [ ] **Produktfilter fehlen** — `resources/js/pages/Products/Index.svelte`: Nur Sortierung vorhanden. Keine Filter nach Preis, Hersteller, Kategorie oder Rating.
+- [ ] **Produktfilter** — Hersteller-Filter vorhanden (Sheet auf den Produktlisten). Fachrichtungen nur als UI ohne Daten; Preis/Rating fehlen.
+- [ ] **Alte Daten aufräumen** — nach dem Umzug in die Env: PayPal-/SMTP-Zeilen aus `settings` und die `users`-Tabelle per Migration entfernen (vorher `php artisan settings:legacy-credentials` ausführen).
 
 - [ ] **Registrierung** — `resources/js/pages/auth/Register.svelte`: Kein Passwort-Stärke-Indikator, keine AGB-Akzeptanz-Checkbox.
 

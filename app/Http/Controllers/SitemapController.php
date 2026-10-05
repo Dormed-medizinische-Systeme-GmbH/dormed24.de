@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Category;
 use App\Models\Product;
+use App\Support\Catalog\Categories;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
 
@@ -25,7 +25,7 @@ class SitemapController extends Controller
             ];
 
             $products = Product::select('id', 'updated_at')->get();
-            $categories = Category::select('slug', 'updated_at')->get();
+            $categories = Categories::all();
 
             return view('sitemap', [
                 'staticUrls' => $staticUrls,

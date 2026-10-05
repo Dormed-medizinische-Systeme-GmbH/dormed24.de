@@ -2,9 +2,9 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\Category;
 use App\Models\Setting;
 use App\Support\Cart\CartService;
+use App\Support\Catalog\Categories;
 use App\Support\PaymentMode;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -69,17 +69,8 @@ class HandleInertiaRequests extends Middleware
                 'phone_href' => $this->phoneHref($phone),
                 'fax_href' => $this->phoneHref($fax),
             ],
-            'navCategories' => Inertia::always(
-                function () {
-                    try {
-                        return Category::orderBy('name')->get(['id', 'name', 'slug']);
-                    } catch (\Throwable $e) {
-                        report($e);
-
-                        return collect();
-                    }
-                },
-            ),
+            // Feste Kategorien aus config/categories.php, in deren Reihenfolge.
+            'navCategories' => Inertia::always(fn () => Categories::options()),
             'sandbox' => ! PaymentMode::isLive(),
         ];
     }

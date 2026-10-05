@@ -21,10 +21,8 @@ class AdminAccessTest extends TestCase
             'products index' => ['admin.products.index'],
             'orders index' => ['admin.orders.index'],
             'customers index' => ['admin.customers.index'],
-            'categories index' => ['admin.categories.index'],
             'manufacturers index' => ['admin.manufacturers.index'],
             'settings general' => ['admin.settings.general'],
-            'settings payment' => ['admin.settings.payment'],
         ];
     }
 
@@ -47,6 +45,28 @@ class AdminAccessTest extends TestCase
         $this->actingAsAdmin()
             ->get(route('admin.settings.index'))
             ->assertRedirect('/admin/settings/general');
+    }
+
+    /**
+     * Kategorien (config/categories.php) sowie PayPal-/SMTP-Zugangsdaten (Env)
+     * werden nicht mehr im Admin gepflegt — die Seiten dafür gibt es nicht mehr.
+     *
+     * @return array<string, array{string}>
+     */
+    public static function removedAdminPages(): array
+    {
+        return [
+            'kategorien' => ['/admin/categories'],
+            'kategorie anlegen' => ['/admin/categories/create'],
+            'mailversand' => ['/admin/settings/mail'],
+            'zahlungsarten' => ['/admin/settings/payment'],
+        ];
+    }
+
+    #[DataProvider('removedAdminPages')]
+    public function test_removed_admin_pages_no_longer_exist(string $path): void
+    {
+        $this->actingAsAdmin()->get($path)->assertNotFound();
     }
 
     public function test_customer_session_does_not_grant_admin_access(): void

@@ -38,14 +38,14 @@
         description: string | null;
         price: string;
         manufacturer_id: number | null;
-        category_id: number | null;
+        category_slug: string | null;
         is_available: boolean;
         images: ProductImage[];
         variants: ProductVariant[];
     };
 
     type Manufacturer = { id: number; name: string };
-    type Category = { id: number; name: string };
+    type Category = { slug: string; name: string };
 
     let {
         product,
@@ -59,7 +59,7 @@
         description: product.description ?? '',
         price: product.price,
         manufacturer_id: product.manufacturer_id ? String(product.manufacturer_id) : '',
-        category_id: product.category_id ? String(product.category_id) : '',
+        category_slug: product.category_slug ?? '',
         is_available: product.is_available,
     });
 
@@ -68,7 +68,7 @@
     );
 
     const selectedCategoryLabel = $derived(
-        categories.find((c) => String(c.id) === form.category_id)?.name ?? 'Kategorie wählen',
+        categories.find((c) => c.slug === form.category_slug)?.name ?? 'Kategorie wählen',
     );
 
     function submit(e: SubmitEvent) {
@@ -260,18 +260,18 @@
 
                 <div class="flex flex-col gap-2">
                     <Label>Kategorie</Label>
-                    <Select.Root type="single" bind:value={form.category_id}>
+                    <Select.Root type="single" bind:value={form.category_slug}>
                         <Select.Trigger class="w-full">
                             {selectedCategoryLabel}
                         </Select.Trigger>
                         <Select.Content>
-                            {#each categories as c (c.id)}
-                                <Select.Item value={String(c.id)}>{c.name}</Select.Item>
+                            {#each categories as c (c.slug)}
+                                <Select.Item value={c.slug}>{c.name}</Select.Item>
                             {/each}
                         </Select.Content>
                     </Select.Root>
-                    {#if form.errors.category_id}
-                        <p class="text-sm text-destructive">{form.errors.category_id}</p>
+                    {#if form.errors.category_slug}
+                        <p class="text-sm text-destructive">{form.errors.category_slug}</p>
                     {/if}
                 </div>
 

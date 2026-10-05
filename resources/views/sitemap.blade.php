@@ -11,7 +11,6 @@
     @foreach ($categories as $category)
     <url>
         <loc>{{ url('/' . $category->slug) }}</loc>
-        <lastmod>{{ $category->updated_at->toAtomString() }}</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.7</priority>
     </url>

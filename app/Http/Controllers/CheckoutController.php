@@ -6,7 +6,6 @@ use App\Http\Requests\Cart\UpdateCartPaymentMethodRequest;
 use App\Http\Requests\Checkout\PlaceOrderRequest;
 use App\Models\Customer;
 use App\Models\Order;
-use App\Models\Setting;
 use App\Support\Address\AddressRules;
 use App\Support\Cart\CartService;
 use App\Support\Orders\OrderManager;
@@ -37,9 +36,7 @@ class CheckoutController extends Controller
         $paypalClientId = null;
 
         if (($selectedPayment['id'] ?? '') === 'paypal') {
-            $paypalClientId = PaymentMode::isLive()
-                ? Setting::get('paypal.live.client_id')
-                : Setting::get('paypal.sandbox.client_id');
+            $paypalClientId = config('paypal.'.PaymentMode::current().'.client_id') ?: null;
         }
 
         return Inertia::render('Checkout/Confirm', [

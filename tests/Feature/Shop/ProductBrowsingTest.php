@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Shop;
 
-use App\Models\Category;
 use App\Models\Manufacturer;
 use App\Models\Product;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -247,15 +246,15 @@ class ProductBrowsingTest extends TestCase
 
     public function test_show_lists_similar_products_from_the_same_category(): void
     {
-        $category = Category::factory()->create();
-        $product = Product::factory()->create(['category_id' => $category->id]);
-        $sameCategoryProduct = Product::factory()->create(['category_id' => $category->id]);
-        Product::factory()->create(['category_id' => Category::factory()->create()->id]);
+        $product = Product::factory()->create(['category_slug' => 'zubehoer']);
+        $sameCategoryProduct = Product::factory()->create(['category_slug' => 'zubehoer']);
+        Product::factory()->create(['category_slug' => 'verbrauchsartikel']);
 
         $this->get(route('products.show', $product))
             ->assertOk()
             ->assertInertia(
                 fn ($page) => $page
+                    ->where('product.category', ['slug' => 'zubehoer', 'name' => 'Zubehör', 'description' => null])
                     ->has('similarProducts', 1)
                     ->where('similarProducts.0.id', $sameCategoryProduct->id)
             );
@@ -263,8 +262,7 @@ class ProductBrowsingTest extends TestCase
 
     public function test_show_similar_products_excludes_the_current_product(): void
     {
-        $category = Category::factory()->create();
-        $product = Product::factory()->create(['category_id' => $category->id]);
+        $product = Product::factory()->create(['category_slug' => 'zubehoer']);
 
         $this->get(route('products.show', $product))
             ->assertOk()
@@ -273,8 +271,8 @@ class ProductBrowsingTest extends TestCase
 
     public function test_show_returns_no_similar_products_without_a_category(): void
     {
-        $product = Product::factory()->create(['category_id' => null]);
-        Product::factory()->create(['category_id' => null]);
+        $product = Product::factory()->create(['category_slug' => null]);
+        Product::factory()->create(['category_slug' => null]);
 
         $this->get(route('products.show', $product))
             ->assertOk()

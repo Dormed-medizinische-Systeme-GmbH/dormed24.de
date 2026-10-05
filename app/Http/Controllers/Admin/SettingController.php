@@ -4,27 +4,14 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
-use App\Support\PaymentMode;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Mail\Message;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class SettingController extends Controller
 {
-    private const SENSITIVE_KEYS = [
-        'mail.smtp_password',
-        'paypal.sandbox.client_secret',
-        'paypal.live.client_secret',
-        'paypal.webhook_id',
-    ];
-
     private const ALLOWED_KEYS = [
         'shop.name',
         'shop.email',
@@ -34,18 +21,6 @@ class SettingController extends Controller
         'shop.bank_iban',
         'shop.bank_bic',
         'shop.bank_name',
-        'mail.smtp_host',
-        'mail.smtp_port',
-        'mail.smtp_user',
-        'mail.smtp_password',
-        'paypal.sandbox.client_id',
-        'paypal.sandbox.merchant_id',
-        'paypal.sandbox.client_secret',
-        'paypal.live.client_id',
-        'paypal.live.app_id',
-        'paypal.live.merchant_id',
-        'paypal.live.client_secret',
-        'paypal.webhook_id',
     ];
 
     public function showGeneral(): Response
@@ -54,31 +29,6 @@ class SettingController extends Controller
 
         return Inertia::render('Admin/Settings/General', [
             'settings' => $settings,
-        ]);
-    }
-
-    public function showMail(): Response
-    {
-        $settings = $this->loadSettings();
-
-        return Inertia::render('Admin/Settings/Mail', [
-            'settings' => $settings,
-            'hasSensitive' => collect(self::SENSITIVE_KEYS)
-                ->mapWithKeys(fn ($k) => [$k => Setting::get($k) !== null])
-                ->all(),
-        ]);
-    }
-
-    public function showPayment(): Response
-    {
-        $settings = $this->loadSettings();
-
-        return Inertia::render('Admin/Settings/Payment', [
-            'settings' => $settings,
-            'hasSensitive' => collect(self::SENSITIVE_KEYS)
-                ->mapWithKeys(fn ($k) => [$k => Setting::get($k) !== null])
-                ->all(),
-            'paymentMode' => PaymentMode::current(),
         ]);
     }
 
@@ -107,10 +57,6 @@ class SettingController extends Controller
         }
 
         foreach ($data['settings'] as $key => $value) {
-            if (in_array($key, self::SENSITIVE_KEYS, true) && ($value === '••••••••' || $value === '')) {
-                continue;
-            }
-
             Setting::set($key, $value ?: null);
         }
 
@@ -124,19 +70,13 @@ class SettingController extends Controller
      */
     private function assertValidFormat(string $key, ?string $value): void
     {
-        if ($value === null || $value === '' || $value === '••••••••') {
+        if ($value === null || $value === '') {
             return;
         }
 
         $error = match ($key) {
             'shop.email' => filter_var($value, FILTER_VALIDATE_EMAIL) === false
                 ? 'Bitte eine gültige E-Mail-Adresse angeben.'
-                : null,
-            'mail.smtp_user' => str_contains($value, '@') && filter_var($value, FILTER_VALIDATE_EMAIL) === false
-                ? 'Bitte eine gültige E-Mail-Adresse angeben.'
-                : null,
-            'mail.smtp_port' => ! ctype_digit($value) || (int) $value < 1 || (int) $value > 65535
-                ? 'Der SMTP-Port muss eine Zahl zwischen 1 und 65535 sein.'
                 : null,
             default => null,
         };
@@ -145,69 +85,6 @@ class SettingController extends Controller
             throw ValidationException::withMessages([
                 "settings.{$key}" => $error,
             ]);
-        }
-    }
-
-    public function checkMail(): JsonResponse
-    {
-        $host = Setting::get('mail.smtp_host');
-
-        if (! $host) {
-            return response()->json(['message' => 'Kein SMTP-Host konfiguriert.'], 422);
-        }
-
-        $smtpUser = Setting::get('mail.smtp_user');
-
-        if (! $smtpUser) {
-            return response()->json(['message' => 'Kein SMTP-Benutzer konfiguriert.'], 422);
-        }
-
-        try {
-            Mail::raw('Dies ist eine Testmail von dormed24.', function (Message $message) use ($smtpUser): void {
-                $message->from($smtpUser)->to($smtpUser)->subject('SMTP-Test — dormed24 Admin');
-            });
-
-            return response()->json(['message' => "Testmail an {$smtpUser} versendet."]);
-        } catch (\Throwable $e) {
-            Log::error('SMTP connection test failed', ['exception' => $e]);
-
-            return response()->json(['message' => 'SMTP-Verbindung fehlgeschlagen. Prüfen Sie die Konfiguration.'], 422);
-        }
-    }
-
-    public function checkPayPal(): JsonResponse
-    {
-        $isLive = PaymentMode::isLive();
-        $clientId = $isLive
-            ? Setting::get('paypal.live.client_id')
-            : Setting::get('paypal.sandbox.client_id');
-        $clientSecret = $isLive
-            ? Setting::get('paypal.live.client_secret')
-            : Setting::get('paypal.sandbox.client_secret');
-
-        if (! $clientId || ! $clientSecret) {
-            return response()->json(['message' => 'Client-ID oder Secret nicht konfiguriert.'], 422);
-        }
-
-        $baseUrl = $isLive
-            ? 'https://api-m.paypal.com'
-            : 'https://api-m.sandbox.paypal.com';
-        $mode = PaymentMode::current();
-
-        try {
-            $response = Http::withBasicAuth($clientId, $clientSecret)
-                ->asForm()
-                ->post("{$baseUrl}/v1/oauth2/token", ['grant_type' => 'client_credentials']);
-
-            if ($response->successful() && isset($response->json()['access_token'])) {
-                return response()->json(['message' => "Verbindung erfolgreich ({$mode})."]);
-            }
-
-            return response()->json(['message' => 'Authentifizierung fehlgeschlagen: '.($response->json()['error_description'] ?? 'Unbekannter Fehler')], 422);
-        } catch (\Throwable $e) {
-            Log::error('PayPal connection test failed', ['exception' => $e]);
-
-            return response()->json(['message' => 'PayPal-Verbindung fehlgeschlagen. Prüfen Sie die Konfiguration.'], 422);
         }
     }
 
@@ -224,24 +101,7 @@ class SettingController extends Controller
             'shop.bank_iban' => $raw->get('shop.bank_iban', ''),
             'shop.bank_bic' => $raw->get('shop.bank_bic', ''),
             'shop.bank_name' => $raw->get('shop.bank_name', ''),
-            'mail.smtp_host' => $raw->get('mail.smtp_host', ''),
-            'mail.smtp_port' => $raw->get('mail.smtp_port', ''),
-            'mail.smtp_user' => $raw->get('mail.smtp_user', ''),
-            'mail.smtp_password' => '',
-            'paypal.sandbox.client_id' => $raw->get('paypal.sandbox.client_id', ''),
-            'paypal.sandbox.merchant_id' => $raw->get('paypal.sandbox.merchant_id', ''),
-            'paypal.sandbox.client_secret' => '',
-            'paypal.live.client_id' => $raw->get('paypal.live.client_id', ''),
-            'paypal.live.app_id' => $raw->get('paypal.live.app_id', ''),
-            'paypal.live.merchant_id' => $raw->get('paypal.live.merchant_id', ''),
-            'paypal.live.client_secret' => '',
-            'paypal.webhook_id' => '',
         ];
-
-        foreach (self::SENSITIVE_KEYS as $key) {
-            $decrypted = Setting::get($key);
-            $settings[$key] = $decrypted ? '••••••••' : '';
-        }
 
         return $settings;
     }
