@@ -36,7 +36,7 @@
         description: string | null;
         price: string;
         is_available: boolean;
-        category: { id: number; name: string; slug: string } | null;
+        category: { name: string; slug: string } | null;
         manufacturer: { id: number; name: string } | null;
         images: ProductImage[];
         variants: ProductVariant[];

@@ -4,8 +4,8 @@ namespace App\Providers;
 
 use App\Auth\EnvAdminUserProvider;
 use App\Contracts\CartStore;
-use App\Models\Setting;
 use App\Support\Cart\SessionCartStore;
+use App\Support\ModeMailConfiguration;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\Hashing\Hasher;
@@ -37,45 +37,12 @@ class AppServiceProvider extends ServiceProvider
         $view->addLocation(resource_path());
 
         $this->configureDefaults();
-        $this->configureFromDatabase();
+        ModeMailConfiguration::apply();
 
         Auth::provider('env-admin', fn (Application $app): EnvAdminUserProvider => new EnvAdminUserProvider(
             $app->make(Hasher::class),
             (array) config('auth.admin', []),
         ));
-    }
-
-    /**
-     * Configure default behaviors for production-ready applications.
-     */
-    protected function configureFromDatabase(): void
-    {
-        try {
-            $smtpHost = Setting::get('mail.smtp_host');
-            if ($smtpHost) {
-                config([
-                    'mail.default' => 'smtp',
-                    'mail.mailers.smtp.host' => $smtpHost,
-                    'mail.mailers.smtp.port' => Setting::get('mail.smtp_port', '587'),
-                    'mail.mailers.smtp.username' => Setting::get('mail.smtp_user'),
-                    'mail.mailers.smtp.password' => Setting::get('mail.smtp_password'),
-                ]);
-            }
-
-            $smtpUser = Setting::get('mail.smtp_user');
-            if ($smtpUser) {
-                config(['mail.from.address' => $smtpUser]);
-            } elseif ($shopEmail = Setting::get('shop.email')) {
-                config(['mail.from.address' => $shopEmail]);
-            }
-
-            $shopName = Setting::get('shop.name');
-            if ($shopName) {
-                config(['mail.from.name' => $shopName]);
-            }
-        } catch (\Throwable) {
-            // DB not yet available (e.g. during migrations)
-        }
     }
 
     protected function configureDefaults(): void

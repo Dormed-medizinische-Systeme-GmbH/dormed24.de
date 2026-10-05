@@ -169,22 +169,10 @@ parameters:
 			path: app/Http/Controllers/ProductController.php
 
 		-
-			message: '#^Method App\\Http\\Requests\\Admin\\StoreCategoryRequest\:\:rules\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Http/Requests/Admin/StoreCategoryRequest.php
-
-		-
 			message: '#^Method App\\Http\\Requests\\Admin\\StoreManufacturerRequest\:\:rules\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: app/Http/Requests/Admin/StoreManufacturerRequest.php
-
-		-
-			message: '#^Method App\\Http\\Requests\\Admin\\UpdateCategoryRequest\:\:rules\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Http/Requests/Admin/UpdateCategoryRequest.php
 
 		-
 			message: '#^Method App\\Http\\Requests\\Cart\\AddCartItemRequest\:\:rules\(\) return type has no value type specified in iterable type array\.$#'
@@ -269,12 +257,6 @@ parameters:
 			identifier: missingType.generics
 			count: 1
 			path: app/Models/Product.php
-
-		-
-			message: '#^Property App\\Models\\Setting\:\:\$encryptedKeys type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Models/Setting.php
 
 		-
 			message: '#^Class App\\Models\\ShippingMethod uses generic trait Illuminate\\Database\\Eloquent\\Factories\\HasFactory but does not specify its types\: TFactory$#'
@@ -503,24 +485,6 @@ parameters:
 			identifier: larastan.noEnvCallsOutsideOfConfig
 			count: 1
 			path: database/seeders/ContactsSeeder.php
-
-		-
-			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
-			identifier: larastan.noEnvCallsOutsideOfConfig
-			count: 4
-			path: database/seeders/MailSeeder.php
-
-		-
-			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
-			identifier: larastan.noEnvCallsOutsideOfConfig
-			count: 8
-			path: database/seeders/PaymentSeeder.php
-
-		-
-			message: '#^Parameter \#2 \$value of static method App\\Models\\Setting\:\:set\(\) expects string\|null, bool\|string given\.$#'
-			identifier: argument.type
-			count: 1
-			path: database/seeders/PaymentSeeder.php
 
 		-
 			message: '#^Strict comparison using \=\=\= between non\-empty\-list\<string\|null\> and array\{\} will always evaluate to false\.$#'

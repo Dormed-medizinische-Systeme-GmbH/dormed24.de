@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Support\Catalog\Categories;
+use App\Support\Catalog\Category;
 use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -13,13 +15,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * @property int $id
  * @property int|null $manufacturer_id
- * @property int|null $category_id
+ * @property string|null $category_slug Slug aus config/categories.php
  * @property string $name
  * @property string|null $description
  * @property string $price
  * @property bool $is_available
  */
-#[Fillable(['manufacturer_id', 'category_id', 'name', 'description', 'price', 'is_available'])]
+#[Fillable(['manufacturer_id', 'category_slug', 'name', 'description', 'price', 'is_available'])]
 class Product extends Model
 {
     /** @use HasFactory<ProductFactory> */
@@ -34,11 +36,11 @@ class Product extends Model
     }
 
     /**
-     * @return BelongsTo<Category, $this>
+     * Kategorie aus config/categories.php (kein DB-Bezug).
      */
-    public function category(): BelongsTo
+    public function category(): ?Category
     {
-        return $this->belongsTo(Category::class);
+        return Categories::find($this->category_slug);
     }
 
     /**

@@ -4,6 +4,7 @@ namespace Tests\Feature\Admin;
 
 use App\Models\Setting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class SettingControllerTest extends TestCase
@@ -48,26 +49,40 @@ class SettingControllerTest extends TestCase
         $this->assertNull(Setting::get('shop.email'));
     }
 
-    public function test_update_rejects_invalid_smtp_port(): void
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function credentialKeysNowInEnv(): array
     {
-        $this->asAdmin()
-            ->put(route('admin.settings.update'), [
-                'settings' => ['mail.smtp_port' => '99999'],
-            ])
-            ->assertSessionHasErrors('settings.mail.smtp_port');
-
-        $this->assertNull(Setting::get('mail.smtp_port'));
+        return [
+            'smtp host' => ['mail.smtp_host'],
+            'smtp passwort' => ['mail.smtp_password'],
+            'paypal client id' => ['paypal.live.client_id'],
+            'paypal secret' => ['paypal.sandbox.client_secret'],
+            'paypal webhook' => ['paypal.webhook_id'],
+        ];
     }
 
-    public function test_update_accepts_valid_shop_email_and_port(): void
+    #[DataProvider('credentialKeysNowInEnv')]
+    public function test_credentials_can_no_longer_be_stored_in_the_database(string $key): void
     {
         $this->asAdmin()
             ->put(route('admin.settings.update'), [
-                'settings' => ['shop.email' => 'shop@dormed24.de', 'mail.smtp_port' => '587'],
+                'settings' => [$key => 'geheim'],
+            ])
+            ->assertSessionHasErrors('settings');
+
+        $this->assertNull(Setting::get($key));
+    }
+
+    public function test_update_accepts_valid_shop_email(): void
+    {
+        $this->asAdmin()
+            ->put(route('admin.settings.update'), [
+                'settings' => ['shop.email' => 'shop@dormed24.de'],
             ])
             ->assertSessionHasNoErrors();
 
         $this->assertSame('shop@dormed24.de', Setting::get('shop.email'));
-        $this->assertSame('587', Setting::get('mail.smtp_port'));
     }
 }

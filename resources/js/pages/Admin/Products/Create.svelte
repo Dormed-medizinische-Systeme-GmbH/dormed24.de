@@ -14,7 +14,7 @@
     import * as Select from '@/components/ui/select';
 
     type Manufacturer = { id: number; name: string };
-    type Category = { id: number; name: string };
+    type Category = { slug: string; name: string };
 
     let { manufacturers, categories }: { manufacturers: Manufacturer[]; categories: Category[] } = $props();
 
@@ -23,7 +23,7 @@
         description: '',
         price: '',
         manufacturer_id: '',
-        category_id: '',
+        category_slug: '',
         is_available: true,
     });
 
@@ -32,7 +32,7 @@
     );
 
     const selectedCategoryLabel = $derived(
-        categories.find((c) => String(c.id) === form.category_id)?.name ?? 'Kategorie wählen',
+        categories.find((c) => c.slug === form.category_slug)?.name ?? 'Kategorie wählen',
     );
 
     function submit(e: SubmitEvent) {
@@ -102,20 +102,20 @@
             <Label>Kategorie</Label>
             <Select.Root
                 type="single"
-                value={form.category_id}
-                onValueChange={(v) => (form.category_id = v ?? '')}
+                value={form.category_slug}
+                onValueChange={(v) => (form.category_slug = v ?? '')}
             >
                 <Select.Trigger class="w-full">
                     {selectedCategoryLabel}
                 </Select.Trigger>
                 <Select.Content>
-                    {#each categories as c (c.id)}
-                        <Select.Item value={String(c.id)}>{c.name}</Select.Item>
+                    {#each categories as c (c.slug)}
+                        <Select.Item value={c.slug}>{c.name}</Select.Item>
                     {/each}
                 </Select.Content>
             </Select.Root>
-            {#if form.errors.category_id}
-                <p class="text-sm text-destructive">{form.errors.category_id}</p>
+            {#if form.errors.category_slug}
+                <p class="text-sm text-destructive">{form.errors.category_slug}</p>
             {/if}
         </div>
 

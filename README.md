@@ -36,9 +36,10 @@ Zentrale Klassen (die „Geschäftslogik-Ecke"):
 | --- | --- |
 | `app/Support/Cart/CartService.php` | Warenkorb: Session-State, Live-Preise, Varianten, Versand-/Zahlarten, Summen |
 | `app/Support/Orders/OrderManager.php` | Cart → Order (transaktional), `markPaid()` (idempotent), Bestätigungsmails, Summen-Berechnung |
-| `app/Services/PayPalService.php` | PayPal-REST-Client (Settings-basiert), Webhook-Verifikation, Refunds |
-| `app/Support/PaymentMode.php` | sandbox/live — ausschließlich aus `APP_ENV` abgeleitet |
-| `app/Models/Setting.php` | Key-Value-Settings in DB, sensible Keys verschlüsselt, pro Request memoisiert |
+| `app/Services/PayPalService.php` | PayPal-REST-Client (Zugangsdaten aus der Env, `config/paypal.php`), Webhook-Verifikation, Refunds |
+| `app/Support/PaymentMode.php` | sandbox/live — live nur bei `APP_ENV=production` **und** `APP_DEBUG=false`; steuert PayPal-/SMTP-Zugangsdaten und Sandbox-Banner |
+| `config/categories.php` | Feste Produktkategorien (Reihenfolge = Navigation), Produkte speichern `category_slug` |
+| `app/Models/Setting.php` | Key-Value-Shop-Settings in DB (Name, Kontakt, Bankverbindung), pro Request memoisiert. PayPal/SMTP **nicht** hier, sondern in der Env |
 | `app/Http/Middleware/HandleInertiaRequests.php` | Shared Props: Cart, Auth, Kontakt, Kategorien, Sandbox-Banner |
 
 ---
@@ -112,7 +113,7 @@ Confirm-Seite (Zahlart PayPal) → PayPal-JS-SDK-Button
 `pending` → `paid`, sowie `cancelled` / `failed` / `refunded`. `is_test`
 markiert Sandbox-Orders (aus `PaymentMode::isLive()`), fließt aber **nicht**
 in den Dashboard-Umsatz ein — der zählt schlicht alle `paid`-Orders. Der
-Filter wurde entfernt: `PaymentMode` hängt ausschließlich an `APP_ENV`, ohne
+Filter wurde entfernt: `PaymentMode` hängt ausschließlich an `APP_ENV` und `APP_DEBUG`, ohne
 Admin-Override kann in Produktion strukturell keine Sandbox-Order entstehen,
 die die Zahlen verfälschen könnte. Kein separater Fulfillment-Status
 (`processing`/`completed`) — `paid` ist der finale Erfolgszustand.

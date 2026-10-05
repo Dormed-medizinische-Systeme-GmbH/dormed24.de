@@ -55,11 +55,11 @@ Standalone-Seiten (Welcome, Products/*, Checkout/*, statische Seiten) binden `<S
 | -------------------------- | ----------------------------------------- |
 | `routes/web.php`           | Home (`/`), statische Seiten (AGB, FAQ, …), Sitemap; lädt die anderen Routedateien |
 | `routes/products.php`      | `GET /products`, `/products/search`, `/products/{product}` |
-| `routes/categories.php`    | `GET /{category:slug}` (Catch-all, ein Segment) |
+| `routes/categories.php`    | `GET /{category}` (Catch-all, ein Segment; Slugs aus `config/categories.php`) |
 | `routes/public/rating.php` | `POST /products/{product}/ratings` (anonym — siehe TODO) |
 | `routes/checkout.php`      | Cart (`/cart/items/{product}/{variant?}`), Checkout (`confirm`/`address`/`submit` mit `auth`+`verified`), Success, Kundenbestellungen |
 | `routes/paypal.php`        | `order/create` + `order/capture` (`auth`+`verified`), `after-payment`, `webhook` (signaturverifiziert, ohne CSRF) |
-| `routes/admin.php`         | Admin-CRUD (Produkte inkl. Bilder/Varianten, Kategorien, Hersteller, Kunden), Bestell-Aktionen (`orders.confirm-payment`, `orders.refund`), Settings + Versandarten |
+| `routes/admin.php`         | Admin-CRUD (Produkte inkl. Bilder/Varianten, Hersteller, Kunden), Bestell-Aktionen (`orders.confirm-payment`, `orders.refund`), Settings + Versandarten |
 | `routes/settings.php`      | Profil, Adressen, Sicherheit (Kunde)      |
 
 ---
@@ -74,7 +74,7 @@ Standalone-Seiten (Welcome, Products/*, Checkout/*, statische Seiten) binden `<S
 | `ProductVariant` | `product_variants` | Absoluter Endpreis (`price`), `is_default`, `sort_order` |
 | `ProductImage`   | `product_images`   | public-Disk, `sort_order` (0 = Hauptbild) |
 | `Manufacturer`   | `manufacturers`    |                                   |
-| `Category`       | `categories`       | Slug-basierte Shop-Route          |
+| — (`config/categories.php`) | — | Feste Kategorien, Produkte speichern `category_slug` |
 | `Order`          | `orders`           | FK zu `customers` **nullable, ON DELETE SET NULL** (Historie überlebt Kontolöschung); Adress-Snapshots als JSON |
 | `OrderItem`      | `order_items`      | Snapshot: `product_name` (inkl. Varianten-Label), `unit_price` |
 | `Payment`        | `payments`         | PayPal-Transaktionen (order_id, capture_id, response_data) |
@@ -102,7 +102,7 @@ resources/js/
 │   │   ├── ByCategory.svelte       # Kategorie-Listing
 │   │   └── Show.svelte             # Detailseite (Varianten, Zoom, Ratings, JSON-LD)
 │   ├── Admin/                      # Dashboard, Products, Orders, Customers,
-│   │                               # Categories, Manufacturers, Settings, Login
+│   │                               # Manufacturers, Settings, Login
 │   ├── auth/                       # Fortify-Auth-Seiten (inkl. VerifyEmail)
 │   └── settings/                   # Profil, Adressen, Sicherheit, Bestellungen (+ Show)
 ├── components/

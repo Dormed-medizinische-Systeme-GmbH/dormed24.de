@@ -27,7 +27,7 @@
     import { edit as editProfile } from '@/routes/profile';
     import type { Cart } from '@/types';
 
-    type NavCategory = { id: number; name: string; slug: string };
+    type NavCategory = { slug: string; name: string };
 
     const navCategories = $derived(page.props.navCategories as NavCategory[]);
 
@@ -294,7 +294,7 @@
                                     {item.label}
                                 </Link>
                             {/each}
-                            {#each navCategories as cat (cat.id)}
+                            {#each navCategories as cat (cat.slug)}
                                 <Link
                                     href={`/${cat.slug}`}
                                     class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-brand-secondary"
@@ -405,7 +405,7 @@
                         {item.label}
                     </Link>
                 {/each}
-                {#each navCategories as cat (cat.id)}
+                {#each navCategories as cat (cat.slug)}
                     <Link
                         href={`/${cat.slug}`}
                         class="border-b-2 border-transparent px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:border-brand-accent hover:text-brand-secondary"

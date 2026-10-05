@@ -51,6 +51,57 @@ class ProductEditTest extends TestCase
             );
     }
 
+    public function test_edit_page_offers_configured_categories(): void
+    {
+        $product = Product::factory()->create(['category_slug' => 'ultraschallsonden']);
+
+        $this->actingAsAdmin()
+            ->get(route('admin.products.edit', $product))
+            ->assertOk()
+            ->assertInertia(
+                fn ($page) => $page
+                    ->where('product.category_slug', 'ultraschallsonden')
+                    ->where('categories', [
+                        ['slug' => 'ultraschallsysteme', 'name' => 'Ultraschallsysteme'],
+                        ['slug' => 'ultraschallsonden', 'name' => 'Ultraschallsonden'],
+                        ['slug' => 'verbrauchsartikel', 'name' => 'Verbrauchsartikel'],
+                        ['slug' => 'zubehoer', 'name' => 'Zubehör'],
+                    ])
+            );
+    }
+
+    public function test_product_category_can_be_set_to_a_configured_slug(): void
+    {
+        $product = Product::factory()->create(['category_slug' => null]);
+
+        $this->actingAsAdmin()
+            ->put(route('admin.products.update', $product), [
+                'name' => $product->name,
+                'price' => '19.99',
+                'category_slug' => 'ultraschallsonden',
+                'is_available' => true,
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('ultraschallsonden', $product->refresh()->category_slug);
+    }
+
+    public function test_unknown_category_slug_is_rejected(): void
+    {
+        $product = Product::factory()->create(['category_slug' => 'zubehoer']);
+
+        $this->actingAsAdmin()
+            ->put(route('admin.products.update', $product), [
+                'name' => $product->name,
+                'price' => '19.99',
+                'category_slug' => 'gibt-es-nicht',
+                'is_available' => true,
+            ])
+            ->assertSessionHasErrors('category_slug');
+
+        $this->assertSame('zubehoer', $product->refresh()->category_slug);
+    }
+
     public function test_update_requires_admin(): void
     {
         $product = Product::factory()->create();

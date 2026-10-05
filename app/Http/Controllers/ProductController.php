@@ -58,13 +58,13 @@ class ProductController extends Controller
 
     public function show(Product $product): Response
     {
-        $product->load(['category', 'manufacturer', 'ratings', 'images', 'variants']);
+        $product->load(['manufacturer', 'ratings', 'images', 'variants']);
         $product->loadAvg('ratings', 'stars');
 
-        $similarProducts = $product->category_id === null
+        $similarProducts = $product->category_slug === null
             ? collect()
             : Product::available()
-                ->where('category_id', $product->category_id)
+                ->where('category_slug', $product->category_slug)
                 ->whereKeyNot($product->id)
                 ->with(['manufacturer', 'images' => fn ($query) => $query->where('sort_order', 0)])
                 ->orderBy('name')
@@ -73,6 +73,7 @@ class ProductController extends Controller
 
         return Inertia::render('Products/Show', [
             'product' => array_merge($product->toArray(), [
+                'category' => $product->category()?->toArray(),
                 'images' => $product->images->map(fn ($img) => [
                     'id' => $img->id,
                     'url' => $img->url,

@@ -1,13 +1,10 @@
 <script lang="ts">
     import { Link } from '@inertiajs/svelte';
     import Building2 from '@lucide/svelte/icons/building-2';
-    import CreditCard from '@lucide/svelte/icons/credit-card';
     import LayoutGrid from '@lucide/svelte/icons/layout-grid';
-    import Mail from '@lucide/svelte/icons/mail';
     import Package from '@lucide/svelte/icons/package';
     import Settings from '@lucide/svelte/icons/settings';
     import ShoppingCart from '@lucide/svelte/icons/shopping-cart';
-    import Tag from '@lucide/svelte/icons/tag';
     import Truck from '@lucide/svelte/icons/truck';
     import Users from '@lucide/svelte/icons/users';
     import type { Snippet } from 'svelte';
@@ -39,18 +36,11 @@
 
     const catalogItems: NavItem[] = [
         { title: 'Hersteller', href: '/admin/manufacturers', icon: Building2 },
-        { title: 'Kategorien', href: '/admin/categories', icon: Tag },
         { title: 'Produkte', href: '/admin/products', icon: Package },
     ];
 
     const settingsItems: NavItem[] = [
         { title: 'Allgemein', href: '/admin/settings/general', icon: Settings },
-        { title: 'Mailversand', href: '/admin/settings/mail', icon: Mail },
-        {
-            title: 'Zahlungsarten',
-            href: '/admin/settings/payment',
-            icon: CreditCard,
-        },
         {
             title: 'Versandarten',
             href: '/admin/settings/shipping',

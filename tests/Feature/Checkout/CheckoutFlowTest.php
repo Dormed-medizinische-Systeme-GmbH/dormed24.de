@@ -5,7 +5,6 @@ namespace Tests\Feature\Checkout;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Product;
-use App\Models\Setting;
 use App\Models\ShippingMethod;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -184,7 +183,7 @@ class CheckoutFlowTest extends TestCase
         $shipping = ShippingMethod::factory()->create(['price' => '0.00']);
         $product = Product::factory()->create(['price' => '10.00']);
 
-        Setting::set('paypal.sandbox.client_id', 'sandbox-client-id');
+        config(['paypal.sandbox.client_id' => 'sandbox-client-id']);
 
         $this->actingAs($customer)
             ->withSession([

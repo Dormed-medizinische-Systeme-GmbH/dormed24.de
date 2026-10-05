@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\Order;
 use App\Models\Payment;
-use App\Models\Setting;
 use App\Support\PaymentMode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -34,16 +33,16 @@ class PayPalService
         return [
             'mode' => $mode,
             'sandbox' => [
-                'client_id' => Setting::get('paypal.sandbox.client_id') ?? config('paypal.sandbox.client_id', ''),
-                'client_secret' => Setting::get('paypal.sandbox.client_secret') ?? config('paypal.sandbox.client_secret', ''),
-                'app_id' => Setting::get('paypal.sandbox.app_id') ?? config('paypal.sandbox.app_id', 'APP-80W284485P519543T'),
-                'merchant_id' => Setting::get('paypal.sandbox.merchant_id') ?? config('paypal.sandbox.merchant_id', ''),
+                'client_id' => (string) config('paypal.sandbox.client_id', ''),
+                'client_secret' => (string) config('paypal.sandbox.client_secret', ''),
+                'app_id' => (string) config('paypal.sandbox.app_id', 'APP-80W284485P519543T'),
+                'merchant_id' => (string) config('paypal.sandbox.merchant_id', ''),
             ],
             'live' => [
-                'client_id' => Setting::get('paypal.live.client_id') ?? config('paypal.live.client_id', ''),
-                'client_secret' => Setting::get('paypal.live.client_secret') ?? config('paypal.live.client_secret', ''),
-                'app_id' => Setting::get('paypal.live.app_id') ?? config('paypal.live.app_id', ''),
-                'merchant_id' => Setting::get('paypal.live.merchant_id') ?? config('paypal.live.merchant_id', ''),
+                'client_id' => (string) config('paypal.live.client_id', ''),
+                'client_secret' => (string) config('paypal.live.client_secret', ''),
+                'app_id' => (string) config('paypal.live.app_id', ''),
+                'merchant_id' => (string) config('paypal.live.merchant_id', ''),
             ],
             'payment_action' => config('paypal.payment_action', 'Sale'),
             'currency' => config('paypal.currency', 'EUR'),
@@ -181,7 +180,7 @@ class PayPalService
      */
     public function verifyWebhook(Request $request): bool
     {
-        $webhookId = Setting::get('paypal.webhook_id') ?? config('paypal.webhook_id');
+        $webhookId = config('paypal.'.PaymentMode::current().'.webhook_id');
 
         if (blank($webhookId)) {
             Log::warning('PayPal webhook verification skipped: no webhook ID configured');
