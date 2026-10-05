@@ -6,11 +6,12 @@
     import FileCheck from '@lucide/svelte/icons/file-check';
     import ImageIcon from '@lucide/svelte/icons/image';
     import PackageCheck from '@lucide/svelte/icons/package-check';
+    import Phone from '@lucide/svelte/icons/phone';
     import ShieldCheck from '@lucide/svelte/icons/shield-check';
     import Truck from '@lucide/svelte/icons/truck';
     import * as ProductController from '@/actions/App/Http/Controllers/ProductController';
     import AppHead from '@/components/AppHead.svelte';
-    import ShopHeaderWithHover from '@/components/ShopHeader-with-hover.svelte';
+    import ShopHeader from '@/components/ShopHeader.svelte';
     import TestAppFooter from '@/components/TestAppFooter.svelte';
     import { Card, CardContent } from '@/components/ui/card';
     import { formatPrice } from '@/lib/currency';
@@ -19,22 +20,22 @@
         {
             icon: PackageCheck,
             label: 'Einfach direkt bestellen',
-            text: 'Bestellung direkt im Shop – ohne Angebotsschleifen, mit klaren Preisen.',
+            text: 'Sortiment einsehen, in den Warenkorb, fertig — ganz ohne Angebotsanfrage.',
         },
         {
             icon: Truck,
             label: 'Lieferung oder Abholung',
-            text: 'Per DPD zugestellt oder persönlich bei uns abgeholt – wie es passt.',
+            text: 'Sie entscheiden, ob es zu Ihnen kommt oder Sie es bei uns abholen.',
         },
         {
             icon: FileCheck,
-            label: 'inkl. GWE und Einweisung',
-            text: 'Video-Einweisung oder Einweisung vor Ort – Sie starten nicht bei null.',
+            label: 'Inkl. GWE und Einweisung',
+            text: 'Messtechnische Kontrolle und Einweisung sind bei uns kein Aufpreis.',
         },
         {
             icon: ShieldCheck,
-            label: 'Gewährleistung und geprüfte Qualität',
-            text: 'Jedes Gerät mit Gewährleistung – geprüfte Qualität statt Blindkauf.',
+            label: 'Gewährleistung & geprüfte Qualität',
+            text: 'Jedes Gerät durchläuft eine Prüfung, bevor es Ihre Praxis erreicht.',
         },
     ] as const;
 
@@ -61,51 +62,6 @@
         },
     ] as const;
 
-    const highlightProducts = [
-        {
-            title: 'Meone Finger-Pulsoximeter',
-            price: '46,41 €*',
-            summary:
-                'USB-C aufladbar, OLED-Display, Spot-Check oder kontinuierliche Überwachung.',
-        },
-        {
-            title: 'BP2 Blutdruckmessgerät mit 1-Kanal-EKG',
-            price: '117,81 €*',
-            summary:
-                'Kompaktes 2-in-1-Gerät mit EKG-Funktion, App-Anbindung und umfangreichem Zubehör.',
-        },
-        {
-            title: 'Wandkasten Metall mit Alarm',
-            price: '189,21 €*',
-            summary:
-                'Robuster Schutz für Defibrillatoren mit akustischem und visuellem Alarmsystem.',
-        },
-    ] as const;
-
-    const serviceColumns = [
-        {
-            eyebrow: 'Praxis & Klinik',
-            title: 'Vom Erstgerät bis zur Erweiterung',
-            text: 'Beschaffen Sie Diagnostik, Monitoring und Zubehör zentral an einem Ort und mit nachvollziehbarer Betreuung.',
-        },
-        {
-            eyebrow: 'Beratung & Einweisung',
-            title: 'Nicht nur bestellen, sondern passend auswählen',
-            text: 'Für erklärungsbedürftige Technik bleiben Lieferung, Gewährleistung und Einweisung Teil des Gesamtbilds.',
-        },
-        {
-            eyebrow: 'Schnelle Wege',
-            title: 'Abholung oder Lieferung, je nach Einsatz',
-            text: 'Ob kurzfristiger Bedarf oder geplante Ausstattung: die Shop-Oberfläche soll auf reale Einkaufsabläufe einzahlen.',
-        },
-    ] as const;
-
-    const assortmentPillars = [
-        'Verlässliche Medizintechnik für Praxis, MVZ und Klinik',
-        'Kompakte Geräte für Alltag, Hausbesuch und Notfall',
-        'Zubehör und Verbrauchsmaterial als wiederkehrender Bedarf',
-        'Persönlicher Ansprechpartner statt anonymer Bestellstrecke',
-    ] as const;
     type ContactInfo = {
         email: string;
         phone: string;
@@ -208,7 +164,7 @@
 
 <svelte:window bind:scrollY />
 
-<AppHead title="Willkommen (Test: Hover-Header)" />
+<AppHead title="Willkommen (Test: Artifact-Redesign)" />
 
 <svelte:head>
     <meta name="robots" content="noindex, nofollow" />
@@ -217,7 +173,7 @@
 </svelte:head>
 
 <div class="min-h-screen bg-white">
-    <ShopHeaderWithHover />
+    <ShopHeader />
 
     <!-- Hero -->
     <section
@@ -276,45 +232,66 @@
                     Verlässliche Medizintechnik für Ihre Patientenversorgung
                 </p>
 
-                <ul class="mb-10 flex flex-col gap-2.5">
+                <ul class="mb-9 flex flex-wrap gap-2">
                     {#each features as feature (feature)}
                         <li
-                            class="flex items-center gap-2.5 font-semibold text-white"
+                            class="flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[13px] font-semibold text-white backdrop-blur-sm"
                         >
-                            <Check class="size-4 shrink-0 text-[#8fc4f0]" />
+                            <Check class="size-3.5 shrink-0 text-[#8fc4f0]" />
                             {feature}
                         </li>
                     {/each}
                 </ul>
+
+                <a
+                    href={contact.phone_href}
+                    class="group inline-flex items-center gap-3.5 rounded-full bg-white py-2 pl-2 pr-5 shadow-lg shadow-black/20 transition hover:-translate-y-px hover:shadow-xl"
+                >
+                    <span
+                        class="grid size-10 place-items-center rounded-full bg-brand-accent"
+                    >
+                        <Phone class="size-[1.1rem] text-white" />
+                    </span>
+                    <span>
+                        <span
+                            class="block text-[11px] font-semibold text-muted-foreground"
+                        >
+                            Telefonisch erreichbar
+                        </span>
+                        <span class="block text-[17px] font-bold text-primary">
+                            {contact.phone}
+                        </span>
+                    </span>
+                </a>
             </div>
         </div>
     </section>
 
     <!--
-        TEST-DESIGN: ersetzt die generische Lorem-Feature-Section
+        Ersetzt die generische Lorem-Feature-Section
         ("Show your solution's impact on user success") und zieht die
-        Trust-Bar-Inhalte (Lieferung/GWE/Gewaehrleistung) hier mit rein,
-        wie vom User gewuenscht - eine Sektion statt zwei getrennte.
-        Linksbuendig statt zentriert, damit es nicht wie eine generische
-        Marketing-Hero-Kachel wirkt.
+        Trust-Bar-Inhalte (Lieferung/GWE/Gewaehrleistung) hier mit rein -
+        eine Sektion statt zwei getrennte. Linksbuendig statt zentriert.
+        Graues Sektions-Grau (bg-muted) fuer sauberen Hell/Grau-Wechsel im
+        Seitenrhythmus (Hero -> grau -> weiss -> grau -> Footer).
     -->
-    <section class="bg-background">
+    <section class="bg-muted">
         <div class="mx-auto max-w-7xl px-4 py-16 lg:px-8 lg:py-24">
             <div class="max-w-2xl">
                 <p
                     class="text-xs font-bold uppercase tracking-[0.14em] text-brand-accent"
                 >
-                    Rundum-Service
+                    Direkt bestellen
                 </p>
                 <h2
-                    class="mt-3 text-3xl font-bold leading-tight text-foreground lg:text-4xl"
+                    class="mt-3 text-3xl font-bold leading-tight text-primary lg:text-4xl"
                 >
-                    Nicht nur verkauft — eingerichtet, eingewiesen, betreut.
+                    Medizintechnik ohne Umwege beschaffen
                 </h2>
                 <p class="mt-4 text-base leading-7 text-muted-foreground">
-                    Jede Bestellung endet nicht an der Haustür: Lieferung oder
-                    Abholung, Gewährleistung und Einweisung gehören für uns zum
-                    Gerät dazu.
+                    Vom ersten Klick bis zur Einweisung vor Ort: Sie bestellen
+                    direkt, ohne Rückfragen-Ping-Pong – und bekommen Geräte, die
+                    geprüft und einsatzbereit ankommen.
                 </p>
             </div>
 
@@ -343,63 +320,11 @@
         </div>
     </section>
 
-    <!--
-        Onboarding: echte Reihenfolge (registrieren -> freischalten ->
-        bestellen). Grosse, transparente Hintergrund-Ziffer statt kleinem
-        Kreis-Badge - abgenommene Variante aus dem Artifact-Vergleich,
-        1:1 uebernommen.
-    -->
-    <section class="bg-muted">
-        <div class="mx-auto max-w-7xl px-4 py-16 lg:px-8 lg:py-24">
-            <div class="max-w-2xl">
-                <p
-                    class="text-xs font-bold uppercase tracking-[0.14em] text-brand-accent"
-                >
-                    So einfach geht's
-                </p>
-                <h2 class="mt-3 text-2xl font-bold text-foreground lg:text-3xl">
-                    Einfach registrieren, freischalten lassen und direkt
-                    bestellen
-                </h2>
-            </div>
-
-            <div
-                class="mt-10 grid divide-y divide-border overflow-hidden rounded-2xl border border-border bg-background md:grid-cols-3 md:divide-x md:divide-y-0"
-            >
-                {#each onboardingSteps as step, index (step.title)}
-                    <div class="relative overflow-hidden px-7 pb-7 pt-10">
-                        <span
-                            class="pointer-events-none absolute right-1 top-2 text-[6.5rem] font-extrabold leading-none text-primary/[0.06]"
-                            aria-hidden="true"
-                        >
-                            {index + 1}
-                        </span>
-                        <p
-                            class="relative mb-4 inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.08em] text-brand-accent"
-                        >
-                            <span class="size-1.5 rounded-full bg-brand-accent"
-                            ></span>
-                            Schritt {index + 1}
-                        </p>
-                        <h3 class="relative text-base font-bold text-primary">
-                            {step.title}
-                        </h3>
-                        <p
-                            class="relative mt-2.5 text-sm leading-6 text-muted-foreground"
-                        >
-                            {step.text}
-                        </p>
-                    </div>
-                {/each}
-            </div>
-        </div>
-    </section>
-
     {#if randomProducts.length > 0 && activeProduct}
         <section class="bg-white">
             <div class="mx-auto max-w-7xl px-4 py-12 lg:px-8 lg:py-16">
                 <h2
-                    class="text-4xl font-bold leading-tight text-foreground md:text-center lg:text-5xl"
+                    class="text-3xl font-bold leading-tight text-primary lg:text-4xl"
                 >
                     {randomProductsTitle}
                 </h2>
@@ -528,145 +453,54 @@
         </section>
     {/if}
 
-    <section class="bg-white">
-        <div class="mx-auto max-w-7xl px-4 py-12 lg:px-8 lg:py-16">
-            <div class="mb-8 flex items-end justify-between gap-6">
-                <div class="max-w-3xl">
-                    <h2 class="text-2xl font-bold text-foreground lg:text-3xl">
-                        Neu bei dormed24
-                    </h2>
-                    <p
-                        class="mt-3 text-sm leading-6 text-muted-foreground lg:text-base"
-                    >
-                        Im aktuellen Live-Shop stehen kompakte Geräte für
-                        Diagnostik und Notfallversorgung sichtbar im
-                        Vordergrund. Dieser Bereich greift das auf, ohne vom
-                        restlichen Shop-Design wegzulaufen.
-                    </p>
-                </div>
-                <Link
-                    href={ProductController.index.url()}
-                    class="hidden shrink-0 text-sm font-semibold text-brand-accent hover:underline lg:inline-flex lg:items-center lg:gap-2"
-                >
-                    Alle Produkte ansehen
-                    <ArrowRight class="size-4" />
-                </Link>
-            </div>
-
-            <div class="grid gap-4 md:grid-cols-3">
-                {#each highlightProducts as product (product.title)}
-                    <article
-                        class="rounded-xl border bg-white p-6 shadow-sm transition hover:shadow-md"
-                    >
-                        <p
-                            class="text-xs font-semibold uppercase tracking-wide text-brand-accent"
-                        >
-                            Produkthighlight
-                        </p>
-                        <h3 class="mt-3 text-lg font-semibold text-foreground">
-                            {product.title}
-                        </h3>
-                        <p class="mt-3 text-sm leading-6 text-muted-foreground">
-                            {product.summary}
-                        </p>
-                        <div
-                            class="mt-5 flex items-center justify-between gap-4 border-t pt-4"
-                        >
-                            <span
-                                class="text-sm font-semibold text-brand-secondary"
-                                >{product.price}</span
-                            >
-                            <Link
-                                href={ProductController.index.url()}
-                                class="text-sm font-semibold text-brand-accent hover:underline"
-                            >
-                                Zum Sortiment
-                            </Link>
-                        </div>
-                    </article>
-                {/each}
-            </div>
-
-            <div class="mt-6 lg:hidden">
-                <Link
-                    href={ProductController.index.url()}
-                    class="inline-flex items-center gap-2 text-sm font-semibold text-brand-accent hover:underline"
-                >
-                    Alle Produkte ansehen
-                    <ArrowRight class="size-4" />
-                </Link>
-            </div>
-        </div>
-    </section>
-
+    <!--
+        Onboarding: echte Reihenfolge (registrieren -> freischalten ->
+        bestellen). Grosse, transparente Hintergrund-Ziffer statt kleinem
+        Kreis-Badge - abgenommene Variante aus dem Artifact-Vergleich,
+        1:1 uebernommen. Jetzt letzte Inhaltssektion vor dem Footer.
+    -->
     <section class="bg-muted">
-        <div class="mx-auto max-w-7xl px-4 py-12 lg:px-8 lg:py-16">
+        <div class="mx-auto max-w-7xl px-4 py-16 lg:px-8 lg:py-24">
+            <div class="max-w-2xl">
+                <p
+                    class="text-xs font-bold uppercase tracking-[0.14em] text-brand-accent"
+                >
+                    So einfach geht's
+                </p>
+                <h2 class="mt-3 text-2xl font-bold text-foreground lg:text-3xl">
+                    Einfach registrieren, freischalten lassen und direkt
+                    bestellen
+                </h2>
+            </div>
+
             <div
-                class="grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]"
+                class="mt-10 grid divide-y divide-border overflow-hidden rounded-2xl border border-border bg-background md:grid-cols-3 md:divide-x md:divide-y-0"
             >
-                <div>
-                    <h2 class="text-2xl font-bold text-foreground lg:text-3xl">
-                        Beschaffung für Praxis, MVZ und Klinik
-                    </h2>
-                    <p
-                        class="mt-3 text-sm leading-6 text-muted-foreground lg:text-base"
-                    >
-                        Statt einer komplett eigenen Landingpage-Ästhetik
-                        bekommt der Shop hier eher denselben nüchternen Ton wie
-                        die anderen Seiten: klare Informationen, erkennbare
-                        Vorteile und direkte Wege in Sortiment oder Kontakt.
-                    </p>
-
-                    <div class="mt-6 grid gap-3">
-                        {#each assortmentPillars as pillar (pillar)}
-                            <div
-                                class="rounded-lg border bg-white px-4 py-3 text-sm text-muted-foreground shadow-sm"
-                            >
-                                {pillar}
-                            </div>
-                        {/each}
-                    </div>
-                </div>
-
-                <div class="rounded-xl border bg-white p-6 shadow-sm">
-                    <h3 class="text-lg font-semibold text-foreground">
-                        Beratung und schnelle Wege
-                    </h3>
-                    <div class="mt-5 space-y-5">
-                        {#each serviceColumns as column (column.title)}
-                            <div
-                                class="border-b pb-5 last:border-b-0 last:pb-0"
-                            >
-                                <p
-                                    class="text-sm font-semibold text-brand-secondary"
-                                >
-                                    {column.title}
-                                </p>
-                                <p
-                                    class="mt-2 text-sm leading-6 text-muted-foreground"
-                                >
-                                    {column.text}
-                                </p>
-                            </div>
-                        {/each}
-                    </div>
-
-                    <div class="mt-6 flex flex-wrap gap-3">
-                        <Link
-                            href={ProductController.index.url()}
-                            class="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary/90"
+                {#each onboardingSteps as step, index (step.title)}
+                    <div class="relative overflow-hidden px-7 pb-7 pt-10">
+                        <span
+                            class="pointer-events-none absolute right-1 top-2 text-[6.5rem] font-extrabold leading-none text-primary/[0.06]"
+                            aria-hidden="true"
                         >
-                            Jetzt shoppen
-                            <ArrowRight class="size-4" />
-                        </Link>
-                        <Link
-                            href="/kontakt"
-                            class="inline-flex items-center gap-2 rounded-lg border bg-white px-4 py-2.5 text-sm font-semibold text-brand-secondary hover:text-brand-accent"
+                            {index + 1}
+                        </span>
+                        <p
+                            class="relative mb-4 inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.08em] text-brand-accent"
                         >
-                            Beratung anfragen
-                        </Link>
+                            <span class="size-1.5 rounded-full bg-brand-accent"
+                            ></span>
+                            Schritt {index + 1}
+                        </p>
+                        <h3 class="relative text-base font-bold text-primary">
+                            {step.title}
+                        </h3>
+                        <p
+                            class="relative mt-2.5 text-sm leading-6 text-muted-foreground"
+                        >
+                            {step.text}
+                        </p>
                     </div>
-                </div>
+                {/each}
             </div>
         </div>
     </section>
