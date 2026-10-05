@@ -11,6 +11,7 @@ final readonly class Category
         public string $slug,
         public string $name,
         public ?string $description = null,
+        public bool $hasSpecialties = false,
     ) {}
 
     /**

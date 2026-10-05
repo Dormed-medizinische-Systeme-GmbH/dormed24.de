@@ -128,4 +128,28 @@ class CategoryPageTest extends TestCase
                 ])->etc()
             );
     }
+
+    public function test_category_page_offers_specialties_only_where_products_have_them(): void
+    {
+        Product::factory()->create(['category_slug' => 'ultraschallsysteme', 'specialties' => ['kardiologie']]);
+        Product::factory()->create(['category_slug' => 'zubehoer']);
+
+        $this->get('/ultraschallsysteme')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->has('filterOptions.specialties', 1));
+
+        $this->get('/zubehoer')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->where('filterOptions.specialties', []));
+    }
+
+    public function test_category_page_filters_by_specialty(): void
+    {
+        Product::factory()->create(['category_slug' => 'ultraschallsonden', 'specialties' => ['kardiologie']]);
+        Product::factory()->create(['category_slug' => 'ultraschallsonden', 'specialties' => ['urologie']]);
+
+        $this->get('/ultraschallsonden?fachrichtung[]=urologie')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->where('total', 1)->where('filters.specialties', ['urologie']));
+    }
 }

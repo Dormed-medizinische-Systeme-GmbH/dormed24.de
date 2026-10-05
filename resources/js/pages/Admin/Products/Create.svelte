@@ -8,6 +8,7 @@
     import { useForm } from '@inertiajs/svelte';
     import * as AdminProductController from '@/actions/App/Http/Controllers/Admin/ProductController';
     import AppHead from '@/components/AppHead.svelte';
+    import SpecialtyPicker from '@/components/SpecialtyPicker.svelte';
     import TechnicalSpecsEditor from '@/components/TechnicalSpecsEditor.svelte';
     import { Button } from '@/components/ui/button';
     import { Input } from '@/components/ui/input';
@@ -16,8 +17,19 @@
 
     type Manufacturer = { id: number; name: string };
     type Category = { slug: string; name: string };
+    type Specialty = { slug: string; name: string };
 
-    let { manufacturers, categories }: { manufacturers: Manufacturer[]; categories: Category[] } = $props();
+    let {
+        manufacturers,
+        categories,
+        specialtyCategories,
+        specialties,
+    }: {
+        manufacturers: Manufacturer[];
+        categories: Category[];
+        specialtyCategories: string[];
+        specialties: Specialty[];
+    } = $props();
 
     const form = useForm({
         name: '',
@@ -26,6 +38,7 @@
         price: '',
         manufacturer_id: '',
         category_slug: '',
+        specialties: [] as string[],
         is_available: true,
     });
 
@@ -37,8 +50,16 @@
         categories.find((c) => c.slug === form.category_slug)?.name ?? 'Kategorie wählen',
     );
 
+    // Fachrichtungen nur für Kategorien mit has_specialties (config/categories.php).
+    const hasSpecialties = $derived(specialtyCategories.includes(form.category_slug));
+
     function submit(e: SubmitEvent) {
         e.preventDefault();
+
+        if (!hasSpecialties) {
+            form.specialties = [];
+        }
+
         form.post(AdminProductController.store.url());
     }
 </script>
@@ -122,6 +143,10 @@
                 <p class="text-sm text-destructive">{form.errors.category_slug}</p>
             {/if}
         </div>
+
+        {#if hasSpecialties}
+            <SpecialtyPicker bind:selected={form.specialties} options={specialties} errors={form.errors} />
+        {/if}
 
         <div class="flex items-center justify-between rounded-lg border bg-card p-4">
             <div>

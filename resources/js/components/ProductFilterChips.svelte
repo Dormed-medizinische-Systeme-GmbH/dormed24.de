@@ -1,6 +1,6 @@
 <script lang="ts">
     import X from '@lucide/svelte/icons/x';
-    import { visitWithManufacturerFilter } from '@/lib/productFilters';
+    import { clearFilters, visitWithFilters } from '@/lib/productFilters';
     import type {
         ProductListFilterOptions,
         ProductListFilters,
@@ -20,29 +20,54 @@
         ),
     );
 
-    function removeManufacturer(id: number) {
-        visitWithManufacturerFilter(
-            filters.manufacturers.filter((value) => value !== id),
-        );
-    }
+    const activeSpecialties = $derived(
+        filterOptions.specialties.filter((option) =>
+            filters.specialties.includes(option.id),
+        ),
+    );
+
+    const chips = $derived([
+        ...activeManufacturers.map((option) => ({
+            key: `manufacturer-${option.id}`,
+            name: option.name,
+            remove: () =>
+                visitWithFilters({
+                    ...filters,
+                    manufacturers: filters.manufacturers.filter(
+                        (value) => value !== option.id,
+                    ),
+                }),
+        })),
+        ...activeSpecialties.map((option) => ({
+            key: `specialty-${option.id}`,
+            name: option.name,
+            remove: () =>
+                visitWithFilters({
+                    ...filters,
+                    specialties: filters.specialties.filter(
+                        (value) => value !== option.id,
+                    ),
+                }),
+        })),
+    ]);
 </script>
 
-{#if activeManufacturers.length > 0}
+{#if chips.length > 0}
     <div class="mb-5 flex flex-wrap items-center gap-2">
-        {#each activeManufacturers as manufacturer (manufacturer.id)}
+        {#each chips as chip (chip.key)}
             <button
                 type="button"
-                onclick={() => removeManufacturer(manufacturer.id)}
-                aria-label={`Filter ${manufacturer.name} entfernen`}
+                onclick={chip.remove}
+                aria-label={`Filter ${chip.name} entfernen`}
                 class="inline-flex items-center gap-1.5 rounded-full border border-border bg-white py-1 pl-3 pr-2 text-sm text-foreground shadow-sm transition-colors hover:border-brand-accent hover:text-brand-accent"
             >
-                {manufacturer.name}
+                {chip.name}
                 <X class="size-3.5" />
             </button>
         {/each}
         <button
             type="button"
-            onclick={() => visitWithManufacturerFilter([])}
+            onclick={clearFilters}
             class="px-2 text-sm font-medium text-brand-accent hover:underline"
         >
             Alle zurücksetzen

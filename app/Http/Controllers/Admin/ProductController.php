@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\StoreProductRequest;
 use App\Models\Manufacturer;
 use App\Models\Product;
 use App\Support\Catalog\Categories;
+use App\Support\Catalog\Specialties;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -26,12 +27,14 @@ class ProductController extends Controller
         return Inertia::render('Admin/Products/Create', [
             'manufacturers' => Manufacturer::orderBy('name')->get(['id', 'name']),
             'categories' => Categories::options(),
+            'specialtyCategories' => Categories::slugsWithSpecialties(),
+            'specialties' => Specialties::options(),
         ]);
     }
 
     public function store(StoreProductRequest $request): RedirectResponse
     {
-        $product = Product::create($request->validated());
+        $product = Product::create($request->productData());
 
         return redirect()->route('admin.products.edit', $product)
             ->with('success', 'Produkt erstellt.');
@@ -43,12 +46,14 @@ class ProductController extends Controller
             'product' => $product->load('manufacturer', 'images', 'variants'),
             'manufacturers' => Manufacturer::orderBy('name')->get(['id', 'name']),
             'categories' => Categories::options(),
+            'specialtyCategories' => Categories::slugsWithSpecialties(),
+            'specialties' => Specialties::options(),
         ]);
     }
 
     public function update(StoreProductRequest $request, Product $product): RedirectResponse
     {
-        $product->update($request->validated());
+        $product->update($request->productData());
 
         return redirect()->route('admin.products.index')
             ->with('success', 'Produkt aktualisiert.');

@@ -191,17 +191,97 @@ class ProductBrowsingTest extends TestCase
             );
     }
 
-    public function test_index_specialty_filter_is_not_wired_yet(): void
+    public function test_index_exposes_specialty_options_in_config_order_with_counts(): void
     {
-        Product::factory()->count(2)->create();
+        Product::factory()->create(['category_slug' => 'ultraschallsysteme', 'specialties' => ['urologie', 'kardiologie']]);
+        Product::factory()->create(['category_slug' => 'ultraschallsonden', 'specialties' => ['kardiologie']]);
+        Product::factory()->create(['category_slug' => 'zubehoer']);
 
-        $this->get(route('products.index', ['fachrichtung' => ['kardiologie']]))
+        $this->get(route('products.index'))
+            ->assertOk()
+            ->assertInertia(
+                fn ($page) => $page
+                    ->where('filters.specialties', [])
+                    ->where('filterOptions.specialties', [
+                        ['id' => 'kardiologie', 'name' => 'Kardiologie', 'count' => 2],
+                        ['id' => 'urologie', 'name' => 'Urologie', 'count' => 1],
+                    ])
+                    ->where('filterOptions.total', 3)
+                    ->where('filterOptions.totalWithSpecialtyFilter', 3)
+            );
+    }
+
+    public function test_index_filters_by_specialty_with_or_within_the_group(): void
+    {
+        Product::factory()->create(['specialties' => ['kardiologie']]);
+        Product::factory()->create(['specialties' => ['urologie', 'radiologie']]);
+        Product::factory()->create(['specialties' => ['paediatrie']]);
+        Product::factory()->create();
+
+        $this->get(route('products.index', ['fachrichtung' => ['kardiologie', 'urologie']]))
+            ->assertOk()
+            ->assertInertia(
+                fn ($page) => $page
+                    ->where('total', 2)
+                    ->where('filters.specialties', ['kardiologie', 'urologie'])
+                    ->where('filterOptions.totalWithSpecialtyFilter', 2)
+            );
+    }
+
+    public function test_index_ignores_unknown_or_unused_specialties(): void
+    {
+        Product::factory()->count(2)->create(['specialties' => ['kardiologie']]);
+
+        $this->get(route('products.index', ['fachrichtung' => ['zahnmedizin', 'urologie']]))
             ->assertOk()
             ->assertInertia(
                 fn ($page) => $page
                     ->where('total', 2)
                     ->where('filters.specialties', [])
-                    ->where('filterOptions.specialties', [])
+            );
+    }
+
+    public function test_specialty_and_manufacturer_filters_combine_and_facet_each_other(): void
+    {
+        $sony = Manufacturer::factory()->create(['name' => 'Sony']);
+        $mindray = Manufacturer::factory()->create(['name' => 'Mindray']);
+
+        Product::factory()->for($sony)->create(['specialties' => ['kardiologie']]);
+        Product::factory()->for($sony)->create(['specialties' => ['urologie']]);
+        Product::factory()->for($mindray)->create(['specialties' => ['kardiologie']]);
+
+        $this->get(route('products.index', ['hersteller' => [$sony->id], 'fachrichtung' => ['kardiologie']]))
+            ->assertOk()
+            ->assertInertia(
+                fn ($page) => $page
+                    ->where('total', 1)
+                    // Hersteller-Zahlen mit Fachrichtungs-Filter, Fachrichtungs-Zahlen mit Hersteller-Filter.
+                    ->where('filterOptions.manufacturers.0', ['id' => $mindray->id, 'name' => 'Mindray', 'count' => 1])
+                    ->where('filterOptions.manufacturers.1', ['id' => $sony->id, 'name' => 'Sony', 'count' => 1])
+                    ->where('filterOptions.specialties', [
+                        ['id' => 'kardiologie', 'name' => 'Kardiologie', 'count' => 1],
+                        ['id' => 'urologie', 'name' => 'Urologie', 'count' => 1],
+                    ])
+                    ->where('filterOptions.total', 3)
+                    ->where('filterOptions.totalWithSpecialtyFilter', 2)
+            );
+    }
+
+    public function test_manufacturer_without_matches_for_the_specialty_stays_selectable_with_zero(): void
+    {
+        $sony = Manufacturer::factory()->create(['name' => 'Sony']);
+        $mindray = Manufacturer::factory()->create(['name' => 'Mindray']);
+
+        Product::factory()->for($sony)->create(['specialties' => ['kardiologie']]);
+        Product::factory()->for($mindray)->create(['specialties' => ['urologie']]);
+
+        $this->get(route('products.index', ['hersteller' => [$mindray->id], 'fachrichtung' => ['kardiologie']]))
+            ->assertOk()
+            ->assertInertia(
+                fn ($page) => $page
+                    ->where('total', 0)
+                    ->where('filters.manufacturers', [$mindray->id])
+                    ->where('filterOptions.manufacturers.0', ['id' => $mindray->id, 'name' => 'Mindray', 'count' => 0])
             );
     }
 
@@ -266,6 +346,23 @@ class ProductBrowsingTest extends TestCase
         $this->get(route('products.show', $product))
             ->assertOk()
             ->assertInertia(fn ($page) => $page->where('product.technical_specs', []));
+    }
+
+    public function test_show_exposes_specialty_names_in_config_order(): void
+    {
+        $product = Product::factory()->create([
+            'category_slug' => 'ultraschallsysteme',
+            'specialties' => ['urologie', 'kardiologie'],
+        ]);
+
+        $this->get(route('products.show', $product))
+            ->assertOk()
+            ->assertInertia(
+                fn ($page) => $page->where('product.specialties', [
+                    ['slug' => 'kardiologie', 'name' => 'Kardiologie'],
+                    ['slug' => 'urologie', 'name' => 'Urologie'],
+                ])
+            );
     }
 
     public function test_show_returns_404_for_unknown_product(): void

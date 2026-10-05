@@ -36,6 +36,7 @@
         name: string;
         description: string | null;
         technical_specs: TechnicalSpec[];
+        specialties: { slug: string; name: string }[];
         price: string;
         is_available: boolean;
         category: { name: string; slug: string } | null;
@@ -371,6 +372,20 @@
                         >
                             {product.name}
                         </h1>
+                        {#if product.specialties.length > 0}
+                            <ul
+                                class="mt-3 flex flex-wrap gap-1.5"
+                                aria-label="Fachrichtungen"
+                            >
+                                {#each product.specialties as specialty (specialty.slug)}
+                                    <li
+                                        class="rounded-full border border-border bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground"
+                                    >
+                                        {specialty.name}
+                                    </li>
+                                {/each}
+                            </ul>
+                        {/if}
                     </div>
 
                     <div

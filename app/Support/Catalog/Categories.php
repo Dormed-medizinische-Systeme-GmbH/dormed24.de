@@ -14,7 +14,7 @@ final class Categories
      */
     public static function all(): array
     {
-        /** @var list<array{slug: string, name: string, description?: string|null}> $entries */
+        /** @var list<array{slug: string, name: string, description?: string|null, has_specialties?: bool}> $entries */
         $entries = (array) config('categories', []);
 
         return array_map(
@@ -22,6 +22,7 @@ final class Categories
                 slug: $entry['slug'],
                 name: $entry['name'],
                 description: $entry['description'] ?? null,
+                hasSpecialties: $entry['has_specialties'] ?? false,
             ),
             $entries,
         );
@@ -48,6 +49,19 @@ final class Categories
     public static function slugs(): array
     {
         return array_map(fn (Category $category): string => $category->slug, self::all());
+    }
+
+    /**
+     * Kategorien, deren Produkte Fachrichtungen haben.
+     *
+     * @return list<string>
+     */
+    public static function slugsWithSpecialties(): array
+    {
+        return array_values(array_map(
+            fn (Category $category): string => $category->slug,
+            array_filter(self::all(), fn (Category $category): bool => $category->hasSpecialties),
+        ));
     }
 
     /**
