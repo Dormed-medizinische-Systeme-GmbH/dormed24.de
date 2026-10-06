@@ -10,6 +10,8 @@
         fax: string;
         phone_href: string;
         fax_href: string;
+        phone_display: string;
+        fax_display: string;
     };
 
     const contact = $derived(page.props.contact as ContactInfo);
@@ -31,7 +33,7 @@
                 >
                     <Phone class="size-4 shrink-0 text-muted-foreground" />
                     <a href={contact.phone_href} class="hover:text-brand-accent"
-                        >{contact.phone}</a
+                        >{contact.phone_display}</a
                     >
                 </p>
                 <p
@@ -39,7 +41,7 @@
                 >
                     <Printer class="size-4 shrink-0 text-muted-foreground" />
                     <a href={contact.fax_href} class="hover:text-brand-accent"
-                        >{contact.fax}</a
+                        >{contact.fax_display}</a
                     >
                 </p>
                 <p

@@ -114,6 +114,8 @@
         fax: string;
         phone_href: string;
         fax_href: string;
+        phone_display: string;
+        fax_display: string;
     };
 
     type RandomProduct = {
@@ -296,7 +298,7 @@
                     <span
                         class="text-2xl font-bold tracking-wide text-white lg:text-3xl"
                     >
-                        {contact.phone}
+                        {contact.phone_display}
                     </span>
                 </a>
             </div>
