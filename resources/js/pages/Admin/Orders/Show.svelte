@@ -8,7 +8,7 @@
 </script>
 
 <script lang="ts">
-    import { router } from '@inertiajs/svelte';
+    import { router, setLayoutProps } from '@inertiajs/svelte';
     import { Loader2 } from '@lucide/svelte';
     import Package from '@lucide/svelte/icons/package';
     import { toast } from 'svelte-sonner';
@@ -169,7 +169,35 @@
 
         return lines.join(', ') || '—';
     }
+
+    // Bestellaktionen rechts im Admin-Header.
+    $effect(() => {
+        setLayoutProps({ actions: headerActions });
+    });
 </script>
+
+{#snippet headerActions()}
+    {#if canConfirmPayment}
+        <label class="flex items-center gap-2 text-sm text-muted-foreground">
+            <input
+                type="checkbox"
+                bind:checked={notifyCustomer}
+                class="accent-primary"
+            />
+            Kunde benachrichtigen
+        </label>
+        <Button onclick={confirmPayment} disabled={confirmingPayment}>
+            {#if confirmingPayment}<Loader2 class="size-4 animate-spin" />{/if}
+            Zahlungseingang bestätigen
+        </Button>
+    {/if}
+    {#if canRefund}
+        <Button variant="destructive" onclick={refund} disabled={refunding}>
+            {#if refunding}<Loader2 class="size-4 animate-spin" />{/if}
+            Zahlung erstatten
+        </Button>
+    {/if}
+{/snippet}
 
 <AppHead title="Bestellung #{order.id} — Admin" />
 
@@ -281,60 +309,6 @@
             </CardContent>
         </Card>
     </div>
-
-    <!-- Aktionen -->
-    <Card>
-        <CardHeader>
-            <CardTitle>Aktionen</CardTitle>
-        </CardHeader>
-        <CardContent class="flex flex-col gap-4">
-            {#if !canConfirmPayment && !canRefund}
-                <p class="text-sm text-muted-foreground">
-                    Diese Bestellung wird ausschließlich automatisch über PayPal
-                    verwaltet — hier ist keine manuelle Aktion möglich.
-                </p>
-            {/if}
-
-            <div class="flex flex-wrap items-end gap-3">
-                {#if canConfirmPayment}
-                    <Button
-                        onclick={confirmPayment}
-                        disabled={confirmingPayment}
-                    >
-                        {#if confirmingPayment}<Loader2
-                                class="size-4 animate-spin"
-                            />{/if}
-                        Zahlungseingang bestätigen
-                    </Button>
-                {/if}
-                {#if canRefund}
-                    <Button
-                        variant="destructive"
-                        onclick={refund}
-                        disabled={refunding}
-                    >
-                        {#if refunding}<Loader2
-                                class="size-4 animate-spin"
-                            />{/if}
-                        Zahlung erstatten
-                    </Button>
-                {/if}
-            </div>
-
-            {#if canConfirmPayment}
-                <label
-                    class="flex items-center gap-2 text-sm text-muted-foreground"
-                >
-                    <input
-                        type="checkbox"
-                        bind:checked={notifyCustomer}
-                        class="accent-primary"
-                    />
-                    Kunde per E-Mail benachrichtigen (Bestellbestätigung senden)
-                </label>
-            {/if}
-        </CardContent>
-    </Card>
 
     <!-- Adressen -->
     <div class="grid gap-6 md:grid-cols-2">
