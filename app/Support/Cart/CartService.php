@@ -170,7 +170,7 @@ class CartService
             ->get()
             ->keyBy(fn (Product $product) => (string) $product->getKey());
 
-        return collect($rawItems)
+        return array_values(collect($rawItems)
             ->map(function (int $quantity, int|string $lineKey) use ($products): ?CartItem {
                 $lineKey = (string) $lineKey;
                 [$productId, $variantId] = $this->parseLineKey($lineKey);
@@ -221,8 +221,7 @@ class CartService
                 );
             })
             ->filter()
-            ->values()
-            ->all();
+            ->all());
     }
 
     /**
@@ -247,7 +246,7 @@ class CartService
      */
     private function shippingMethods(string $selectedId): array
     {
-        return $this->shippingMethodModels()
+        return array_values($this->shippingMethodModels()
             ->values()
             ->map(function (ShippingMethod $method, int $index) use ($selectedId): ShippingOption {
                 $methodId = (string) $method->id;
@@ -260,8 +259,7 @@ class CartService
                     selected: $methodId === $selectedId || ($selectedId === '' && $index === 0),
                 );
             })
-            ->values()
-            ->all();
+            ->all());
     }
 
     /**
