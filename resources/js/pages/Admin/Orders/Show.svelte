@@ -84,6 +84,16 @@
         REFUNDED: 'Rückerstattet',
     };
 
+    const orderedAt = $derived(
+        new Date(order.created_at).toLocaleDateString('de-DE', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        }),
+    );
+
     let notifyCustomer = $state(false);
     let confirmingPayment = $state(false);
     let refunding = $state(false);
@@ -229,7 +239,7 @@
         <!-- Kundendaten -->
         <Card>
             <CardHeader>
-                <CardTitle>Kunde</CardTitle>
+                <CardTitle>Bestellinformationen</CardTitle>
             </CardHeader>
             <CardContent class="space-y-2 text-sm">
                 {#if order.customer}
@@ -248,6 +258,20 @@
                 {:else}
                     <p class="text-muted-foreground">Kunde nicht verfügbar.</p>
                 {/if}
+                <div class="flex justify-between">
+                    <span class="text-muted-foreground">Bestellzeitpunkt</span>
+                    <span>{orderedAt}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-muted-foreground">Status</span>
+                    <span
+                        class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {orderStatusBadgeClass(
+                            order.status,
+                        )}"
+                    >
+                        {orderStatusLabel(order.status)}
+                    </span>
+                </div>
             </CardContent>
         </Card>
 
