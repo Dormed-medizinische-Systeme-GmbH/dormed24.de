@@ -11,6 +11,8 @@
         fax: string;
         phone_href: string;
         fax_href: string;
+        phone_display: string;
+        fax_display: string;
     };
 
     const contact = $derived(page.props.contact as ContactInfo);
@@ -126,7 +128,8 @@
                 Bei weiteren Fragen erreichen Sie uns unter
                 <a
                     href={contact.phone_href}
-                    class="text-brand-accent hover:underline">{contact.phone}</a
+                    class="text-brand-accent hover:underline"
+                    >{contact.phone_display}</a
                 >
                 oder
                 <a
@@ -169,7 +172,7 @@
                         href={contact.phone_href}
                         class="inline-flex items-center rounded-md bg-brand-secondary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-accent"
                     >
-                        {contact.phone}
+                        {contact.phone_display}
                     </a>
                     <a
                         href={`mailto:${contact.email}`}

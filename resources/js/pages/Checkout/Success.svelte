@@ -42,6 +42,8 @@
         fax: string;
         phone_href: string;
         fax_href: string;
+        phone_display: string;
+        fax_display: string;
     };
 
     const contact = $derived(page.props.contact as ContactInfo);
@@ -166,7 +168,7 @@
         <p class="mt-6 text-center text-xs text-muted-foreground">
             Bei Fragen erreichen Sie uns unter <a
                 href={contact.phone_href}
-                class="hover:underline">{contact.phone}</a
+                class="hover:underline">{contact.phone_display}</a
             >
         </p>
     </main>

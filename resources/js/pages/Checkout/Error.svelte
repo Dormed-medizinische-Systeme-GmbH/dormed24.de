@@ -13,6 +13,8 @@
         fax: string;
         phone_href: string;
         fax_href: string;
+        phone_display: string;
+        fax_display: string;
     };
 
     const contact = $derived(page.props.contact as ContactInfo);
@@ -38,7 +40,8 @@
             Bitte versuchen Sie es erneut oder kontaktieren Sie uns unter
             <a
                 href={contact.phone_href}
-                class="text-brand-accent hover:underline">{contact.phone}</a
+                class="text-brand-accent hover:underline"
+                >{contact.phone_display}</a
             >.
         </p>
         <div class="mt-8 flex justify-center gap-3">

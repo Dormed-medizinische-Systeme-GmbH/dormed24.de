@@ -68,6 +68,8 @@
         fax: string;
         phone_href: string;
         fax_href: string;
+        phone_display: string;
+        fax_display: string;
     };
 
     type RandomProduct = {
@@ -259,7 +261,7 @@
                             Telefonisch erreichbar
                         </span>
                         <span class="block text-[17px] font-bold text-primary">
-                            {contact.phone}
+                            {contact.phone_display}
                         </span>
                     </span>
                 </a>

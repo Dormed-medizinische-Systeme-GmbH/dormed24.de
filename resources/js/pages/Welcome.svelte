@@ -291,11 +291,6 @@
                         <Phone class="size-5 text-white" />
                     </div>
                     <span
-                        class="hidden text-2xl font-bold tracking-wide text-white lg:text-3xl"
-                    >
-                        02301 – 188/600
-                    </span>
-                    <span
                         class="text-2xl font-bold tracking-wide text-white lg:text-3xl"
                     >
                         {contact.phone_display}

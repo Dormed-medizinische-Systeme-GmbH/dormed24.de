@@ -10,6 +10,8 @@
         fax: string;
         phone_href: string;
         fax_href: string;
+        phone_display: string;
+        fax_display: string;
     };
 
     const contact = $derived(page.props.contact as ContactInfo);
@@ -38,14 +40,14 @@
                         class="flex items-center gap-2 text-white transition hover:text-[#8fc4f0]"
                     >
                         <Phone class="size-4 shrink-0 text-white/45" />
-                        {contact.phone}
+                        {contact.phone_display}
                     </a>
                     <a
                         href={contact.fax_href}
                         class="flex items-center gap-2 text-white transition hover:text-[#8fc4f0]"
                     >
                         <Printer class="size-4 shrink-0 text-white/45" />
-                        {contact.fax}
+                        {contact.fax_display}
                     </a>
                     <a
                         href={`mailto:${contact.email}`}

@@ -10,6 +10,8 @@
         fax: string;
         phone_href: string;
         fax_href: string;
+        phone_display: string;
+        fax_display: string;
     };
 
     const contact = $derived(page.props.contact as ContactInfo);
@@ -107,14 +109,14 @@
                         Telefon: <a
                             href={contact.phone_href}
                             class="text-brand-accent hover:underline"
-                            >{contact.phone}</a
+                            >{contact.phone_display}</a
                         >
                     </li>
                     <li>
                         Telefax: <a
                             href={contact.fax_href}
                             class="text-brand-accent hover:underline"
-                            >{contact.fax}</a
+                            >{contact.fax_display}</a
                         >
                     </li>
                     <li>
