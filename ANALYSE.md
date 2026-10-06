@@ -53,26 +53,11 @@ mobiles Datenvolumen.
 
 ## 🔵 Code und Doku
 
-### CI-Gate unvollständig (V4 Launch 1)
-
-- `tests.yml` führt PHPStan, Tests und Build aus, aber kein `svelte-check`
-  (`npm run types:check`).
-- `lint.yml` ruft `npm run format` und `npm run lint` auf, also die Varianten,
-  die schreiben bzw. fixen. Formatverstöße lassen die CI deshalb nicht fehlschlagen.
-
-Abhilfe: auf `format:check`/`lint:check` umstellen und `npm run types:check`
-ergänzen.
-
 ### Cart-Array als DTO (V1 #18, V4 Q-3)
 
 Die PHPStan-Baseline hat 84 Einträge (Juli: 98). Der Großteil sitzt in
 `CartService` und `PayPalService` (je 17) und hängt am untypisierten
 Cart-Array. Ein Cart-DTO würde den Großteil davon auflösen.
-
-### `sessions.user_id` (V2 S6, kosmetisch)
-
-Die Spalte stammt aus dem Starter-Kit, die Authentifizierung läuft über
-`customers`. Funktional egal.
 
 ## 🚀 Betrieb / Launch
 
@@ -118,3 +103,6 @@ Die Spalte stammt aus dem Starter-Kit, die Authentifizierung läuft über
   `/informationen/versand` bleibt vorerst.
 - Cart als Shared Prop (Header-Zähler) wird nicht lazy/deferred geladen.
 - Keine atomaren Deploys.
+- `sessions.user_id` bleibt so benannt. Laravels `DatabaseSessionHandler`
+  schreibt fest in diese Spalte, der Inhalt ist die `customers.id` des
+  `web`-Guards.

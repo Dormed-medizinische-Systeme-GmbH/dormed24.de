@@ -341,7 +341,7 @@ Indexe:
 | Spalte          | Typ     | Nullable | Hinweis        |
 |-----------------|---------|----------|----------------|
 | `id`            | varchar | NO       | PK             |
-| `user_id`       | integer | YES      | nullable       |
+| `user_id`       | integer | YES      | nullable, enthält `customers.id` (Name von Laravel vorgegeben) |
 | `ip_address`    | varchar | YES      |                |
 | `user_agent`    | text    | YES      |                |
 | `payload`       | text    | NO       |                |

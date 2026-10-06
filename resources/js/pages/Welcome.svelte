@@ -114,6 +114,8 @@
         fax: string;
         phone_href: string;
         fax_href: string;
+        phone_display: string;
+        fax_display: string;
     };
 
     type RandomProduct = {
@@ -219,7 +221,10 @@
 <svelte:head>
     <!-- eslint-disable-next-line svelte/no-at-html-tags -- JSON-LD; "<" is escaped in organizationSchema -->
     {@html organizationJsonLdHtml}
-    <meta name="google-site-verification" content="RO3ODoXF_H3wJR7Y23UapHtLY09mJ35g9wfBh52pWec" />
+    <meta
+        name="google-site-verification"
+        content="RO3ODoXF_H3wJR7Y23UapHtLY09mJ35g9wfBh52pWec"
+    />
 </svelte:head>
 
 <div class="min-h-screen bg-white">
@@ -286,14 +291,9 @@
                         <Phone class="size-5 text-white" />
                     </div>
                     <span
-                        class="hidden text-2xl font-bold tracking-wide text-white lg:text-3xl"
-                    >
-                        02301 – 188/600
-                    </span>
-                    <span
                         class="text-2xl font-bold tracking-wide text-white lg:text-3xl"
                     >
-                        {contact.phone}
+                        {contact.phone_display}
                     </span>
                 </a>
             </div>

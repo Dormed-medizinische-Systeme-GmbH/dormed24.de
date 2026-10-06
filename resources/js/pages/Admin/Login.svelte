@@ -55,6 +55,10 @@
             </Button>
         </div>
 
-        <FormErrorsAlert {errors} title="Anmeldung fehlgeschlagen." showDetails={false} />
+        <FormErrorsAlert
+            {errors}
+            title="Anmeldung fehlgeschlagen."
+            showDetails={false}
+        />
     {/snippet}
 </Form>

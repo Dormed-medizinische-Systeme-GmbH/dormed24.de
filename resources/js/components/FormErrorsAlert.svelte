@@ -17,7 +17,9 @@
     } = $props();
 
     const messages = $derived(
-        Object.values(errors).filter((message): message is string => Boolean(message)),
+        Object.values(errors).filter((message): message is string =>
+            Boolean(message),
+        ),
     );
 
     let dismissed = $state(false);

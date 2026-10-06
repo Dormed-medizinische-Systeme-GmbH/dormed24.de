@@ -18,7 +18,7 @@
 
 <Link
     href={ProductController.show.url(product.id)}
-    class="group overflow-hidden rounded-[1.4rem] border border-border bg-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-lg"
+    class="group flex h-full flex-col overflow-hidden rounded-[1.4rem] border border-border bg-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-lg"
 >
     <div class="aspect-square w-full overflow-hidden bg-white">
         {#if product.images[0]}

@@ -65,5 +65,9 @@ jobs:
       - name: Run Type Analysis
         run: composer types:check
 
+      # Nach dem Build, weil die Wayfinder-Dateien dort generiert werden.
+      - name: Check Frontend Types
+        run: npm run types:check
+
       - name: Tests
         run: php artisan test

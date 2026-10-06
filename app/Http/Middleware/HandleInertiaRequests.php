@@ -68,11 +68,37 @@ class HandleInertiaRequests extends Middleware
                 'fax' => $fax,
                 'phone_href' => $this->phoneHref($phone),
                 'fax_href' => $this->phoneHref($fax),
+                'phone_display' => $this->phoneDisplay($phone),
+                'fax_display' => $this->phoneDisplay($fax),
             ],
             // Feste Kategorien aus config/categories.php, in deren Reihenfolge.
             'navCategories' => Inertia::always(fn () => Categories::options()),
             'sandbox' => ! PaymentMode::isLive(),
         ];
+    }
+
+    /**
+     * Anzeigeformat "02301 / 188-600": Vorwahl, Schrägstrich, Rufnummer mit
+     * Bindestrich vor den letzten drei Ziffern. Die Vorwahl ist der erste
+     * Ziffernblock der Eingabe, +49/0049 wird zur 0. Lässt sich keine Vorwahl
+     * abtrennen, bleibt der Wert unverändert.
+     */
+    private function phoneDisplay(string $value): string
+    {
+        $national = preg_replace('/^\s*(\+|00)49[\s\-\/–]*(\(0\))?\s*/u', '0', $value) ?? $value;
+
+        if (! preg_match('/^\s*(\d+)\D+(.*)$/u', $national, $matches)) {
+            return $value;
+        }
+
+        $areaCode = $matches[1];
+        $subscriber = preg_replace('/\D/', '', $matches[2]) ?? '';
+
+        if (strlen($subscriber) < 4) {
+            return $value;
+        }
+
+        return $areaCode.' / '.substr($subscriber, 0, -3).'-'.substr($subscriber, -3);
     }
 
     private function phoneHref(string $value): string

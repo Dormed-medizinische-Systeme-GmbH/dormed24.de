@@ -64,9 +64,13 @@
                     carouselApi = api;
                 }}
             >
-                <Carousel.Content>
+                <!-- pb-6/pt-3: Platz für Hover-Schatten und -Anhebung der Karten,
+                     sonst schneidet das overflow-hidden des Karussells sie ab. -->
+                <Carousel.Content class="pb-6 pt-3">
                     {#each products as product (product.id)}
-                        <Carousel.Item class="basis-full md:basis-1/2 lg:basis-1/4">
+                        <Carousel.Item
+                            class="basis-full md:basis-1/2 lg:basis-1/4"
+                        >
                             <ProductCard {product} />
                         </Carousel.Item>
                     {/each}
