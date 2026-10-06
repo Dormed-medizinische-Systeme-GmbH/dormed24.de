@@ -37,15 +37,15 @@ class PayPalController extends Controller
     {
         $cart = $this->cartService->cart();
 
-        if ($cart['is_empty']) {
+        if ($cart->isEmpty()) {
             return response()->json(['error' => 'Warenkorb ist leer.'], 400);
         }
 
-        if (! $this->cartService->isAddressComplete()) {
+        if (! $cart->shippingAddress->isComplete()) {
             return response()->json(['error' => 'Bitte vervollständigen Sie Ihre Lieferadresse.'], 422);
         }
 
-        if ($this->cartService->hasUnavailableItems()) {
+        if ($cart->hasUnavailableItems()) {
             return response()->json(['error' => 'Ihr Warenkorb enthält nicht mehr verfügbare Produkte.'], 422);
         }
 
@@ -58,8 +58,8 @@ class PayPalController extends Controller
 
         try {
             $response = $this->payPalService->createOrder(
-                amount: (float) $cart['total'],
-                address: $cart['shipping_address'] ?? null,
+                amount: $cart->totalCents() / 100,
+                address: $cart->shippingAddress->toArray(),
             );
 
             if (! isset($response['id'])) {

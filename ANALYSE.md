@@ -53,11 +53,15 @@ mobiles Datenvolumen.
 
 ## 🔵 Code und Doku
 
-### Cart-Array als DTO (V1 #18, V4 Q-3)
+### PayPal-Antworten untypisiert (aus V1 #18 / V4 Q-3 abgeleitet)
 
-Die PHPStan-Baseline hat 84 Einträge (Juli: 98). Der Großteil sitzt in
-`CartService` und `PayPalService` (je 17) und hängt am untypisierten
-Cart-Array. Ein Cart-DTO würde den Großteil davon auflösen.
+Die PHPStan-Baseline hat noch 63 Einträge (Juli: 98). Der größte Block sind
+17 in `PayPalService`. Ursache ist die PayPal-Bibliothek: Ihre Methoden liefern
+je nach Antwort ein Array, einen `StreamInterface` oder einen String. Dazu
+kommen 5 im `PayPalController`, meist untypisierte Webhook-Payloads. Abhilfe:
+ein kleiner Helfer, der jede Antwort in ein typisiertes Array normalisiert,
+plus Array-Shapes für die Webhook-Ressourcen. Der Warenkorb ist seit dem
+Cart-DTO (`App\Support\Cart\Cart`) erledigt.
 
 ## 🚀 Betrieb / Launch
 

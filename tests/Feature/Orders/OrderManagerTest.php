@@ -7,10 +7,16 @@ use App\Mail\OrderConfirmationMail;
 use App\Mail\PaymentConfirmationMail;
 use App\Models\Customer;
 use App\Models\Order;
+use App\Models\OrderItem;
+use App\Support\Cart\Cart;
+use App\Support\Cart\CartAddress;
+use App\Support\Cart\CartItem;
+use App\Support\Cart\PaymentOption;
+use App\Support\Cart\ShippingOption;
 use App\Support\Orders\OrderManager;
-use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use RuntimeException;
 use Tests\TestCase;
 
 class OrderManagerTest extends TestCase
@@ -106,31 +112,70 @@ class OrderManagerTest extends TestCase
     {
         $customer = Customer::factory()->create();
 
-        $cart = [
-            'total' => '19.99',
-            'shipping_total' => '0.00',
-            'shipping_address' => null,
-            'billing_address' => null,
-            'items' => [
-                [
-                    'product_id' => null,
-                    // NOT-NULL-Verletzung: der Item-Insert schlägt fehl, die
-                    // bereits angelegte Order darf nicht stehen bleiben.
-                    'name' => null,
-                    'unit_price' => '19.99',
-                    'quantity' => 1,
-                ],
-            ],
-        ];
+        // Der Item-Insert schlägt fehl, die bereits angelegte Order darf
+        // nicht stehen bleiben.
+        OrderItem::creating(fn () => throw new RuntimeException('Item-Insert fehlgeschlagen'));
 
         try {
-            app(OrderManager::class)->createFromCart($customer, $cart, 'invoice');
+            app(OrderManager::class)->createFromCart($customer, $this->cartWithOneItem(), 'invoice');
             $this->fail('Expected the item insert to fail.');
-        } catch (QueryException) {
+        } catch (RuntimeException) {
             // expected
         }
 
         $this->assertDatabaseCount('orders', 0);
         $this->assertDatabaseCount('order_items', 0);
+    }
+
+    public function test_create_from_cart_persists_totals_addresses_and_items(): void
+    {
+        $customer = Customer::factory()->create();
+
+        $order = app(OrderManager::class)->createFromCart($customer, $this->cartWithOneItem(), 'invoice');
+
+        $this->assertSame('pending', $order->status);
+        $this->assertSame('invoice', $order->payment_method);
+        $this->assertSame('44.88', $order->total_amount);
+        $this->assertSame('4.90', $order->shipping_amount);
+        $this->assertSame('Berlin', $order->shipping_address['city']);
+        $this->assertNull($order->billing_address);
+        $this->assertDatabaseHas('order_items', [
+            'order_id' => $order->id,
+            'product_id' => 7,
+            'product_name' => 'Ultraschallgel',
+            'unit_price' => '19.99',
+            'quantity' => 2,
+        ]);
+    }
+
+    /**
+     * 2 × 19,99 + 4,90 Versand = 44,88.
+     */
+    private function cartWithOneItem(): Cart
+    {
+        return new Cart(
+            items: [
+                new CartItem(
+                    lineKey: '7',
+                    productId: 7,
+                    variantId: null,
+                    variantLabel: null,
+                    name: 'Ultraschallgel',
+                    description: null,
+                    productNumber: '7',
+                    manufacturerName: null,
+                    quantity: 2,
+                    unitPriceCents: 1999,
+                    imageUrl: null,
+                    productUrl: 'https://example.com/produkte/7',
+                    isAvailable: true,
+                ),
+            ],
+            vatRate: 19,
+            shippingMethods: [new ShippingOption('1', 'Standard', null, 490, true)],
+            paymentMethods: [new PaymentOption('invoice', 'invoice', 'Kauf auf Rechnung', null, true)],
+            shippingAddress: CartAddress::fromArray(['first_name' => 'Erika', 'last_name' => 'Muster', 'city' => 'Berlin']),
+            billingAddress: null,
+        );
     }
 }

@@ -8,26 +8,22 @@ use App\Models\ProductVariant;
 use App\Models\ShippingMethod;
 use Illuminate\Support\Collection;
 
+/**
+ * Liest und schreibt den Warenkorb. In der Session liegt nur der schlanke
+ * Rohzustand (CartState), cart() baut daraus das typisierte Cart-DTO.
+ *
+ * @phpstan-type CartState array{items: array<int|string, int>, shipping_method: string, payment_method: string, shipping_address: array<string, mixed>, billing_address: array<string, mixed>|null}
+ */
 class CartService
 {
-    public const DEFAULT_ADDRESS = [
-        'company' => '',
-        'salutation' => '',
-        'first_name' => '',
-        'last_name' => '',
-        'street' => '',
-        'house_number' => '',
-        'address_line2' => '',
-        'zip' => '',
-        'city' => '',
-        'country' => 'DE',
-        'phone' => '',
-    ];
+    public const DEFAULT_ADDRESS = CartAddress::DEFAULTS;
 
     /**
      * Lazily loaded and reused for the lifetime of this instance, so a
      * single cart() call doesn't query shipping methods twice (once via
      * state() for the selected id, once via shippingMethods() for the list).
+     *
+     * @var Collection<int, ShippingMethod>|null
      */
     private ?Collection $shippingMethodModelsCache = null;
 
@@ -35,45 +31,24 @@ class CartService
         private readonly CartStore $store,
     ) {}
 
-    public function cart(): array
+    public function cart(): Cart
     {
         $state = $this->state();
         $items = $this->items($state['items']);
 
-        if ($items->isEmpty() && $state['items'] !== []) {
+        if ($items === [] && $state['items'] !== []) {
             $state['items'] = [];
             $this->persist($state);
         }
 
-        $shippingMethods = $this->shippingMethods($state['shipping_method']);
-        $paymentMethods = $this->paymentMethods($state['payment_method']);
-        $selectedShipping = collect($shippingMethods)->firstWhere('selected', true);
-        $selectedPayment = collect($paymentMethods)->firstWhere('selected', true);
-
-        $subtotalCents = $items->sum('line_total_cents');
-        $shippingCents = (int) ($selectedShipping['price_cents'] ?? 0);
-        $totalCents = $subtotalCents + $shippingCents;
-        $vatRate = (int) config('shop.cart.vat_rate', 19);
-        $netTotalCents = (int) round($totalCents / (1 + ($vatRate / 100)));
-        $vatAmountCents = $totalCents - $netTotalCents;
-
-        return [
-            'items' => $items->values()->all(),
-            'count' => $items->sum('quantity'),
-            'is_empty' => $items->isEmpty(),
-            'vat_rate' => $vatRate,
-            'shipping_methods' => $shippingMethods,
-            'payment_methods' => $paymentMethods,
-            'selected_shipping_method' => $selectedShipping,
-            'selected_payment_method' => $selectedPayment,
-            'subtotal' => $this->formatAmount($subtotalCents),
-            'shipping_total' => $this->formatAmount($shippingCents),
-            'total' => $this->formatAmount($totalCents),
-            'net_total' => $this->formatAmount($netTotalCents),
-            'vat_amount' => $this->formatAmount($vatAmountCents),
-            'shipping_address' => $this->getShippingAddress(),
-            'billing_address' => $this->getBillingAddress(),
-        ];
+        return new Cart(
+            items: $items,
+            vatRate: (int) config('shop.cart.vat_rate', 19),
+            shippingMethods: $this->shippingMethods($state['shipping_method']),
+            paymentMethods: $this->paymentMethods($state['payment_method']),
+            shippingAddress: CartAddress::fromArray($state['shipping_address']),
+            billingAddress: $state['billing_address'] !== null ? CartAddress::fromArray($state['billing_address']) : null,
+        );
     }
 
     public function add(Product $product, int $quantity, ?ProductVariant $variant = null): void
@@ -138,6 +113,9 @@ class CartService
         $this->persist($state);
     }
 
+    /**
+     * @param  array<string, mixed>  $data
+     */
     public function setShippingAddress(array $data): void
     {
         $state = $this->state();
@@ -146,6 +124,9 @@ class CartService
         $this->persist($state);
     }
 
+    /**
+     * @param  array<string, mixed>|null  $data  null = wie Lieferadresse
+     */
     public function setBillingAddress(?array $data): void
     {
         $state = $this->state();
@@ -156,35 +137,29 @@ class CartService
         $this->persist($state);
     }
 
-    public function getShippingAddress(): array
-    {
-        return $this->state()['shipping_address'] ?? self::DEFAULT_ADDRESS;
-    }
-
-    public function getBillingAddress(): ?array
-    {
-        return $this->state()['billing_address']; // null = same as shipping
-    }
-
     public function clear(): void
     {
         $this->persist([
             'items' => [],
-            'shipping_method' => (string) ($this->shippingMethodModels()->first()?->id ?? ''),
-            'payment_method' => (string) (collect($this->paymentMethods(''))->first()['id'] ?? ''),
+            'shipping_method' => (string) ($this->shippingMethodModels()->first()->id ?? ''),
+            'payment_method' => $this->paymentMethods('')[0]->id ?? '',
             'shipping_address' => self::DEFAULT_ADDRESS,
             'billing_address' => null,
         ]);
     }
 
-    private function items(array $rawItems): Collection
+    /**
+     * @param  array<int|string, int>  $rawItems  lineKey => Menge (numerische Keys macht PHP zu int)
+     * @return list<CartItem>
+     */
+    private function items(array $rawItems): array
     {
         if ($rawItems === []) {
-            return collect();
+            return [];
         }
 
         $productIds = collect(array_keys($rawItems))
-            ->map(fn (string $lineKey): int => $this->parseLineKey($lineKey)[0])
+            ->map(fn (int|string $lineKey): int => $this->parseLineKey((string) $lineKey)[0])
             ->unique()
             ->all();
 
@@ -195,8 +170,9 @@ class CartService
             ->get()
             ->keyBy(fn (Product $product) => (string) $product->getKey());
 
-        return collect($rawItems)
-            ->map(function (int $quantity, string $lineKey) use ($products): ?array {
+        return array_values(collect($rawItems)
+            ->map(function (int $quantity, int|string $lineKey) use ($products): ?CartItem {
+                $lineKey = (string) $lineKey;
                 [$productId, $variantId] = $this->parseLineKey($lineKey);
 
                 /** @var Product|null $product */
@@ -218,10 +194,9 @@ class CartService
                     && $product !== null
                     && $product->variants->isNotEmpty();
 
-                $unitPriceCents = $this->amountToCents($variant->price ?? $product->price ?? 0);
-                $lineTotalCents = $unitPriceCents * $quantity;
+                $unitPriceCents = Money::toCents($variant->price ?? $product->price ?? 0);
 
-                $name = (string) ($product?->name ?? 'Produkt nicht verfügbar');
+                $name = (string) ($product->name ?? 'Produkt nicht verfügbar');
 
                 // The variant label becomes part of the line name so cart UI,
                 // checkout, order snapshot and mails all show it consistently.
@@ -229,27 +204,29 @@ class CartService
                     $name .= ' – '.$variant->label;
                 }
 
-                return [
-                    'line_key' => $lineKey,
-                    'product_id' => $productId,
-                    'variant_id' => $variantId,
-                    'variant_label' => $variant?->label,
-                    'name' => $name,
-                    'description' => $product?->description,
-                    'product_number' => (string) ($product?->id ?? $productId),
-                    'manufacturer_name' => $product?->manufacturer?->name,
-                    'quantity' => $quantity,
-                    'unit_price' => $this->formatAmount($unitPriceCents),
-                    'line_total' => $this->formatAmount($lineTotalCents),
-                    'line_total_cents' => $lineTotalCents,
-                    'image_url' => $product?->images->first()?->url,
-                    'product_url' => $product ? route('products.show', $product) : route('products.index'),
-                    'is_available' => $product !== null && $product->is_available && ! $variantMissing && ! $variantRequiredButMissing,
-                ];
+                return new CartItem(
+                    lineKey: $lineKey,
+                    productId: $productId,
+                    variantId: $variantId,
+                    variantLabel: $variant?->label,
+                    name: $name,
+                    description: $product?->description,
+                    productNumber: (string) ($product->id ?? $productId),
+                    manufacturerName: $product?->manufacturer?->name,
+                    quantity: $quantity,
+                    unitPriceCents: $unitPriceCents,
+                    imageUrl: $product?->images->first()?->url,
+                    productUrl: $product ? route('products.show', $product) : route('products.index'),
+                    isAvailable: $product !== null && $product->is_available && ! $variantMissing && ! $variantRequiredButMissing,
+                );
             })
-            ->filter();
+            ->filter()
+            ->all());
     }
 
+    /**
+     * @return Collection<int, ShippingMethod>
+     */
     private function shippingMethodModels(): Collection
     {
         // Nur Versandarten mit gesetztem Preis sind im Self-Service-Checkout
@@ -264,43 +241,50 @@ class CartService
             ->get();
     }
 
+    /**
+     * @return list<ShippingOption>
+     */
     private function shippingMethods(string $selectedId): array
     {
-        return $this->shippingMethodModels()
+        return array_values($this->shippingMethodModels()
             ->values()
-            ->map(function (ShippingMethod $method, int $index) use ($selectedId): array {
+            ->map(function (ShippingMethod $method, int $index) use ($selectedId): ShippingOption {
                 $methodId = (string) $method->id;
-                $priceCents = $this->amountToCents($method->price);
 
-                return [
-                    'id' => $methodId,
-                    'label' => $method->name,
-                    'description' => $method->description,
-                    'price' => $this->formatAmount($priceCents),
-                    'price_cents' => $priceCents,
-                    'selected' => $methodId === $selectedId || ($selectedId === '' && $index === 0),
-                ];
+                return new ShippingOption(
+                    id: $methodId,
+                    label: $method->name,
+                    description: $method->description,
+                    priceCents: Money::toCents($method->price),
+                    selected: $methodId === $selectedId || ($selectedId === '' && $index === 0),
+                );
             })
-            ->all();
+            ->all());
     }
 
+    /**
+     * @return list<PaymentOption>
+     */
     private function paymentMethods(string $selectedId): array
     {
         $methods = [];
         $index = 0;
 
         // Fixed line-up: invoice + PayPal (order and labels from config/shop.php).
-        foreach (config('shop.cart.providers', []) as $provider => $config) {
+        /** @var array<string, array{methods?: list<array{id: string, label: string, description?: string|null}>}> $providers */
+        $providers = config('shop.cart.providers', []);
+
+        foreach ($providers as $provider => $config) {
             foreach ($config['methods'] ?? [] as $method) {
                 $methodId = (string) $method['id'];
 
-                $methods[] = [
-                    'id' => $methodId,
-                    'provider' => $provider,
-                    'label' => $method['label'],
-                    'description' => $method['description'] ?? null,
-                    'selected' => $methodId === $selectedId || ($selectedId === '' && $index === 0),
-                ];
+                $methods[] = new PaymentOption(
+                    id: $methodId,
+                    provider: $provider,
+                    label: $method['label'],
+                    description: $method['description'] ?? null,
+                    selected: $methodId === $selectedId || ($selectedId === '' && $index === 0),
+                );
 
                 $index++;
             }
@@ -311,43 +295,49 @@ class CartService
 
     public function hasUnavailableItems(): bool
     {
-        return $this->items($this->state()['items'])
-            ->contains(fn (array $item): bool => ! $item['is_available']);
+        foreach ($this->items($this->state()['items']) as $item) {
+            if (! $item->isAvailable) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function isAddressComplete(): bool
     {
-        $a = $this->getShippingAddress();
-
-        return ! empty($a['first_name'])
-            && ! empty($a['last_name'])
-            && ! empty($a['street'])
-            && ! empty($a['house_number'])
-            && ! empty($a['zip'])
-            && ! empty($a['city']);
+        return CartAddress::fromArray($this->state()['shipping_address'])->isComplete();
     }
 
+    /**
+     * Rohzustand aus der Session, bereinigt und mit Defaults aufgefüllt.
+     *
+     * @return CartState
+     */
     private function state(): array
     {
         $rawState = $this->store->get();
         $shippingMethodIds = $this->shippingMethodModels()->pluck('id')->map(fn ($id) => (string) $id)->all();
-        $paymentMethodIds = collect($this->paymentMethods(''))->pluck('id')->map(fn ($id) => (string) $id)->all();
+        $paymentMethodIds = array_map(fn (PaymentOption $method): string => $method->id, $this->paymentMethods(''));
+
+        $items = [];
+        $rawItems = is_array($rawState['items'] ?? null) ? $rawState['items'] : [];
+
+        foreach ($rawItems as $lineKey => $item) {
+            [$productId, $variantId] = $this->parseLineKey((string) $lineKey);
+            // Older sessions stored a {quantity, unit_price, name, product_number}
+            // shape per item; only the quantity still matters going forward.
+            $normalizedQuantity = (int) (is_array($item) ? ($item['quantity'] ?? 0) : $item);
+
+            if ($productId < 1 || $normalizedQuantity < 1) {
+                continue;
+            }
+
+            $items[$this->lineKey($productId, $variantId)] = min(99, $normalizedQuantity);
+        }
 
         return [
-            'items' => collect($rawState['items'] ?? [])
-                ->mapWithKeys(function (mixed $item, mixed $lineKey): array {
-                    [$productId, $variantId] = $this->parseLineKey((string) $lineKey);
-                    // Older sessions stored a {quantity, unit_price, name, product_number}
-                    // shape per item; only the quantity still matters going forward.
-                    $normalizedQuantity = (int) (is_array($item) ? ($item['quantity'] ?? 0) : $item);
-
-                    if ($productId < 1 || $normalizedQuantity < 1) {
-                        return [];
-                    }
-
-                    return [$this->lineKey($productId, $variantId) => min(99, $normalizedQuantity)];
-                })
-                ->all(),
+            'items' => $items,
             'shipping_method' => in_array(($rawState['shipping_method'] ?? null), $shippingMethodIds, true)
                 ? (string) $rawState['shipping_method']
                 : (string) ($shippingMethodIds[0] ?? ''),
@@ -364,21 +354,11 @@ class CartService
         ];
     }
 
+    /**
+     * @param  CartState  $state
+     */
     private function persist(array $state): void
     {
         $this->store->put($state);
-    }
-
-    private function amountToCents(string|int|float|null $amount): int
-    {
-        $normalized = str_replace(',', '.', (string) $amount);
-        [$whole, $fraction] = array_pad(explode('.', $normalized, 2), 2, '0');
-
-        return ((int) $whole * 100) + (int) str_pad(substr($fraction, 0, 2), 2, '0');
-    }
-
-    private function formatAmount(int $cents): string
-    {
-        return number_format($cents / 100, 2, '.', '');
     }
 }
