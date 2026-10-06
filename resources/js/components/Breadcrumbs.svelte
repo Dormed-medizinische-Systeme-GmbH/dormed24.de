@@ -1,12 +1,12 @@
 <script lang="ts">
     import { Link } from '@inertiajs/svelte';
+    import ChevronRight from '@lucide/svelte/icons/chevron-right';
     import {
         Breadcrumb,
         BreadcrumbItem,
         BreadcrumbLink,
         BreadcrumbList,
         BreadcrumbPage,
-        BreadcrumbSeparator,
     } from '@/components/ui/breadcrumb';
     import type { BreadcrumbItem as BreadcrumbItemType } from '@/types';
 
@@ -38,7 +38,9 @@
                 {/if}
             </BreadcrumbItem>
             {#if index !== breadcrumbs.length - 1}
-                <BreadcrumbSeparator />
+                <li role="presentation" aria-hidden="true">
+                    <ChevronRight class="size-3.5 text-muted-foreground" />
+                </li>
             {/if}
         {/each}
     </BreadcrumbList>
