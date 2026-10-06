@@ -14,7 +14,7 @@ Bereits umgesetzt (Branch `tests/paypal-images-shipping-gaps`): Webhook-Verifika
 
 ### Nur teilweise abgedeckt
 - `PayPalService::verifyWebhook()`: Der Pfad "keine Webhook-ID" ist jetzt getestet (Sandbox und Live). Der Erfolgspfad (`verification_status === 'SUCCESS'`), der Exception-Pfad und die Weitergabe der `PAYPAL-*`-Header sind es **nicht**. Grund: `PayPalService::client()` erzeugt das SDK intern (`new PayPal(...)`) und holt per Netzwerk ein Token. Ohne injizierbaren Client lässt sich das nicht deterministisch testen. Kleines Refactoring nötig (Client per Konstruktor oder Factory injizieren). Das ist die einzige Authentifizierung des Webhooks und der wichtigste verbleibende Punkt.
-- `markPaymentAndOrder()` (DENIED/REFUNDED) hat keinen Reihenfolge-Schutz wie `PAYMENT.CAPTURE.COMPLETED`. Ein spätes `DENIED` für ein bereits bezahltes Payment würde die Order auf `failed` setzen. Ob PayPal das real so sendet, ist ungeklärt. Erst klären, dann entweder Code absichern und testen oder das Verhalten bewusst dokumentieren. Absichtlich **kein** Test geschrieben, der das aktuelle Verhalten festschreibt.
+- ~~`markPaymentAndOrder()` ohne Reihenfolge-Schutz~~ umgesetzt: spätes `DENIED` für bezahlte/erstattete Orders wird ignoriert, Teilerstattungen per Webhook setzen die Order nicht mehr auf `refunded` (siehe PayPal-Review, Befund 3). Offen bleibt: `markPaymentAndOrder` ist als Name weiterhin unklar.
 
 ## Offen: Schwächen bestehender Tests
 

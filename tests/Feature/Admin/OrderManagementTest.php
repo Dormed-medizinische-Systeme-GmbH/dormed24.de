@@ -7,6 +7,7 @@ use App\Mail\OrderConfirmationMail;
 use App\Mail\PaymentConfirmationMail;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Services\PayPalService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
@@ -129,5 +130,114 @@ class OrderManagementTest extends TestCase
 
         $this->patchJson(route('admin.orders.confirm-payment', $order))
             ->assertRedirect(route('admin.login'));
+    }
+
+    private function paidPaypalOrderWithCapture(): Payment
+    {
+        $order = Order::factory()->create(['status' => 'paid', 'payment_method' => 'paypal']);
+
+        return Payment::factory()->completed()->for($order)->create(['amount' => '49.90']);
+    }
+
+    public function test_refund_marks_payment_and_order_refunded_when_paypal_confirms(): void
+    {
+        $payment = $this->paidPaypalOrderWithCapture();
+
+        $this->mock(PayPalService::class, function ($mock) use ($payment): void {
+            $mock->shouldReceive('refundOrder')
+                ->once()
+                ->with($payment->paypal_capture_id, 49.9)
+                ->andReturn(['id' => 'REFUND1', 'status' => 'COMPLETED']);
+        });
+
+        $this->actingAsAdmin()
+            ->postJson(route('admin.orders.refund', $payment->order))
+            ->assertOk()
+            ->assertJson(['status' => 'refunded']);
+
+        $this->assertSame('REFUNDED', $payment->fresh()->status);
+        $this->assertSame('refunded', $payment->order->fresh()->status);
+    }
+
+    /**
+     * @return array<string, array{array<string, mixed>}>
+     */
+    public static function rejectedRefundResponses(): array
+    {
+        return [
+            // Das SDK liefert API-Fehler als Array statt als Exception.
+            'error array' => [['type' => 'error', 'message' => 'INSTRUMENT_DECLINED']],
+            'error name' => [['name' => 'UNPROCESSABLE_ENTITY', 'details' => [['issue' => 'CAPTURE_FULLY_REFUNDED']]]],
+            'refund failed' => [['id' => 'REFUND2', 'status' => 'FAILED']],
+            'refund cancelled' => [['id' => 'REFUND3', 'status' => 'CANCELLED']],
+            'empty response' => [[]],
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $response
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('rejectedRefundResponses')]
+    public function test_refund_is_not_booked_when_paypal_does_not_confirm_it(array $response): void
+    {
+        $payment = $this->paidPaypalOrderWithCapture();
+
+        $this->mock(PayPalService::class, function ($mock) use ($response): void {
+            $mock->shouldReceive('refundOrder')->once()->andReturn($response);
+        });
+
+        $this->actingAsAdmin()
+            ->postJson(route('admin.orders.refund', $payment->order))
+            ->assertStatus(422);
+
+        $this->assertSame('COMPLETED', $payment->fresh()->status);
+        $this->assertSame('paid', $payment->order->fresh()->status);
+    }
+
+    public function test_pending_refund_is_acknowledged_but_not_booked_as_refunded(): void
+    {
+        $payment = $this->paidPaypalOrderWithCapture();
+
+        $this->mock(PayPalService::class, function ($mock): void {
+            $mock->shouldReceive('refundOrder')->once()->andReturn(['id' => 'REFUND4', 'status' => 'PENDING']);
+        });
+
+        $this->actingAsAdmin()
+            ->postJson(route('admin.orders.refund', $payment->order))
+            ->assertStatus(202)
+            ->assertJson(['status' => 'pending']);
+
+        // Den Abschluss meldet PayPal per CAPTURE.REFUNDED-Webhook.
+        $this->assertSame('COMPLETED', $payment->fresh()->status);
+        $this->assertSame('paid', $payment->order->fresh()->status);
+    }
+
+    public function test_refund_exception_leaves_payment_and_order_untouched(): void
+    {
+        $payment = $this->paidPaypalOrderWithCapture();
+
+        $this->mock(PayPalService::class, function ($mock): void {
+            $mock->shouldReceive('refundOrder')->once()->andThrow(new \RuntimeException('timeout'));
+        });
+
+        $this->actingAsAdmin()
+            ->postJson(route('admin.orders.refund', $payment->order))
+            ->assertStatus(422);
+
+        $this->assertSame('COMPLETED', $payment->fresh()->status);
+        $this->assertSame('paid', $payment->order->fresh()->status);
+    }
+
+    public function test_refund_requires_admin(): void
+    {
+        $payment = $this->paidPaypalOrderWithCapture();
+
+        $this->mock(PayPalService::class, function ($mock): void {
+            $mock->shouldNotReceive('refundOrder');
+        });
+
+        $this->postJson(route('admin.orders.refund', $payment->order))->assertRedirect(route('admin.login'));
+
+        $this->assertSame('COMPLETED', $payment->fresh()->status);
     }
 }

@@ -9,6 +9,7 @@ use App\Services\PayPalService;
 use App\Support\Orders\OrderManager;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -123,10 +124,39 @@ class OrderController extends Controller
         }
 
         try {
-            $payPalService->refundOrder($payment->paypal_capture_id, (float) $payment->amount);
+            $response = $payPalService->refundOrder($payment->paypal_capture_id, (float) $payment->amount);
 
-            $payment->update(['status' => 'REFUNDED']);
-            $order->update(['status' => 'refunded']);
+            // Das SDK meldet API-Fehler als Array statt als Exception: ohne
+            // Statusprüfung würde eine abgelehnte Erstattung als erfolgreich
+            // gebucht.
+            $refundStatus = $response['status'] ?? null;
+
+            if ($refundStatus === 'PENDING') {
+                Log::warning('PayPal refund pending', [
+                    'order_id' => $order->id,
+                    'capture_id' => $payment->paypal_capture_id,
+                ]);
+
+                return response()->json([
+                    'message' => 'Erstattung bei PayPal angestoßen, aber noch nicht abgeschlossen. Der Status wird automatisch aktualisiert.',
+                    'status' => 'pending',
+                ], 202);
+            }
+
+            if ($refundStatus !== 'COMPLETED') {
+                Log::error('PayPal refund not confirmed', [
+                    'order_id' => $order->id,
+                    'capture_id' => $payment->paypal_capture_id,
+                    'response' => $response,
+                ]);
+
+                return response()->json(['message' => 'Erstattung fehlgeschlagen. Bitte prüfen Sie das Log und den PayPal-Status.'], 422);
+            }
+
+            DB::transaction(function () use ($payment, $order): void {
+                $payment->update(['status' => 'REFUNDED']);
+                $order->update(['status' => 'refunded']);
+            });
 
             return response()->json(['message' => 'Zahlung erstattet.', 'status' => 'refunded']);
         } catch (\Throwable $e) {

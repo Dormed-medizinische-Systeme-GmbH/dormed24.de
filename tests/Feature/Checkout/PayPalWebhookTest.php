@@ -325,4 +325,79 @@ class PayPalWebhookTest extends TestCase
         $this->assertSame('CREATED', $payment->fresh()->status);
         $this->assertSame('pending', $order->fresh()->status);
     }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function settledOrderStatuses(): array
+    {
+        return [
+            'paid' => ['paid'],
+            'refunded' => ['refunded'],
+        ];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('settledOrderStatuses')]
+    public function test_late_denied_webhook_does_not_fail_a_settled_order(string $orderStatus): void
+    {
+        $order = Order::factory()->create(['status' => $orderStatus, 'payment_method' => 'paypal']);
+        $payment = Payment::factory()->completed()->for($order)->create();
+        $paymentStatus = $payment->status;
+
+        $this->withVerifiedWebhook();
+
+        // PayPal liefert unsortiert: ein DENIED zu einer längst bezahlten
+        // (oder erstatteten) Capture darf den Abschluss nicht zurückdrehen.
+        $this->postJson(route('paypal.webhook'), [
+            'event_type' => 'PAYMENT.CAPTURE.DENIED',
+            'resource' => ['id' => $payment->paypal_capture_id],
+        ])->assertOk();
+
+        $this->assertSame($paymentStatus, $payment->fresh()->status);
+        $this->assertSame($orderStatus, $order->fresh()->status);
+    }
+
+    public function test_partial_refund_webhook_does_not_mark_the_whole_order_refunded(): void
+    {
+        $order = Order::factory()->create(['status' => 'paid', 'payment_method' => 'paypal']);
+        $payment = Payment::factory()->completed()->for($order)->create(['amount' => '100.00']);
+
+        $this->withVerifiedWebhook();
+
+        $this->postJson(route('paypal.webhook'), [
+            'event_type' => 'PAYMENT.CAPTURE.REFUNDED',
+            'resource' => [
+                'id' => 'REFUND-PARTIAL',
+                'amount' => ['value' => '10.00', 'currency_code' => 'EUR'],
+                'links' => [
+                    ['rel' => 'up', 'href' => "https://api.paypal.com/v2/payments/captures/{$payment->paypal_capture_id}"],
+                ],
+            ],
+        ])->assertOk();
+
+        $this->assertSame('COMPLETED', $payment->fresh()->status);
+        $this->assertSame('paid', $order->fresh()->status);
+    }
+
+    public function test_full_refund_webhook_with_amount_marks_order_refunded(): void
+    {
+        $order = Order::factory()->create(['status' => 'paid', 'payment_method' => 'paypal']);
+        $payment = Payment::factory()->completed()->for($order)->create(['amount' => '100.00']);
+
+        $this->withVerifiedWebhook();
+
+        $this->postJson(route('paypal.webhook'), [
+            'event_type' => 'PAYMENT.CAPTURE.REFUNDED',
+            'resource' => [
+                'id' => 'REFUND-FULL',
+                'amount' => ['value' => '100.00', 'currency_code' => 'EUR'],
+                'links' => [
+                    ['rel' => 'up', 'href' => "https://api.paypal.com/v2/payments/captures/{$payment->paypal_capture_id}"],
+                ],
+            ],
+        ])->assertOk();
+
+        $this->assertSame('REFUNDED', $payment->fresh()->status);
+        $this->assertSame('refunded', $order->fresh()->status);
+    }
 }
