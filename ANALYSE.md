@@ -53,21 +53,6 @@ mobiles Datenvolumen.
 
 ## 🔵 Code und Doku
 
-### README ist bei Zugangsdaten und Admin veraltet (neu, beim Aufräumen gefunden)
-
-Die Abschnitte „Mails“, „Settings & PayPal-Credentials“ und die
-Launch-Checkliste in `README.md` beschreiben noch den Stand vor Oktober 2026:
-
-- SMTP- und PayPal-Zugangsdaten sowie die Webhook-ID im Admin bzw. in der
-  `settings`-Tabelle
-- `SEED_PAYPAL_*` für die Erstbefüllung
-- `php artisan admin:add` für den Admin-Nutzer
-- SQLite als Datenbank
-
-Aktuell kommen PayPal und SMTP nur aus der Env (`PAYPAL_SANDBOX_*`/`PAYPAL_LIVE_*`,
-`MAIL_SANDBOX_*`/`MAIL_LIVE_*`), der Admin aus `ADMIN_EMAIL`/`ADMIN_PASSWORD`,
-und die Kategorien aus `config/categories.php`.
-
 ### CI-Gate unvollständig (V4 Launch 1)
 
 - `tests.yml` führt PHPStan, Tests und Build aus, aber kein `svelte-check`

@@ -1,7 +1,7 @@
 # dormed24-Shop
 
 Onlineshop für Medizintechnik (dormed 24) — Ablösung für Shopware.
-**Stack:** Laravel 13 · Inertia v3 · Svelte 5 · Tailwind 4 · PHPUnit 12 · SQLite · PayPal (srmklive/paypal) · `npm run dev` (dev)
+**Stack:** Laravel 13 · Inertia v3 · Svelte 5 · Tailwind 4 · PHPUnit 12 · SQLite (Default, `DB_CONNECTION`) · PayPal (srmklive/paypal) · `npm run dev` (dev)
 
 Dieses README ist die übergreifende Landkarte: Was der Shop tut, wie die
 Kern-Flows laufen und wo was liegt. **Konvention: Wer einen Flow ändert,
@@ -39,6 +39,8 @@ Zentrale Klassen (die „Geschäftslogik-Ecke"):
 | `app/Services/PayPalService.php` | PayPal-REST-Client (Zugangsdaten aus der Env, `config/paypal.php`), Webhook-Verifikation, Refunds |
 | `app/Support/PaymentMode.php` | sandbox/live — live nur bei `APP_ENV=production` **und** `APP_DEBUG=false`; steuert PayPal-/SMTP-Zugangsdaten und Sandbox-Banner |
 | `config/categories.php` | Feste Produktkategorien (Reihenfolge = Navigation), Produkte speichern `category_slug` |
+| `config/specialties.php` | Feste Fachrichtungen, nur für Kategorien mit `has_specialties` (Ultraschallsysteme/-sonden); Produkte speichern die Slugs als JSON-Liste (`products.specialties`) |
+| `app/Support/ModeMailConfiguration.php` | Übernimmt beim Booten die SMTP-Zugangsdaten des aktiven Modus aus der Env in den Mailer |
 | `app/Models/Setting.php` | Key-Value-Shop-Settings in DB (Name, Kontakt, Bankverbindung), pro Request memoisiert. PayPal/SMTP **nicht** hier, sondern in der Env |
 | `app/Http/Middleware/HandleInertiaRequests.php` | Shared Props: Cart, Auth, Kontakt, Kategorien, Sandbox-Banner |
 
@@ -129,24 +131,36 @@ die die Zahlen verfälschen könnte. Kein separater Fulfillment-Status
 verschickt (kein `ShouldQueue`, kein Queue-Worker nötig). Bei aktuell max. ~5
 Mails/Tag ist der Request-Overhead vernachlässigbar; eine spätere Umstellung
 auf Queue ist bei Bedarf ein kleiner Schritt (Interface + `Queueable`-Trait
-zurück auf die beiden Mailables, Worker-Prozess aufsetzen). SMTP-Konfiguration
-kommt aus den Admin-Settings (Einstellungen → Mailversand, dort auch
-„Verbindung prüfen"). Admin-Empfänger der Bestell-Benachrichtigung: fest die
+zurück auf die beiden Mailables, Worker-Prozess aufsetzen). SMTP-Zugangsdaten
+kommen aus der Env, je Modus getrennt (`MAIL_SANDBOX_*` / `MAIL_LIVE_*`, siehe
+Abschnitt 7). Ist für den aktiven Modus kein Host gesetzt, bleibt `MAIL_MAILER`
+(z. B. `log`) aktiv. Absendername ist der Shop-Name aus den Settings.
+Admin-Empfänger der Bestell-Benachrichtigung: fest die
 Kontakt-Mail-Adresse aus Setting `shop.email` (dieselbe, die auch im
 Shop-Frontend angezeigt wird) — kein separates Feld, kein Fallback.
 
-### 7. Settings & PayPal-Credentials (Single Source of Truth)
+### 7. Settings & Zugangsdaten
 
-- Alle Shop-/Mail-/Payment-Einstellungen liegen als Key-Value in der
-  `settings`-Tabelle, sensible Werte (Secrets, SMTP-Passwort, Webhook-ID)
-  verschlüsselt. Pflege im Admin unter Einstellungen.
-- **Es gibt keine PayPal-Credentials in der .env** — einziger env-Pfad ist die
-  Erstbefüllung über `SEED_PAYPAL_*`-Keys + `php artisan db:seed
-  --class=PaymentSeeder`.
-- sandbox/live ergibt sich ausschließlich aus `APP_ENV` (Produktion = live,
-  sonst sandbox) — kein Admin-Override. Sandbox zeigt im Frontend einen
-  Banner. Beide Zugangsdaten-Sets bleiben unabhängig vom aktiven Modus im
-  Admin (Zahlungsarten) editierbar.
+- **Env (Server-`.env`), nicht in der Datenbank:**
+  - Admin-Zugang: `ADMIN_EMAIL` + `ADMIN_PASSWORD` (bcrypt-Hash, erzeugen mit
+    `php artisan admin:hash-password`). Es gibt genau einen Admin, keine
+    Admin-Tabelle.
+  - PayPal: `PAYPAL_SANDBOX_*` und `PAYPAL_LIVE_*` (Client-ID, Secret,
+    Merchant-ID, Webhook-ID; Live zusätzlich `PAYPAL_LIVE_APP_ID`), siehe
+    `config/paypal.php`.
+  - SMTP: `MAIL_SANDBOX_*` und `MAIL_LIVE_*` (Host, Port, Benutzer, Passwort,
+    Absenderadresse), siehe `config/mail.php` → `modes`.
+- **Datenbank (`settings`-Tabelle, Pflege im Admin):** nur noch Shop-Daten wie
+  Name, Kontakt (`shop.email`) und Bankverbindung.
+- **Code (`config/`):** Kategorien (`categories.php`) und Fachrichtungen
+  (`specialties.php`). Änderungen laufen über Deploy, nicht über den Admin.
+- sandbox/live: live nur bei `APP_ENV=production` **und** `APP_DEBUG=false`,
+  sonst sandbox (kein Admin-Override). Der Modus wählt das passende
+  Zugangsdaten-Set für PayPal und SMTP. In der Sandbox zeigt das Frontend
+  einen Banner.
+- Umzug von Altdaten: `php artisan settings:legacy-credentials` gibt früher in
+  der Datenbank gespeicherte PayPal-/SMTP-Zugangsdaten als Env-Zeilen aus
+  (nur auf dem Server ausführen, enthält Geheimnisse).
 
 ---
 
@@ -179,9 +193,9 @@ npm run build:ssr                     # Client + SSR-Bundle (bootstrap/ssr/app.j
 
 1. `php artisan storage:link` — Produktbilder liegen auf dem public-Disk.
 2. `APP_ENV=production`, `APP_DEBUG=false`, `SESSION_SECURE_COOKIE=true`; `config:cache`/`route:cache` sind safe.
-3. Admin-Settings pflegen: SMTP (+ Testmail), PayPal-Credentials (+ Verbindungscheck), **PayPal-Webhook-ID** (ohne sie werden alle Webhooks abgelehnt — nur im Log sichtbar), `shop.email` (Kontakt- **und** Bestell-Benachrichtigungsadresse).
-4. Admin-Nutzer via `php artisan admin:add` (Seeder mit Default-Passwörtern laufen nur außerhalb von Produktion).
-5. DB-Backup-Strategie klären (aktuell SQLite-Datei).
+3. Env setzen: `ADMIN_EMAIL`/`ADMIN_PASSWORD`, `PAYPAL_LIVE_*` inkl. **Webhook-ID** (ohne sie werden alle Webhooks abgelehnt — nur im Log sichtbar) und `MAIL_LIVE_*`; danach `php artisan optimize`. Details siehe Abschnitt 7.
+4. Im Admin unter Einstellungen `shop.email` pflegen (Kontakt- **und** Bestell-Benachrichtigungsadresse). Seeder mit Default-Passwörtern laufen nur außerhalb von Produktion.
+5. DB-Backup-Strategie klären (siehe `ANALYSE.md`).
 6. Scheduler-Cron aktuell **nicht nötig** (keine Scheduled Tasks).
 7. Kein Queue-Worker nötig — Mails laufen synchron (siehe Abschnitt „Mails" oben).
 8. **SSR (Server-Side Rendering)** für Crawler/Link-Vorschauen (WhatsApp,
