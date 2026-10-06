@@ -5,7 +5,7 @@
 </script>
 
 <script lang="ts">
-    import { useForm } from '@inertiajs/svelte';
+    import { useForm, setLayoutProps } from '@inertiajs/svelte';
     import * as AdminManufacturerController from '@/actions/App/Http/Controllers/Admin/ManufacturerController';
     import AppHead from '@/components/AppHead.svelte';
     import { Button } from '@/components/ui/button';
@@ -34,9 +34,24 @@
 
     function submit(e: SubmitEvent) {
         e.preventDefault();
+        save();
+    }
+
+    function save() {
         form.put(AdminManufacturerController.update.url(manufacturer.id));
     }
+
+    // Zweiter Speichern-Button rechts im Admin-Header.
+    $effect(() => {
+        setLayoutProps({ actions: headerActions });
+    });
 </script>
+
+{#snippet headerActions()}
+    <Button onclick={save} disabled={form.processing}>
+        {form.processing ? 'Speichert…' : 'Speichern'}
+    </Button>
+{/snippet}
 
 <AppHead title="{manufacturer.name} bearbeiten — Admin" />
 
