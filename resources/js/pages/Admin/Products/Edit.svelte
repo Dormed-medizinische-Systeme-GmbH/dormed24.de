@@ -18,6 +18,7 @@
     import { Label } from '@/components/ui/label';
     import * as Select from '@/components/ui/select';
     import * as Tabs from '@/components/ui/tabs';
+    import { guardUnsavedChanges } from '@/lib/unsavedChanges';
     import { cn } from '@/lib/utils';
     import ProductActions from './ProductActions.svelte';
 
@@ -106,6 +107,13 @@
         setLayoutProps({ actions: headerActions });
     });
 
+    // Rückfrage beim Verlassen, solange die Stammdaten ungespeichert sind.
+    $effect(() => guardUnsavedChanges(() => form.isDirty));
+
+    // Bild- und Variationen-Aktionen laden nur die Props neu: Ungespeicherte
+    // Stammdaten und der aktive Reiter bleiben erhalten.
+    const keepPageState = { preserveState: true, preserveScroll: true } as const;
+
     // --- Image management ---
 
     // Lokale, editierbare Kopie der Bilder: re-derived, sobald sich die
@@ -129,6 +137,7 @@
         data.append('image', file);
 
         router.post(`/admin/products/${product.id}/images`, data, {
+            ...keepPageState,
             onFinish: () => {
                 uploading = false;
                 input.value = '';
@@ -141,7 +150,7 @@
             return;
         }
 
-        router.delete(`/admin/products/${product.id}/images/${imageId}`);
+        router.delete(`/admin/products/${product.id}/images/${imageId}`, keepPageState);
     }
 
     function onDragStart(id: number) {
@@ -175,6 +184,7 @@
         router.patch(
             `/admin/products/${product.id}/images/reorder`,
             { ids: reordered.map((img) => img.id) },
+            keepPageState,
         );
 
         draggedId = null;
@@ -202,6 +212,7 @@
             AdminProductVariantController.store.url(product.id),
             { label: newVariant.label, price: newVariant.price, is_default: newVariant.is_default },
             {
+                ...keepPageState,
                 onSuccess: () => {
                     newVariant = { label: '', price: '', is_default: false };
                 },
@@ -219,6 +230,7 @@
             AdminProductVariantController.update.url({ product: product.id, variant: variantId }),
             { label: editVariant.label, price: editVariant.price, is_default: editVariant.is_default },
             {
+                ...keepPageState,
                 onSuccess: () => {
                     editingVariantId = null;
                 },
@@ -227,7 +239,11 @@
     }
 
     function deleteVariant(variantId: number) {
-        router.delete(AdminProductVariantController.destroy.url({ product: product.id, variant: variantId }));
+        if (!confirm('Variation wirklich löschen?')) {
+            return;
+        }
+
+        router.delete(AdminProductVariantController.destroy.url({ product: product.id, variant: variantId }), keepPageState);
     }
 </script>
 
