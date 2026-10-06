@@ -8,13 +8,16 @@ use JsonSerializable;
 
 /**
  * Der eine Shop-Admin. Kommt aus der Env (ADMIN_EMAIL / ADMIN_PASSWORD),
- * nicht aus der Datenbank. Der Name ist fest "Admin" (nur Anzeige im Panel). Identifier ist die
+ * nicht aus der Datenbank. Der Name ist fest self::NAME (nur Anzeige im Panel). Identifier ist die
  * (kleingeschriebene) E-Mail: Wird sie geändert, sind alte Sessions ungültig.
  *
  * @implements Arrayable<string, string>
  */
 final class EnvAdmin implements Arrayable, Authenticatable, JsonSerializable
 {
+    /** Anzeigename im Admin-Panel. */
+    public const NAME = 'Shop-Admin';
+
     public function __construct(
         public readonly string $name,
         public readonly string $email,

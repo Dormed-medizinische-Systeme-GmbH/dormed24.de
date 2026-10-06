@@ -95,7 +95,7 @@ final class EnvAdminUserProvider implements UserProvider
         }
 
         return new EnvAdmin(
-            name: 'Admin',
+            name: EnvAdmin::NAME,
             email: $email,
             passwordHash: $passwordHash,
         );
