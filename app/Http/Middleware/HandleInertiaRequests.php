@@ -46,7 +46,7 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
-        $cart = app(CartService::class)->cart();
+        $cart = app(CartService::class)->cart()->toArray();
         $phone = Setting::get('shop.phone', self::DEFAULT_SHOP_PHONE) ?? self::DEFAULT_SHOP_PHONE;
         $fax = Setting::get('shop.fax', self::DEFAULT_SHOP_FAX) ?? self::DEFAULT_SHOP_FAX;
 

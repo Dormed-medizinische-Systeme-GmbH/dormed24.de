@@ -70,7 +70,7 @@ class CartShapeTest extends TestCase
             ],
         ]);
 
-        $cart = app(CartService::class)->cart();
+        $cart = app(CartService::class)->cart()->toArray();
 
         $standardOption = [
             'id' => (string) $standard->id,
@@ -160,7 +160,7 @@ class CartShapeTest extends TestCase
 
     public function test_empty_cart_has_the_expected_shape(): void
     {
-        $cart = app(CartService::class)->cart();
+        $cart = app(CartService::class)->cart()->toArray();
 
         $this->assertSame([], $cart['items']);
         $this->assertSame(0, $cart['count']);

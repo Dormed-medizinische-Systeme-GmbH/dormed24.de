@@ -11,11 +11,19 @@ class SessionCartStore implements CartStore
         private readonly Store $session,
     ) {}
 
+    /**
+     * @return array<string, mixed>
+     */
     public function get(): array
     {
-        return $this->session->get($this->sessionKey(), []);
+        $payload = $this->session->get($this->sessionKey(), []);
+
+        return is_array($payload) ? $payload : [];
     }
 
+    /**
+     * @param  array<string, mixed>  $payload
+     */
     public function put(array $payload): void
     {
         $this->session->put($this->sessionKey(), $payload);

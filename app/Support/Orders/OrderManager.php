@@ -8,6 +8,8 @@ use App\Mail\PaymentConfirmationMail;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Setting;
+use App\Support\Cart\Cart;
+use App\Support\Cart\Money;
 use App\Support\PaymentMode;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -22,10 +24,8 @@ class OrderManager
 {
     /**
      * Create a pending order (incl. items) from a cart snapshot.
-     *
-     * @param  array<string, mixed>  $cart  Result of CartService::cart()
      */
-    public function createFromCart(Customer $customer, array $cart, string $paymentMethod): Order
+    public function createFromCart(Customer $customer, Cart $cart, string $paymentMethod): Order
     {
         return DB::transaction(function () use ($customer, $cart, $paymentMethod): Order {
             /** @var Order $order */
@@ -34,18 +34,18 @@ class OrderManager
                 'status' => 'pending',
                 'payment_method' => $paymentMethod,
                 'is_test' => ! PaymentMode::isLive(),
-                'total_amount' => $cart['total'],
-                'shipping_amount' => (float) ($cart['shipping_total'] ?? 0),
-                'shipping_address' => $cart['shipping_address'] ?? null,
-                'billing_address' => $cart['billing_address'] ?? null,
+                'total_amount' => Money::format($cart->totalCents()),
+                'shipping_amount' => Money::format($cart->shippingCents()),
+                'shipping_address' => $cart->shippingAddress->toArray(),
+                'billing_address' => $cart->billingAddress?->toArray(),
             ]);
 
-            foreach ($cart['items'] as $item) {
+            foreach ($cart->items as $item) {
                 $order->items()->create([
-                    'product_id' => $item['product_id'],
-                    'product_name' => $item['name'],
-                    'unit_price' => $item['unit_price'],
-                    'quantity' => $item['quantity'],
+                    'product_id' => $item->productId,
+                    'product_name' => $item->name,
+                    'unit_price' => Money::format($item->unitPriceCents),
+                    'quantity' => $item->quantity,
                 ]);
             }
 

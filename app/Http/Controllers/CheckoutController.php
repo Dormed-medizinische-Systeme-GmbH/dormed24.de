@@ -28,19 +28,18 @@ class CheckoutController extends Controller
 
         $cart = $this->cartService->cart();
 
-        if ($cart['is_empty']) {
+        if ($cart->isEmpty()) {
             return to_route('checkout.index');
         }
 
-        $selectedPayment = $cart['selected_payment_method'] ?? [];
         $paypalClientId = null;
 
-        if (($selectedPayment['id'] ?? '') === 'paypal') {
+        if ($cart->selectedPaymentMethod()?->id === 'paypal') {
             $paypalClientId = config('paypal.'.PaymentMode::current().'.client_id') ?: null;
         }
 
         return Inertia::render('Checkout/Confirm', [
-            'cart' => $cart,
+            'cart' => $cart->toArray(),
             'paypal_client_id' => $paypalClientId,
         ]);
     }
@@ -95,21 +94,21 @@ class CheckoutController extends Controller
     {
         $cart = $this->cartService->cart();
 
-        if ($cart['is_empty']) {
+        if ($cart->isEmpty()) {
             return to_route('checkout.index');
         }
 
-        if (! $this->cartService->isAddressComplete()) {
+        if (! $cart->shippingAddress->isComplete()) {
             return back()->withErrors(['shipping_address' => 'Bitte vervollständigen Sie Ihre Lieferadresse.']);
         }
 
-        if ($this->cartService->hasUnavailableItems()) {
+        if ($cart->hasUnavailableItems()) {
             return back()->withErrors(['cart' => 'Ihr Warenkorb enthält nicht mehr verfügbare Produkte. Bitte aktualisieren Sie Ihren Warenkorb.']);
         }
 
         // PayPal payments run through the PayPal JS SDK and PayPalController;
         // this endpoint only finalizes invoice ("Kauf auf Rechnung") orders.
-        if (($cart['selected_payment_method']['id'] ?? '') !== 'invoice') {
+        if ($cart->selectedPaymentMethod()?->id !== 'invoice') {
             return back()->withErrors(['payment_method' => 'Diese Zahlungsart wird über PayPal abgeschlossen.']);
         }
 

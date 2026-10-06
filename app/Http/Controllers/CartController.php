@@ -21,7 +21,7 @@ class CartController extends Controller
     public function index(): Response
     {
         return Inertia::render('Checkout/Index', [
-            'cart' => $this->cartService->cart(),
+            'cart' => $this->cartService->cart()->toArray(),
         ]);
     }
 
