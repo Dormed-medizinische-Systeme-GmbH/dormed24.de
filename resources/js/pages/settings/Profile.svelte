@@ -85,7 +85,8 @@
 
                     {#if page.props.status === 'verification-link-sent'}
                         <div class="mt-2 text-sm font-medium text-green-600">
-                            Ein neuer Bestätigungslink wurde an Ihre E-Mail-Adresse gesendet.
+                            Ein neuer Bestätigungslink wurde an Ihre
+                            E-Mail-Adresse gesendet.
                         </div>
                     {/if}
                 </div>

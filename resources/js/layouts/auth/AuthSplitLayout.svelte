@@ -13,7 +13,6 @@
         description?: string;
         children?: Snippet;
     } = $props();
-
 </script>
 
 <div

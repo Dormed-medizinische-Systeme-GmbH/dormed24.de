@@ -53,16 +53,6 @@ mobiles Datenvolumen.
 
 ## 🔵 Code und Doku
 
-### CI-Gate unvollständig (V4 Launch 1)
-
-- `tests.yml` führt PHPStan, Tests und Build aus, aber kein `svelte-check`
-  (`npm run types:check`).
-- `lint.yml` ruft `npm run format` und `npm run lint` auf, also die Varianten,
-  die schreiben bzw. fixen. Formatverstöße lassen die CI deshalb nicht fehlschlagen.
-
-Abhilfe: auf `format:check`/`lint:check` umstellen und `npm run types:check`
-ergänzen.
-
 ### Cart-Array als DTO (V1 #18, V4 Q-3)
 
 Die PHPStan-Baseline hat 84 Einträge (Juli: 98). Der Großteil sitzt in
