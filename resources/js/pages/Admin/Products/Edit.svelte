@@ -137,6 +137,10 @@
     }
 
     function deleteImage(imageId: number) {
+        if (!confirm('Bild wirklich löschen?')) {
+            return;
+        }
+
         router.delete(`/admin/products/${product.id}/images/${imageId}`);
     }
 
