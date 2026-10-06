@@ -59,11 +59,6 @@ Die PHPStan-Baseline hat 84 Einträge (Juli: 98). Der Großteil sitzt in
 `CartService` und `PayPalService` (je 17) und hängt am untypisierten
 Cart-Array. Ein Cart-DTO würde den Großteil davon auflösen.
 
-### `sessions.user_id` (V2 S6, kosmetisch)
-
-Die Spalte stammt aus dem Starter-Kit, die Authentifizierung läuft über
-`customers`. Funktional egal.
-
 ## 🚀 Betrieb / Launch
 
 1. **DB-Backup-Strategie**: seit V2 offen, vor dem Launch entscheiden.
@@ -108,3 +103,6 @@ Die Spalte stammt aus dem Starter-Kit, die Authentifizierung läuft über
   `/informationen/versand` bleibt vorerst.
 - Cart als Shared Prop (Header-Zähler) wird nicht lazy/deferred geladen.
 - Keine atomaren Deploys.
+- `sessions.user_id` bleibt so benannt. Laravels `DatabaseSessionHandler`
+  schreibt fest in diese Spalte, der Inhalt ist die `customers.id` des
+  `web`-Guards.
