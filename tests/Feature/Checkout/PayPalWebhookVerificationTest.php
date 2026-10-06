@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Models\Payment;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
@@ -27,7 +28,7 @@ class PayPalWebhookVerificationTest extends TestCase
         ];
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('operatingModes')]
+    #[DataProvider('operatingModes')]
     public function test_webhook_is_rejected_when_no_webhook_id_is_configured(bool $live): void
     {
         Mail::fake();

@@ -10,6 +10,7 @@ use App\Models\Payment;
 use App\Services\PayPalService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class OrderManagementTest extends TestCase
@@ -177,7 +178,7 @@ class OrderManagementTest extends TestCase
     /**
      * @param  array<string, mixed>  $response
      */
-    #[\PHPUnit\Framework\Attributes\DataProvider('rejectedRefundResponses')]
+    #[DataProvider('rejectedRefundResponses')]
     public function test_refund_is_not_booked_when_paypal_does_not_confirm_it(array $response): void
     {
         $payment = $this->paidPaypalOrderWithCapture();

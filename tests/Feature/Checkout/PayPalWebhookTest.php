@@ -9,6 +9,7 @@ use App\Models\Payment;
 use App\Services\PayPalService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class PayPalWebhookTest extends TestCase
@@ -309,7 +310,7 @@ class PayPalWebhookTest extends TestCase
         ];
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('handledEventTypes')]
+    #[DataProvider('handledEventTypes')]
     public function test_event_without_resource_id_is_acknowledged_without_changes(string $eventType): void
     {
         $order = Order::factory()->create(['status' => 'pending', 'payment_method' => 'paypal']);
@@ -337,7 +338,7 @@ class PayPalWebhookTest extends TestCase
         ];
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('settledOrderStatuses')]
+    #[DataProvider('settledOrderStatuses')]
     public function test_late_denied_webhook_does_not_fail_a_settled_order(string $orderStatus): void
     {
         $order = Order::factory()->create(['status' => $orderStatus, 'payment_method' => 'paypal']);
