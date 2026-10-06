@@ -19,6 +19,7 @@ class ProductController extends Controller
     {
         return Inertia::render('Admin/Products/Index', [
             'products' => Product::with('manufacturer')->latest()->get(),
+            'categories' => Categories::options(),
         ]);
     }
 

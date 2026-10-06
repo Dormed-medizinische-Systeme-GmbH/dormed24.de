@@ -29,6 +29,7 @@ class AdminLoginTest extends TestCase
 
         $this->assertTrue(Auth::guard('admin')->check());
         $this->assertSame(self::ADMIN_EMAIL, Auth::guard('admin')->id());
+        $this->assertSame('Shop-Admin', Auth::guard('admin')->user()->name);
     }
 
     public function test_email_is_matched_case_insensitively(): void
@@ -138,7 +139,7 @@ class AdminLoginTest extends TestCase
             ->assertOk()
             ->assertInertia(
                 fn ($page) => $page->where('auth.admin', [
-                    'name' => 'Admin',
+                    'name' => 'Shop-Admin',
                     'email' => self::ADMIN_EMAIL,
                 ])->etc()
             );

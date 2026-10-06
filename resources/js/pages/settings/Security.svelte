@@ -12,31 +12,31 @@
 </script>
 
 <script lang="ts">
-    import {
-        Form ,
-        page,
-    } from '@inertiajs/svelte';
+    // `page` wird nur für 2FA/Passkeys gebraucht (ausgeblendet) — beim
+    // Reaktivieren wieder importieren: import { Form, page } from '@inertiajs/svelte';
+    import { Form } from '@inertiajs/svelte';
     import SecurityController from '@/actions/App/Http/Controllers/Settings/SecurityController';
     import AppHead from '@/components/AppHead.svelte';
     import Heading from '@/components/Heading.svelte';
     import InputError from '@/components/InputError.svelte';
-    import ManagePasskeys from '@/components/ManagePasskeys.svelte';
-    import type { Props as ManagePasskeysProps } from '@/components/ManagePasskeys.svelte';
-    import ManageTwoFactor from '@/components/ManageTwoFactor.svelte';
+    // 2FA + Passkeys vorerst ausgeblendet (siehe Kommentar im Markup unten).
+    // import ManagePasskeys from '@/components/ManagePasskeys.svelte';
+    // import type { Props as ManagePasskeysProps } from '@/components/ManagePasskeys.svelte';
+    // import ManageTwoFactor from '@/components/ManageTwoFactor.svelte';
     import PasswordInput from '@/components/PasswordInput.svelte';
     import { Button } from '@/components/ui/button';
     import { Label } from '@/components/ui/label';
-    const canManageTwoFactor = $derived(Boolean(page.props.canManageTwoFactor));
-    const requiresConfirmation = $derived(
-        Boolean(page.props.requiresConfirmation),
-    );
-    const twoFactorEnabled = $derived(Boolean(page.props.twoFactorEnabled));
-    const canManagePasskeys = $derived(Boolean(page.props.canManagePasskeys));
-    const passkeys = $derived(
-        (Array.isArray(page.props.passkeys)
-            ? page.props.passkeys
-            : []) as ManagePasskeysProps['passkeys'],
-    );
+    // const canManageTwoFactor = $derived(Boolean(page.props.canManageTwoFactor));
+    // const requiresConfirmation = $derived(
+    //     Boolean(page.props.requiresConfirmation),
+    // );
+    // const twoFactorEnabled = $derived(Boolean(page.props.twoFactorEnabled));
+    // const canManagePasskeys = $derived(Boolean(page.props.canManagePasskeys));
+    // const passkeys = $derived(
+    //     (Array.isArray(page.props.passkeys)
+    //         ? page.props.passkeys
+    //         : []) as ManagePasskeysProps['passkeys'],
+    // );
 
     let { passwordRules }: { passwordRules: string } = $props();
 </script>
@@ -112,6 +112,14 @@
     </Form>
 </div>
 
+<!--
+    Zwei-Faktor-Authentifizierung und Passkeys sind für Kunden vorerst
+    bewusst AUSGEBLENDET (nur hier im Markup). Die Infrastruktur dahinter
+    (Fortify-Features, Routen, Controller, ManageTwoFactor/ManagePasskeys,
+    Page-Props) bleibt unverändert und funktionsfähig. Zum Reaktivieren
+    diesen Block sowie die auskommentierten Imports/Werte im Skript oben
+    wieder einkommentieren.
+
 <ManageTwoFactor
     {canManageTwoFactor}
     {requiresConfirmation}
@@ -119,3 +127,4 @@
 />
 
 <ManagePasskeys {canManagePasskeys} {passkeys} />
+-->

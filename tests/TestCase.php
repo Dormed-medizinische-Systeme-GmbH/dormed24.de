@@ -39,7 +39,7 @@ abstract class TestCase extends BaseTestCase
             'password' => $passwordHash,
         ]]);
 
-        return new EnvAdmin('Admin', $email, $passwordHash);
+        return new EnvAdmin(EnvAdmin::NAME, $email, $passwordHash);
     }
 
     protected function actingAsAdmin(): static

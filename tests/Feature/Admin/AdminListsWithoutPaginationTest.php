@@ -27,6 +27,25 @@ class AdminListsWithoutPaginationTest extends TestCase
             ->assertInertia(fn ($page) => $page->component('Admin/Products/Index')->has('products', 25));
     }
 
+    public function test_products_index_offers_category_filter_options(): void
+    {
+        Product::factory()->create(['category_slug' => 'ultraschallsonden']);
+
+        $this->actingAsAdmin()
+            ->get(route('admin.products.index'))
+            ->assertOk()
+            ->assertInertia(
+                fn ($page) => $page
+                    ->where('products.0.category_slug', 'ultraschallsonden')
+                    ->where('categories', [
+                        ['slug' => 'ultraschallsysteme', 'name' => 'Ultraschallsysteme'],
+                        ['slug' => 'ultraschallsonden', 'name' => 'Ultraschallsonden'],
+                        ['slug' => 'verbrauchsartikel', 'name' => 'Verbrauchsartikel'],
+                        ['slug' => 'zubehoer', 'name' => 'Zubehör'],
+                    ])
+            );
+    }
+
     public function test_orders_index_lists_all_orders(): void
     {
         Order::factory()->count(25)->create();

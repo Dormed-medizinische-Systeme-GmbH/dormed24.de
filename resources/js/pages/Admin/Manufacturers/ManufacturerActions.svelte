@@ -13,7 +13,14 @@
         DropdownMenuTrigger,
     } from '@/components/ui/dropdown-menu';
 
-    let { manufacturer }: { manufacturer: { id: number; name: string } } = $props();
+    let {
+        manufacturer,
+        showEdit = true,
+    }: {
+        manufacturer: { id: number; name: string };
+        /** Auf der Bearbeiten-Seite selbst ist „Bearbeiten" überflüssig. */
+        showEdit?: boolean;
+    } = $props();
 
     function destroy() {
         if (!confirm(`Hersteller „${manufacturer.name}" wirklich löschen?`)) {
@@ -33,15 +40,17 @@ return;
         {/snippet}
     </DropdownMenuTrigger>
     <DropdownMenuContent align="end">
-        <DropdownMenuItem asChild>
-            {#snippet children(props)}
-                <a class={props.class} href={AdminManufacturerController.edit.url(manufacturer.id)} onclick={props.onClick}>
-                    <Pencil class="mr-2 size-4" />
-                    Bearbeiten
-                </a>
-            {/snippet}
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
+        {#if showEdit}
+            <DropdownMenuItem asChild>
+                {#snippet children(props)}
+                    <a class={props.class} href={AdminManufacturerController.edit.url(manufacturer.id)} onclick={props.onClick}>
+                        <Pencil class="mr-2 size-4" />
+                        Bearbeiten
+                    </a>
+                {/snippet}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+        {/if}
         <DropdownMenuItem onclick={destroy} class="text-destructive focus:text-destructive">
             <Trash2 class="mr-2 size-4" />
             Löschen

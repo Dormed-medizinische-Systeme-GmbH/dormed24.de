@@ -5,7 +5,7 @@
 </script>
 
 <script lang="ts">
-    import { useForm } from '@inertiajs/svelte';
+    import { useForm, setLayoutProps } from '@inertiajs/svelte';
     import * as AdminProductController from '@/actions/App/Http/Controllers/Admin/ProductController';
     import AppHead from '@/components/AppHead.svelte';
     import SpecialtyPicker from '@/components/SpecialtyPicker.svelte';
@@ -59,14 +59,28 @@
 
     function submit(e: SubmitEvent) {
         e.preventDefault();
+        save();
+    }
 
+    function save() {
         if (!hasSpecialties) {
             form.specialties = [];
         }
 
         form.post(AdminProductController.store.url());
     }
+
+    // Zweiter Speichern-Button rechts im Admin-Header.
+    $effect(() => {
+        setLayoutProps({ actions: headerActions });
+    });
 </script>
+
+{#snippet headerActions()}
+    <Button onclick={save} disabled={form.processing}>
+        {form.processing ? 'Erstellt…' : 'Erstellen'}
+    </Button>
+{/snippet}
 
 <AppHead title="Neues Produkt — Admin" />
 

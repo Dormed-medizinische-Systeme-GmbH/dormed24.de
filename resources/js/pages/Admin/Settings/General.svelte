@@ -8,7 +8,7 @@
 </script>
 
 <script lang="ts">
-    import { useForm } from '@inertiajs/svelte';
+    import { useForm, setLayoutProps } from '@inertiajs/svelte';
     import * as AdminSettingController from '@/actions/App/Http/Controllers/Admin/SettingController';
     import AppHead from '@/components/AppHead.svelte';
     import { Button } from '@/components/ui/button';
@@ -37,13 +37,28 @@
 
     function submit(e: SubmitEvent) {
         e.preventDefault();
+        save();
+    }
+
+    function save() {
         form.put(AdminSettingController.update.url(), {
             // Nach dem Speichern bleibt man auf der Seite: gespeicherte Werte
             // werden der neue Ausgangsstand, sonst bliebe isDirty true.
             onSuccess: () => form.defaults(),
         });
     }
+
+    // Zweiter Speichern-Button rechts im Admin-Header.
+    $effect(() => {
+        setLayoutProps({ actions: headerActions });
+    });
 </script>
+
+{#snippet headerActions()}
+    <Button onclick={save} disabled={form.processing}>
+        {form.processing ? 'Speichert…' : 'Speichern'}
+    </Button>
+{/snippet}
 
 <AppHead title="Allgemein - Einstellungen - Admin" />
 

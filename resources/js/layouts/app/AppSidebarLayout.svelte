@@ -20,9 +20,19 @@
 
 <AppShell variant="sidebar">
     <AppSidebar />
-    <AppContent variant="sidebar" class="overflow-x-hidden">
+    <!--
+        Fester Header: Der Inhaltsbereich ist genau fensterhoch (md: abzüglich
+        des 2×0,5rem-Rands der inset-Variante), der Header bleibt stehen und nur
+        der Bereich darunter scrollt.
+    -->
+    <AppContent
+        variant="sidebar"
+        class="h-svh overflow-hidden md:h-[calc(100svh-1rem)]"
+    >
         <AppSidebarHeader {breadcrumbs} {actions} />
-        {@render children?.()}
+        <div class="flex min-h-0 flex-1 flex-col overflow-y-auto">
+            {@render children?.()}
+        </div>
     </AppContent>
     <Toaster />
 </AppShell>

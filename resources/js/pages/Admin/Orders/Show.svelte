@@ -1,14 +1,15 @@
 <script module lang="ts">
-    export const layout = {
+    // Breadcrumb mit der Bestellnummer statt „Bestelldetail“ (Layout-Callback über die Page-Props).
+    export const layout = (props: { order: { id: number } }) => ({
         breadcrumbs: [
             { title: 'Bestellungen', href: '/admin/orders' },
-            { title: 'Bestelldetail' },
+            { title: `Bestellung #${props.order.id}` },
         ],
-    };
+    });
 </script>
 
 <script lang="ts">
-    import { router } from '@inertiajs/svelte';
+    import { router, setLayoutProps } from '@inertiajs/svelte';
     import { Loader2 } from '@lucide/svelte';
     import Package from '@lucide/svelte/icons/package';
     import { toast } from 'svelte-sonner';
@@ -83,6 +84,16 @@
         FAILED: 'Fehlgeschlagen',
         REFUNDED: 'Rückerstattet',
     };
+
+    const orderedAt = $derived(
+        new Date(order.created_at).toLocaleDateString('de-DE', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        }),
+    );
 
     let notifyCustomer = $state(false);
     let confirmingPayment = $state(false);
@@ -169,7 +180,35 @@
 
         return lines.join(', ') || '—';
     }
+
+    // Bestellaktionen rechts im Admin-Header.
+    $effect(() => {
+        setLayoutProps({ actions: headerActions });
+    });
 </script>
+
+{#snippet headerActions()}
+    {#if canConfirmPayment}
+        <label class="flex items-center gap-2 text-sm text-muted-foreground">
+            <input
+                type="checkbox"
+                bind:checked={notifyCustomer}
+                class="accent-primary"
+            />
+            Kunde benachrichtigen
+        </label>
+        <Button onclick={confirmPayment} disabled={confirmingPayment}>
+            {#if confirmingPayment}<Loader2 class="size-4 animate-spin" />{/if}
+            Zahlungseingang bestätigen
+        </Button>
+    {/if}
+    {#if canRefund}
+        <Button variant="destructive" onclick={refund} disabled={refunding}>
+            {#if refunding}<Loader2 class="size-4 animate-spin" />{/if}
+            Zahlung erstatten
+        </Button>
+    {/if}
+{/snippet}
 
 <AppHead title="Bestellung #{order.id} — Admin" />
 
@@ -201,7 +240,7 @@
         <!-- Kundendaten -->
         <Card>
             <CardHeader>
-                <CardTitle>Kunde</CardTitle>
+                <CardTitle>Bestellinformationen</CardTitle>
             </CardHeader>
             <CardContent class="space-y-2 text-sm">
                 {#if order.customer}
@@ -220,13 +259,27 @@
                 {:else}
                     <p class="text-muted-foreground">Kunde nicht verfügbar.</p>
                 {/if}
+                <div class="flex justify-between">
+                    <span class="text-muted-foreground">Bestellzeitpunkt</span>
+                    <span>{orderedAt}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-muted-foreground">Status</span>
+                    <span
+                        class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {orderStatusBadgeClass(
+                            order.status,
+                        )}"
+                    >
+                        {orderStatusLabel(order.status)}
+                    </span>
+                </div>
             </CardContent>
         </Card>
 
         <!-- Zahlungsinformationen -->
         <Card>
             <CardHeader>
-                <CardTitle>Zahlung</CardTitle>
+                <CardTitle>Zahlungsinformationen</CardTitle>
             </CardHeader>
             <CardContent class="space-y-2 text-sm">
                 <div class="flex justify-between">
@@ -281,60 +334,6 @@
             </CardContent>
         </Card>
     </div>
-
-    <!-- Aktionen -->
-    <Card>
-        <CardHeader>
-            <CardTitle>Aktionen</CardTitle>
-        </CardHeader>
-        <CardContent class="flex flex-col gap-4">
-            {#if !canConfirmPayment && !canRefund}
-                <p class="text-sm text-muted-foreground">
-                    Diese Bestellung wird ausschließlich automatisch über PayPal
-                    verwaltet — hier ist keine manuelle Aktion möglich.
-                </p>
-            {/if}
-
-            <div class="flex flex-wrap items-end gap-3">
-                {#if canConfirmPayment}
-                    <Button
-                        onclick={confirmPayment}
-                        disabled={confirmingPayment}
-                    >
-                        {#if confirmingPayment}<Loader2
-                                class="size-4 animate-spin"
-                            />{/if}
-                        Zahlungseingang bestätigen
-                    </Button>
-                {/if}
-                {#if canRefund}
-                    <Button
-                        variant="destructive"
-                        onclick={refund}
-                        disabled={refunding}
-                    >
-                        {#if refunding}<Loader2
-                                class="size-4 animate-spin"
-                            />{/if}
-                        Zahlung erstatten
-                    </Button>
-                {/if}
-            </div>
-
-            {#if canConfirmPayment}
-                <label
-                    class="flex items-center gap-2 text-sm text-muted-foreground"
-                >
-                    <input
-                        type="checkbox"
-                        bind:checked={notifyCustomer}
-                        class="accent-primary"
-                    />
-                    Kunde per E-Mail benachrichtigen (Bestellbestätigung senden)
-                </label>
-            {/if}
-        </CardContent>
-    </Card>
 
     <!-- Adressen -->
     <div class="grid gap-6 md:grid-cols-2">

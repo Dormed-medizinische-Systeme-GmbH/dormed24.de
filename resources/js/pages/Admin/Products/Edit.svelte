@@ -94,7 +94,10 @@
 
     function submit(e: SubmitEvent) {
         e.preventDefault();
+        save();
+    }
 
+    function save() {
         if (!hasSpecialties) {
             form.specialties = [];
         }
@@ -102,7 +105,7 @@
         form.put(AdminProductController.update.url(product.id));
     }
 
-    // Drei-Punkte-Menü (Anzeigen/Löschen) rechts im Admin-Header.
+    // Drei-Punkte-Menü (Anzeigen/Löschen) und Speichern rechts im Admin-Header.
     $effect(() => {
         setLayoutProps({ actions: headerActions });
     });
@@ -249,6 +252,9 @@
 
 {#snippet headerActions()}
     <ProductActions {product} showEdit={false} />
+    <Button onclick={save} disabled={form.processing}>
+        {form.processing ? 'Speichert…' : 'Speichern'}
+    </Button>
 {/snippet}
 
 <AppHead title="{product.name} bearbeiten — Admin" />

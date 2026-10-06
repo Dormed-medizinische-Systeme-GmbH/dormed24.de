@@ -6,7 +6,6 @@
 
 <script lang="ts">
     import { router, setLayoutProps } from '@inertiajs/svelte';
-    import ChevronDown from '@lucide/svelte/icons/chevron-down';
     import Plus from '@lucide/svelte/icons/plus';
     import {
         getCoreRowModel,
@@ -18,7 +17,6 @@
         ColumnFiltersState,
         RowSelectionState,
         SortingState,
-        VisibilityState,
     } from '@tanstack/table-core';
     import * as AdminProductController from '@/actions/App/Http/Controllers/Admin/ProductController';
     import AppHead from '@/components/AppHead.svelte';
@@ -29,13 +27,8 @@
         createSvelteTable,
         renderComponent,
     } from '@/components/ui/data-table';
-    import {
-        DropdownMenu,
-        DropdownMenuCheckboxItem,
-        DropdownMenuContent,
-        DropdownMenuTrigger,
-    } from '@/components/ui/dropdown-menu';
     import { Input } from '@/components/ui/input';
+    import * as Select from '@/components/ui/select';
     import * as Table from '@/components/ui/table';
     import { formatPrice } from '@/lib/currency';
     import AvailabilityBadge from './AvailabilityBadge.svelte';
@@ -47,10 +40,33 @@
         name: string;
         price: string;
         is_available: boolean;
+        category_slug: string | null;
         manufacturer: { id: number; name: string } | null;
     };
 
-    let { products }: { products: Product[] } = $props();
+    type Category = { slug: string; name: string };
+
+    let {
+        products,
+        categories,
+    }: { products: Product[]; categories: Category[] } = $props();
+
+    // Kategorie-Filter: ALL_CATEGORIES = keine Einschränkung.
+    const ALL_CATEGORIES = 'alle';
+    let selectedCategory = $state(ALL_CATEGORIES);
+
+    const selectedCategoryLabel = $derived(
+        categories.find((category) => category.slug === selectedCategory)
+            ?.name ?? 'Alle Kategorien',
+    );
+
+    const visibleProducts = $derived(
+        selectedCategory === ALL_CATEGORIES
+            ? products
+            : products.filter(
+                  (product) => product.category_slug === selectedCategory,
+              ),
+    );
 
     const columns: ColumnDef<Product>[] = [
         {
@@ -109,11 +125,10 @@
     let sorting = $state<SortingState>([]);
     let columnFilters = $state<ColumnFiltersState>([]);
     let rowSelection = $state<RowSelectionState>({});
-    let columnVisibility = $state<VisibilityState>({});
 
     const table = createSvelteTable({
         get data() {
-            return products;
+            return visibleProducts;
         },
         columns,
         getCoreRowModel: getCoreRowModel(),
@@ -128,10 +143,6 @@
         onRowSelectionChange: (u) => {
             rowSelection = typeof u === 'function' ? u(rowSelection) : u;
         },
-        onColumnVisibilityChange: (u) => {
-            columnVisibility =
-                typeof u === 'function' ? u(columnVisibility) : u;
-        },
         state: {
             get sorting() {
                 return sorting;
@@ -141,9 +152,6 @@
             },
             get rowSelection() {
                 return rowSelection;
-            },
-            get columnVisibility() {
-                return columnVisibility;
             },
         },
     });
@@ -176,29 +184,20 @@
             class="min-w-0 flex-1"
         />
 
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                {#snippet children(props)}
-                    <Button {...props} variant="outline" class="shrink-0">
-                        Spalten <ChevronDown class="ml-2 size-4" />
-                    </Button>
-                {/snippet}
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-                {#each table
-                    .getAllColumns()
-                    .filter((c) => c.getCanHide()) as column (column.id)}
-                    <DropdownMenuCheckboxItem
-                        checked={column.getIsVisible()}
-                        onCheckedChange={(v) => column.toggleVisibility(v)}
-                    >
-                        {typeof column.columnDef.header === 'string'
-                            ? column.columnDef.header
-                            : column.id}
-                    </DropdownMenuCheckboxItem>
+        <Select.Root type="single" bind:value={selectedCategory}>
+            <Select.Trigger class="w-56 shrink-0" aria-label="Kategorie">
+                {selectedCategoryLabel}
+            </Select.Trigger>
+            <Select.Content align="end">
+                <Select.Item value={ALL_CATEGORIES}>Alle Kategorien</Select.Item
+                >
+                {#each categories as category (category.slug)}
+                    <Select.Item value={category.slug}>
+                        {category.name}
+                    </Select.Item>
                 {/each}
-            </DropdownMenuContent>
-        </DropdownMenu>
+            </Select.Content>
+        </Select.Root>
     </div>
 
     <div class="rounded-md border">

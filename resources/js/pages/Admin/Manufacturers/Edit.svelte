@@ -1,17 +1,19 @@
 <script module lang="ts">
-    export const layout = {
-        breadcrumbs: [{ title: 'Hersteller', href: '/admin/manufacturers' }, { title: 'Bearbeiten' }],
-    };
+    // Breadcrumb mit dem Herstellernamen statt „Bearbeiten“ (Layout-Callback über die Page-Props).
+    export const layout = (props: { manufacturer: { name: string } }) => ({
+        breadcrumbs: [{ title: 'Hersteller', href: '/admin/manufacturers' }, { title: props.manufacturer.name }],
+    });
 </script>
 
 <script lang="ts">
-    import { useForm } from '@inertiajs/svelte';
+    import { useForm, setLayoutProps } from '@inertiajs/svelte';
     import * as AdminManufacturerController from '@/actions/App/Http/Controllers/Admin/ManufacturerController';
     import AppHead from '@/components/AppHead.svelte';
     import { Button } from '@/components/ui/button';
     import { Input } from '@/components/ui/input';
     import { Label } from '@/components/ui/label';
     import { guardUnsavedChanges } from '@/lib/unsavedChanges';
+    import ManufacturerActions from './ManufacturerActions.svelte';
 
     type Manufacturer = {
         id: number;
@@ -34,14 +36,30 @@
 
     function submit(e: SubmitEvent) {
         e.preventDefault();
+        save();
+    }
+
+    function save() {
         form.put(AdminManufacturerController.update.url(manufacturer.id));
     }
+
+    // Zweiter Speichern-Button rechts im Admin-Header.
+    $effect(() => {
+        setLayoutProps({ actions: headerActions });
+    });
 </script>
+
+{#snippet headerActions()}
+    <ManufacturerActions {manufacturer} showEdit={false} />
+    <Button onclick={save} disabled={form.processing}>
+        {form.processing ? 'Speichert…' : 'Speichern'}
+    </Button>
+{/snippet}
 
 <AppHead title="{manufacturer.name} bearbeiten — Admin" />
 
 <div class="flex h-full flex-1 flex-col gap-6 p-4">
-    <h1 class="text-xl font-semibold">Hersteller bearbeiten</h1>
+    <h1 class="sr-only">{manufacturer.name} bearbeiten</h1>
 
     <form onsubmit={submit} class="flex max-w-2xl flex-col gap-6">
         <div class="flex flex-col gap-2">
