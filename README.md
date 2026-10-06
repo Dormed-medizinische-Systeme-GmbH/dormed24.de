@@ -16,7 +16,7 @@ zieht dieses Dokument nach.**
 | `README.md` | Diese Übersicht — Flows, Architektur, Betrieb |
 | `AGENTS.md` | Detail-Kontext für KI-Agenten (Layouts, Frontend-Konventionen, Routen) |
 | `database/SCHEMA.md` | Vollständiges DB-Schema — bei jeder Migration aktualisieren |
-| `ANALYSE-V1.md` / `ANALYSE-V2.md` / `ANALYSE-V3.md` | Audit-Checklisten Richtung 1.0 (✅ = erledigt, Kurzprotokoll oben) |
+| `ANALYSE.md` | Offene Audit-Punkte + bewusste Entscheidungen (erledigte Punkte werden entfernt) |
 | `TODO.md` | Offener Backlog (Sicherheit, UI/UX, Ideen) |
 
 ---
@@ -86,7 +86,7 @@ Zentrale Klassen (die „Geschäftslogik-Ecke"):
 - Order bleibt **bewusst `pending`**, bis die Überweisung eintrifft — der Admin
   setzt sie im Bestelldetail auf `paid` (optional mit erneuter Kundenmail).
 - Deshalb gibt es **kein automatisches Cleanup** von pending-Orders
-  (Entscheidung, siehe ANALYSE-V2 B3).
+  (bewusste Entscheidung, siehe `ANALYSE.md`).
 
 ### 4. Checkout PayPal
 
@@ -166,9 +166,8 @@ npm run build:ssr                     # Client + SSR-Bundle (bootstrap/ssr/app.j
 - **SSR ist lokal aus** (`INERTIA_SSR_ENABLED=false`) — zum Entwickeln reicht
   Client-Rendering. Produktions-Setup: siehe Launch-Checkliste Punkt „SSR".
 
-- **Workflow:** Findings/Aufgaben laufen über die Analyse-Checklisten
-  (aktuell `ANALYSE-V3.md`) — erledigte Punkte werden mit ✅ am
-  Überschriftsende abgehakt + im Kurzprotokoll oben ergänzt.
+- **Workflow:** Findings/Aufgaben laufen über `ANALYSE.md` — erledigte
+  Punkte werden dort entfernt, bewusste Entscheidungen bleiben unten gelistet.
 - Feature-Tests sind die Wahrheit: jeder Fix bekommt einen Test. CSRF ist in
   Tests deaktiviert — Browser-relevante Dinge (PayPal-Button, Fetches) einmal
   manuell gegen die Sandbox klicken.
@@ -198,5 +197,4 @@ npm run build:ssr                     # Client + SSR-Bundle (bootstrap/ssr/app.j
    - Kein separater Einstiegspunkt nötig: `@inertiajs/vite` wrappt beim
      `--ssr`-Build automatisch `resources/js/app.ts`.
 
-Offene Punkte vor/nach Launch: siehe `ANALYSE-V3.md` (unten „Empfohlene
-Reihenfolge") und `TODO.md`.
+Offene Punkte vor/nach Launch: siehe `ANALYSE.md` und `TODO.md`.

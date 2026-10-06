@@ -3,7 +3,7 @@
 ## IDEEN
 
 - DPD Tracking in App per API einbauen
-- Bewertungen order-basiert reaktivieren (Kunde bewertet nur gekaufte Produkte) — Route + Formular sind bis dahin bewusst deaktiviert (ANALYSE-V3 S-1); `RatingController` + Tests liegen als Grundlage bereit
+- Bewertungen order-basiert reaktivieren (Kunde bewertet nur gekaufte Produkte) — Route + Formular sind bis dahin bewusst deaktiviert (siehe `ANALYSE.md`); `RatingController` + Tests liegen als Grundlage bereit
 
 ---
 

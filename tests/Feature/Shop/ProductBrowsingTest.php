@@ -301,7 +301,7 @@ class ProductBrowsingTest extends TestCase
     }
 
     /**
-     * Bewusste Entscheidung (ANALYSE-V2, Businesslogik 1): Detailseiten nicht
+     * Bewusste Entscheidung (siehe ANALYSE.md): Detailseiten nicht
      * verfügbarer Produkte bleiben erreichbar (SEO/Bookmarks); das Frontend
      * zeigt den "nicht verfügbar"-Zustand und JSON-LD meldet OutOfStock.
      */

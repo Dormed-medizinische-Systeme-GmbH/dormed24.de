@@ -338,5 +338,4 @@ nie Daten löscht).
 ## Noch nicht gebaut
 
 - Wartungsmodus, Produktfilter, Bulk-Aktionen, Bestell-/Kunden-Filter im Admin (siehe `TODO.md`)
-- Rating-Throttle/Moderation (ANALYSE-V2 S-C, Wiedervorlage Linus)
-- Kleinere Härtungen: Settings-Werte-Validierung, Throttle auf `paypal/order/create` (ANALYSE-V2 S-C)
+- Bestellbasierte Bewertungen (Route + Formular bis dahin deaktiviert, siehe `ANALYSE.md`)
