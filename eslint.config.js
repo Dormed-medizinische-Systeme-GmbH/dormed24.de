@@ -80,6 +80,11 @@ export default ts.config(
                 'error',
                 {
                     groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index'],
+                    // `@/…` immer als intern einordnen, auch wenn die Wayfinder-
+                    // Dateien (`@/actions`, `@/routes`) noch nicht generiert
+                    // sind (CI-Lint-Job ohne Build). Sonst landen sie als
+                    // "unknown" und die Reihenfolge weicht von lokal ab.
+                    pathGroups: [{ pattern: '@/**', group: 'internal' }],
                     alphabetize: { order: 'asc', caseInsensitive: true },
                 },
             ],
