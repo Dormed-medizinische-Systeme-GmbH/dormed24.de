@@ -15,12 +15,19 @@
         DropdownMenuTrigger,
     } from '@/components/ui/dropdown-menu';
 
-    let { product }: { product: { id: number; name: string } } = $props();
+    let {
+        product,
+        showEdit = true,
+    }: {
+        product: { id: number; name: string };
+        /** Auf der Bearbeiten-Seite selbst ist „Bearbeiten" überflüssig. */
+        showEdit?: boolean;
+    } = $props();
 
     function destroy() {
         if (!confirm(`Produkt „${product.name}" wirklich löschen?`)) {
-return;
-}
+            return;
+        }
 
         router.delete(AdminProductController.destroy.url(product.id));
     }
@@ -55,20 +62,25 @@ return;
                 </a>
             {/snippet}
         </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-            {#snippet children(props)}
-                <a
-                    class={props.class}
-                    href={AdminProductController.edit.url(product.id)}
-                    onclick={props.onClick}
-                >
-                    <Pencil class="mr-2 size-4" />
-                    Bearbeiten
-                </a>
-            {/snippet}
-        </DropdownMenuItem>
+        {#if showEdit}
+            <DropdownMenuItem asChild>
+                {#snippet children(props)}
+                    <a
+                        class={props.class}
+                        href={AdminProductController.edit.url(product.id)}
+                        onclick={props.onClick}
+                    >
+                        <Pencil class="mr-2 size-4" />
+                        Bearbeiten
+                    </a>
+                {/snippet}
+            </DropdownMenuItem>
+        {/if}
         <DropdownMenuSeparator />
-        <DropdownMenuItem onclick={destroy} class="text-destructive focus:text-destructive">
+        <DropdownMenuItem
+            onclick={destroy}
+            class="text-destructive focus:text-destructive"
+        >
             <Trash2 class="mr-2 size-4" />
             Löschen
         </DropdownMenuItem>

@@ -1,11 +1,12 @@
 <script module lang="ts">
-    export const layout = {
-        breadcrumbs: [{ title: 'Produkte', href: '/admin/products' }, { title: 'Bearbeiten' }],
-    };
+    // Breadcrumb mit dem Produktnamen statt „Bearbeiten“ (Layout-Callback über die Page-Props).
+    export const layout = (props: { product: { name: string } }) => ({
+        breadcrumbs: [{ title: 'Produkte', href: '/admin/products' }, { title: props.product.name }],
+    });
 </script>
 
 <script lang="ts">
-    import { useForm, router } from '@inertiajs/svelte';
+    import { useForm, router, setLayoutProps } from '@inertiajs/svelte';
     import { GripVertical, Trash2, ImagePlus, Star, Plus, Check } from '@lucide/svelte';
     import * as AdminProductController from '@/actions/App/Http/Controllers/Admin/ProductController';
     import * as AdminProductVariantController from '@/actions/App/Http/Controllers/Admin/ProductVariantController';
@@ -18,6 +19,7 @@
     import * as Select from '@/components/ui/select';
     import * as Tabs from '@/components/ui/tabs';
     import { cn } from '@/lib/utils';
+    import ProductActions from './ProductActions.svelte';
 
     type ProductImage = {
         id: number;
@@ -98,6 +100,11 @@
 
         form.put(AdminProductController.update.url(product.id));
     }
+
+    // Drei-Punkte-Menü (Anzeigen/Löschen) rechts im Admin-Header.
+    $effect(() => {
+        setLayoutProps({ actions: headerActions });
+    });
 
     // --- Image management ---
 
@@ -220,15 +227,14 @@
     }
 </script>
 
+{#snippet headerActions()}
+    <ProductActions {product} showEdit={false} />
+{/snippet}
+
 <AppHead title="{product.name} bearbeiten — Admin" />
 
 <div class="flex h-full flex-1 flex-col gap-6 p-4">
-    <div class="flex items-center justify-between">
-        <div>
-            <h1 class="text-xl font-semibold">{product.name}</h1>
-            <p class="mt-0.5 text-sm text-muted-foreground">Produkt bearbeiten</p>
-        </div>
-    </div>
+    <h1 class="sr-only">{product.name} bearbeiten</h1>
 
     <Tabs.Root value="stammdaten">
         <Tabs.List>

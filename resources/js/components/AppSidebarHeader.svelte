@@ -1,12 +1,16 @@
 <script lang="ts">
+    import type { Snippet } from 'svelte';
     import Breadcrumbs from '@/components/Breadcrumbs.svelte';
     import { SidebarTrigger } from '@/components/ui/sidebar';
     import type { BreadcrumbItem } from '@/types';
 
     let {
         breadcrumbs = [],
+        actions,
     }: {
         breadcrumbs?: BreadcrumbItem[];
+        /** Seitenspezifische Aktionen rechts im Header (z. B. Drei-Punkte-Menü). */
+        actions?: Snippet;
     } = $props();
 </script>
 
@@ -19,4 +23,9 @@
             <Breadcrumbs {breadcrumbs} currentClass="text-base font-semibold" />
         {/if}
     </div>
+    {#if actions}
+        <div class="ms-auto flex items-center gap-2">
+            {@render actions()}
+        </div>
+    {/if}
 </header>
