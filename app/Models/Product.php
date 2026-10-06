@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Support\Catalog\Categories;
 use App\Support\Catalog\Category;
+use App\Support\Catalog\Specialties;
+use App\Support\Catalog\Specialty;
 use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -16,13 +18,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $id
  * @property int|null $manufacturer_id
  * @property string|null $category_slug Slug aus config/categories.php
+ * @property list<string>|null $specialties Slugs aus config/specialties.php
  * @property string $name
  * @property string|null $description
  * @property list<array{label: string, value: string}>|null $technical_specs
  * @property string $price
  * @property bool $is_available
  */
-#[Fillable(['manufacturer_id', 'category_slug', 'name', 'description', 'technical_specs', 'price', 'is_available'])]
+#[Fillable(['manufacturer_id', 'category_slug', 'specialties', 'name', 'description', 'technical_specs', 'price', 'is_available'])]
 class Product extends Model
 {
     /** @use HasFactory<ProductFactory> */
@@ -34,6 +37,7 @@ class Product extends Model
             'price' => 'decimal:2',
             'is_available' => 'boolean',
             'technical_specs' => 'array',
+            'specialties' => 'array',
         ];
     }
 
@@ -43,6 +47,16 @@ class Product extends Model
     public function category(): ?Category
     {
         return Categories::find($this->category_slug);
+    }
+
+    /**
+     * Fachrichtungen aus config/specialties.php in Config-Reihenfolge.
+     *
+     * @return list<Specialty>
+     */
+    public function specialtyList(): array
+    {
+        return Specialties::findMany($this->specialties ?? []);
     }
 
     /**

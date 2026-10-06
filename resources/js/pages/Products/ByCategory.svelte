@@ -9,7 +9,7 @@
     import ProductFilterSheet from '@/components/ProductFilterSheet.svelte';
     import ShopBreadcrumbs from '@/components/ShopBreadcrumbs.svelte';
     import ShopHeader from '@/components/ShopHeader.svelte';
-    import { visitWithManufacturerFilter } from '@/lib/productFilters';
+    import { clearFilters } from '@/lib/productFilters';
     import type {
         ProductListFilterOptions,
         ProductListFilters,
@@ -44,7 +44,9 @@
         filterOptions: ProductListFilterOptions;
     } = $props();
 
-    const hasActiveFilters = $derived(filters.manufacturers.length > 0);
+    const hasActiveFilters = $derived(
+        filters.manufacturers.length + filters.specialties.length > 0,
+    );
 </script>
 
 <AppHead
@@ -87,7 +89,7 @@
                     </p>
                     <button
                         type="button"
-                        onclick={() => visitWithManufacturerFilter([])}
+                        onclick={clearFilters}
                         class="mt-4 inline-block text-sm text-brand-accent hover:underline"
                     >
                         Filter zurücksetzen

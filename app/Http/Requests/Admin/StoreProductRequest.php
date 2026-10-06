@@ -3,6 +3,8 @@
 namespace App\Http\Requests\Admin;
 
 use App\Support\Catalog\Categories;
+use App\Support\Catalog\Specialties;
+use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -54,7 +56,49 @@ class StoreProductRequest extends FormRequest
             'price' => ['required', 'numeric', 'min:0'],
             'manufacturer_id' => ['nullable', 'integer', 'exists:manufacturers,id'],
             'category_slug' => ['nullable', 'string', Rule::in(Categories::slugs())],
+            'specialties' => [
+                'nullable',
+                'array',
+                function (string $attribute, mixed $value, Closure $fail): void {
+                    if (is_array($value) && $value !== [] && ! $this->categoryHasSpecialties()) {
+                        $fail('Fachrichtungen gibt es nur für: '.$this->specialtyCategoryNames().'.');
+                    }
+                },
+            ],
+            'specialties.*' => ['string', 'distinct', Rule::in(Specialties::slugs())],
             'is_available' => ['required', 'boolean'],
         ];
+    }
+
+    /**
+     * Validierte Produktdaten. Fachrichtungen werden in Config-Reihenfolge
+     * gespeichert und geleert, sobald die Kategorie keine (mehr) vorsieht.
+     *
+     * @return array<string, mixed>
+     */
+    public function productData(): array
+    {
+        $data = $this->validated();
+
+        if (! $this->categoryHasSpecialties()) {
+            $data['specialties'] = null;
+        } elseif (array_key_exists('specialties', $data)) {
+            $data['specialties'] = Specialties::normalize((array) ($data['specialties'] ?? []));
+        }
+
+        return $data;
+    }
+
+    private function specialtyCategoryNames(): string
+    {
+        return implode(', ', array_map(
+            fn (string $slug): string => Categories::find($slug)->name ?? $slug,
+            Categories::slugsWithSpecialties(),
+        ));
+    }
+
+    private function categoryHasSpecialties(): bool
+    {
+        return in_array($this->input('category_slug'), Categories::slugsWithSpecialties(), true);
     }
 }

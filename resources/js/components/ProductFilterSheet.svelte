@@ -2,10 +2,7 @@
     import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
     import { Checkbox } from '@/components/ui/checkbox';
     import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
-    import {
-        countForManufacturers,
-        visitWithManufacturerFilter,
-    } from '@/lib/productFilters';
+    import { countForSelection, visitWithFilters } from '@/lib/productFilters';
     import type {
         ProductListFilterOptions,
         ProductListFilters,
@@ -22,16 +19,21 @@
     let open = $state(false);
     // Auswahl im Sheet wird erst mit "anzeigen" angewendet.
     let pendingManufacturers = $state<number[]>([]);
+    let pendingSpecialties = $state<string[]>([]);
 
     const activeFilterCount = $derived(
         filters.manufacturers.length + filters.specialties.length,
     );
     const pendingCount = $derived(
-        countForManufacturers(filterOptions, pendingManufacturers),
+        countForSelection(filterOptions, filters, {
+            manufacturers: pendingManufacturers,
+            specialties: pendingSpecialties,
+        }),
     );
 
     function openSheet() {
         pendingManufacturers = [...filters.manufacturers];
+        pendingSpecialties = [...filters.specialties];
         open = true;
     }
 
@@ -41,15 +43,25 @@
             : pendingManufacturers.filter((value) => value !== id);
     }
 
+    function toggleSpecialty(slug: string, checked: boolean) {
+        pendingSpecialties = checked
+            ? [...pendingSpecialties, slug]
+            : pendingSpecialties.filter((value) => value !== slug);
+    }
+
     function applyFilters() {
         open = false;
-        visitWithManufacturerFilter(pendingManufacturers);
+        visitWithFilters({
+            manufacturers: pendingManufacturers,
+            specialties: pendingSpecialties,
+        });
     }
 
     function resetFilters() {
         pendingManufacturers = [];
+        pendingSpecialties = [];
 
-        if (filters.manufacturers.length > 0) {
+        if (activeFilterCount > 0) {
             applyFilters();
         }
     }
@@ -83,7 +95,11 @@
         </div>
 
         <div class="flex flex-1 flex-col gap-5 overflow-y-auto px-5 py-5">
-            <fieldset class="border-b border-border pb-5">
+            <fieldset
+                class={filterOptions.specialties.length > 0
+                    ? 'border-b border-border pb-5'
+                    : ''}
+            >
                 <legend class="mb-3 text-sm font-semibold text-foreground">
                     Hersteller
                 </legend>
@@ -126,35 +142,45 @@
                 {/if}
             </fieldset>
 
-            <!--
-                Fachrichtungen: bewusst "tot" - das Datenmodell kennt sie noch
-                nicht, das Backend liefert eine leere Liste. Sobald es eine
-                Zuordnung Produkt <-> Fachrichtung gibt, hier wie bei den
-                Herstellern rendern und in ProductFilters verdrahten.
-            -->
-            <fieldset>
-                <legend class="mb-3 text-sm font-semibold text-foreground">
-                    Fachrichtungen
-                </legend>
-                {#if filterOptions.specialties.length === 0}
-                    <p class="text-sm text-muted-foreground">Folgt in Kürze.</p>
-                {:else}
+            <!-- Nur wo Produkte mit Fachrichtungen vorkommen (Ultraschallsysteme/-sonden). -->
+            {#if filterOptions.specialties.length > 0}
+                <fieldset>
+                    <legend class="mb-3 text-sm font-semibold text-foreground">
+                        Fachrichtungen
+                    </legend>
                     <div class="flex flex-col gap-2.5">
                         {#each filterOptions.specialties as option (option.id)}
+                            {@const checked = pendingSpecialties.includes(
+                                option.id,
+                            )}
                             <label
-                                class="flex cursor-not-allowed items-center gap-2.5 text-sm text-muted-foreground/60"
+                                for={`filter-specialty-${option.id}`}
+                                class="flex cursor-pointer items-center gap-2.5 text-sm text-muted-foreground hover:text-foreground"
                             >
-                                <Checkbox disabled class="rounded" />
-                                <span class="min-w-0 flex-1">{option.name}</span
+                                <Checkbox
+                                    id={`filter-specialty-${option.id}`}
+                                    {checked}
+                                    class="rounded"
+                                    onCheckedChange={(value) =>
+                                        toggleSpecialty(option.id, value)}
+                                />
+                                <span
+                                    class="min-w-0 flex-1 {checked
+                                        ? 'font-medium text-foreground'
+                                        : ''}"
                                 >
-                                <span class="shrink-0 text-xs tabular-nums">
+                                    {option.name}
+                                </span>
+                                <span
+                                    class="shrink-0 text-xs tabular-nums text-muted-foreground"
+                                >
                                     {option.count}
                                 </span>
                             </label>
                         {/each}
                     </div>
-                {/if}
-            </fieldset>
+                </fieldset>
+            {/if}
         </div>
 
         <div class="flex flex-col gap-2 border-t p-4">
@@ -170,7 +196,9 @@
                 onclick={applyFilters}
                 class="h-10 w-full rounded-lg bg-primary px-4 text-sm font-semibold text-white transition hover:bg-primary/90"
             >
-                {pendingCount} anzeigen
+                {pendingCount === null
+                    ? 'Ergebnisse anzeigen'
+                    : `${pendingCount} anzeigen`}
             </button>
         </div>
     </SheetContent>

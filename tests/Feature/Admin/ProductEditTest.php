@@ -211,6 +211,130 @@ class ProductEditTest extends TestCase
             );
     }
 
+    public function test_specialties_are_saved_in_config_order_for_ultrasound_categories(): void
+    {
+        $product = Product::factory()->create(['category_slug' => 'ultraschallsysteme']);
+
+        $this->actingAsAdmin()
+            ->put(route('admin.products.update', $product), [
+                'name' => $product->name,
+                'price' => '19.99',
+                'is_available' => true,
+                'category_slug' => 'ultraschallsysteme',
+                'specialties' => ['urologie', 'kardiologie'],
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(['kardiologie', 'urologie'], $product->refresh()->specialties);
+    }
+
+    public function test_specialties_can_be_created_with_a_probe(): void
+    {
+        $this->actingAsAdmin()
+            ->post(route('admin.products.store'), [
+                'name' => 'Sonde L12',
+                'price' => '990.00',
+                'is_available' => true,
+                'category_slug' => 'ultraschallsonden',
+                'specialties' => ['angiologie'],
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(['angiologie'], Product::query()->where('name', 'Sonde L12')->sole()->specialties);
+    }
+
+    public function test_specialties_are_rejected_for_categories_without_specialties(): void
+    {
+        $product = Product::factory()->create(['category_slug' => 'zubehoer']);
+
+        $this->actingAsAdmin()
+            ->put(route('admin.products.update', $product), [
+                'name' => $product->name,
+                'price' => '19.99',
+                'is_available' => true,
+                'category_slug' => 'zubehoer',
+                'specialties' => ['kardiologie'],
+            ])
+            ->assertSessionHasErrors('specialties');
+
+        $this->assertNull($product->refresh()->specialties);
+    }
+
+    public function test_unknown_or_duplicate_specialties_are_rejected(): void
+    {
+        $product = Product::factory()->create(['category_slug' => 'ultraschallsysteme']);
+
+        $this->actingAsAdmin()
+            ->put(route('admin.products.update', $product), [
+                'name' => $product->name,
+                'price' => '19.99',
+                'is_available' => true,
+                'category_slug' => 'ultraschallsysteme',
+                'specialties' => ['zahnmedizin', 'kardiologie', 'kardiologie'],
+            ])
+            ->assertSessionHasErrors(['specialties.0', 'specialties.1', 'specialties.2']);
+
+        $this->assertNull($product->refresh()->specialties);
+    }
+
+    public function test_moving_a_product_out_of_an_ultrasound_category_clears_its_specialties(): void
+    {
+        $product = Product::factory()->create([
+            'category_slug' => 'ultraschallsysteme',
+            'specialties' => ['kardiologie'],
+        ]);
+
+        $this->actingAsAdmin()
+            ->put(route('admin.products.update', $product), [
+                'name' => $product->name,
+                'price' => '19.99',
+                'is_available' => true,
+                'category_slug' => 'zubehoer',
+                'specialties' => [],
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertNull($product->refresh()->specialties);
+    }
+
+    public function test_update_without_specialties_field_keeps_existing_specialties(): void
+    {
+        $product = Product::factory()->create([
+            'category_slug' => 'ultraschallsysteme',
+            'specialties' => ['kardiologie'],
+        ]);
+
+        $this->actingAsAdmin()
+            ->put(route('admin.products.update', $product), [
+                'name' => 'Neuer Name',
+                'price' => '19.99',
+                'is_available' => true,
+                'category_slug' => 'ultraschallsysteme',
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(['kardiologie'], $product->refresh()->specialties);
+    }
+
+    public function test_edit_page_offers_specialties_for_ultrasound_categories(): void
+    {
+        $product = Product::factory()->create([
+            'category_slug' => 'ultraschallsonden',
+            'specialties' => ['kardiologie'],
+        ]);
+
+        $this->actingAsAdmin()
+            ->get(route('admin.products.edit', $product))
+            ->assertOk()
+            ->assertInertia(
+                fn ($page) => $page
+                    ->where('product.specialties', ['kardiologie'])
+                    ->where('specialtyCategories', ['ultraschallsysteme', 'ultraschallsonden'])
+                    ->has('specialties', 10)
+                    ->where('specialties.0', ['slug' => 'allgemeinmedizin-innere-medizin', 'name' => 'Allgemeinmedizin / Innere Medizin'])
+            );
+    }
+
     public function test_update_requires_admin(): void
     {
         $product = Product::factory()->create();

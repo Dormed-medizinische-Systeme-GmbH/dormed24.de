@@ -10,6 +10,7 @@
     import * as AdminProductController from '@/actions/App/Http/Controllers/Admin/ProductController';
     import * as AdminProductVariantController from '@/actions/App/Http/Controllers/Admin/ProductVariantController';
     import AppHead from '@/components/AppHead.svelte';
+    import SpecialtyPicker from '@/components/SpecialtyPicker.svelte';
     import TechnicalSpecsEditor from '@/components/TechnicalSpecsEditor.svelte';
     import { Button } from '@/components/ui/button';
     import { Input } from '@/components/ui/input';
@@ -41,6 +42,7 @@
         price: string;
         manufacturer_id: number | null;
         category_slug: string | null;
+        specialties: string[] | null;
         is_available: boolean;
         images: ProductImage[];
         variants: ProductVariant[];
@@ -48,12 +50,21 @@
 
     type Manufacturer = { id: number; name: string };
     type Category = { slug: string; name: string };
+    type Specialty = { slug: string; name: string };
 
     let {
         product,
         manufacturers,
         categories,
-    }: { product: Product; manufacturers: Manufacturer[]; categories: Category[] } = $props();
+        specialtyCategories,
+        specialties,
+    }: {
+        product: Product;
+        manufacturers: Manufacturer[];
+        categories: Category[];
+        specialtyCategories: string[];
+        specialties: Specialty[];
+    } = $props();
 
     // svelte-ignore state_referenced_locally
     const form = useForm({
@@ -63,6 +74,7 @@
         price: product.price,
         manufacturer_id: product.manufacturer_id ? String(product.manufacturer_id) : '',
         category_slug: product.category_slug ?? '',
+        specialties: [...(product.specialties ?? [])],
         is_available: product.is_available,
     });
 
@@ -74,8 +86,16 @@
         categories.find((c) => c.slug === form.category_slug)?.name ?? 'Kategorie wählen',
     );
 
+    // Fachrichtungen nur für Kategorien mit has_specialties (config/categories.php).
+    const hasSpecialties = $derived(specialtyCategories.includes(form.category_slug));
+
     function submit(e: SubmitEvent) {
         e.preventDefault();
+
+        if (!hasSpecialties) {
+            form.specialties = [];
+        }
+
         form.put(AdminProductController.update.url(product.id));
     }
 
@@ -277,6 +297,10 @@
                         <p class="text-sm text-destructive">{form.errors.category_slug}</p>
                     {/if}
                 </div>
+
+                {#if hasSpecialties}
+                    <SpecialtyPicker bind:selected={form.specialties} options={specialties} errors={form.errors} />
+                {/if}
 
                 <div class="flex flex-col gap-2">
                     <Label>Hersteller</Label>
