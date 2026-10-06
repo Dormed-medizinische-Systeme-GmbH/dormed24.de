@@ -26,11 +26,11 @@ B2B/B2C-Shop für Medizintechnik (Ultraschallsysteme, Zubehör, Verbrauchsmateri
 | Guard   | Model      | Tabelle     | Login-Route    | Middleware       |
 | ------- | ---------- | ----------- | -------------- | ---------------- |
 | `web`   | `Customer` | `customers` | `/login`       | `auth` (Fortify) |
-| `admin` | `User`     | `users`     | `/admin/login` | `ensure.admin`   |
+| `admin` | `EnvAdmin` | — (Env)     | `/admin/login` | `ensure.admin`   |
 
 - `Customer` — Shop-Kunden; Passkeys + 2FA via Fortify, implementiert `MustVerifyEmail`
 - **Bestell-Hebel:** `verified`-Middleware auf `checkout.confirm/address/submit` und `paypal.order.create/capture` — ohne bestätigte E-Mail keine Bestellung
-- `User` — interne Admin-Nutzer; eigener `LoginController`, kein Fortify; `EnsureAdmin` prüft Login **und** `is_admin`-Flag
+- `EnvAdmin` — genau ein Admin aus `ADMIN_EMAIL`/`ADMIN_PASSWORD` (bcrypt-Hash, `php artisan admin:hash-password`), Provider `env-admin`; eigener `LoginController`, kein Fortify, keine Admin-Tabelle
 - In Svelte: `page.props.auth.user` ist immer der aktuelle `Customer`
 - TypeScript-Typ: `Customer` aus `@/types`
 
@@ -69,12 +69,12 @@ Standalone-Seiten (Welcome, Products/*, Checkout/*, statische Seiten) binden `<S
 | Model            | Tabelle            | Hinweise                          |
 | ---------------- | ------------------ | --------------------------------- |
 | `Customer`       | `customers`        | Shop-Auth, Fortify, Passkeys, 2FA, `MustVerifyEmail` |
-| `User`           | `users`            | Nur Admin-Auth (`is_admin`-Flag)  |
-| `Product`        | `products`         | `manufacturer_id`/`category_id` FKs, `is_available`, `available()`-Scope |
+| `Product`        | `products`         | `manufacturer_id` FK, `category_slug` + `specialties` (Slugs aus der Config), `technical_specs` (JSON), `is_available`, `available()`-Scope |
 | `ProductVariant` | `product_variants` | Absoluter Endpreis (`price`), `is_default`, `sort_order` |
 | `ProductImage`   | `product_images`   | public-Disk, `sort_order` (0 = Hauptbild) |
 | `Manufacturer`   | `manufacturers`    |                                   |
 | — (`config/categories.php`) | — | Feste Kategorien, Produkte speichern `category_slug` |
+| — (`config/specialties.php`) | — | Feste Fachrichtungen (nur Kategorien mit `has_specialties`), Produkte speichern die Slugs |
 | `Order`          | `orders`           | FK zu `customers` **nullable, ON DELETE SET NULL** (Historie überlebt Kontolöschung); Adress-Snapshots als JSON |
 | `OrderItem`      | `order_items`      | Snapshot: `product_name` (inkl. Varianten-Label), `unit_price` |
 | `Payment`        | `payments`         | PayPal-Transaktionen (order_id, capture_id, response_data) |
@@ -234,8 +234,8 @@ Regeln:
   - `confirmInvoicePayment()` — manuelle Zahlungseingangs-Bestätigung bei Rechnung (Admin-Button): **eigenes** `PaymentConfirmationMail`/`payment-confirmation.blade.php` (kein Bankdaten-Block, andere Formulierung), **nur an den Kunden**, nie an den Betreiber (der bestätigt es ja gerade selbst). Absichtlich kein `if/else` innerhalb eines gemeinsamen Templates — die beiden Zustände „bitte zahlen" und „danke, bezahlt" sind komplett getrennte Mailables/Views.
 - **Bestellen nur mit bestätigter E-Mail** (`verified`-Middleware, siehe Auth-Abschnitt).
 - **Angebotene Zahlarten sind fest verdrahtet**: Kauf auf Rechnung + PayPal (kein Admin-Setting, kein Provider-Umschalter). Labels/Reihenfolge in `config/shop.php`, Auswahl-UI: Radio auf `Checkout/Confirm`.
-- **Sandbox/Live** = `App\Support\PaymentMode`, ausschließlich aus `APP_ENV` abgeleitet (production = live, sonst sandbox). Kein Admin-Override, kein Setting — im Admin unter Einstellungen → Zahlungsarten nur Zugangsdaten für beide Modi pflegbar.
-- **Secrets** liegen verschlüsselt in `settings` (`Setting::$encryptedKeys`) — **Single Source of Truth**. Es gibt keine `PAYPAL_*`-env-Fallbacks mehr; Erstbefüllung nur über `SEED_PAYPAL_*` + `PaymentSeeder`.
+- **Sandbox/Live** = `App\Support\PaymentMode`: live nur bei `APP_ENV=production` **und** `APP_DEBUG=false`, sonst sandbox. Kein Admin-Override, kein Setting.
+- **Zugangsdaten nur aus der Env:** PayPal (`PAYPAL_SANDBOX_*`/`PAYPAL_LIVE_*`, `config/paypal.php`) und SMTP (`MAIL_SANDBOX_*`/`MAIL_LIVE_*`, `config/mail.php` → `modes`, angewendet durch `ModeMailConfiguration`); der Modus wählt das Set. Nichts davon in `settings` oder im Admin-UI. Altdaten aus der DB: `php artisan settings:legacy-credentials`.
 - **Webhooks** (`/paypal/webhook`): signaturverifiziert; `CAPTURE.COMPLETED` → `markPaid`; `CAPTURE.REFUNDED`/`DENIED` setzen Payment **und** Order (Achtung: beim Refund ist `resource.id` die Refund-ID, die Capture-ID steckt im `up`-Link).
 - **Benachrichtigungs-Empfänger** = fest Setting `shop.email` (dieselbe Kontakt-Mail-Adresse wie im Shop-Frontend), kein separates Feld, kein Fallback. Beide Bestellmails laufen **synchron** im Request (kein Queue-Worker nötig; bei ~5 Mails/Tag ist der Overhead vernachlässigbar).
 - **Admin-Bestellaktionen** unter `Admin/Orders/Show`: `orders.confirm-payment` (einzige manuelle Status-Änderung, s.u.) + PayPal-Refund (`orders.refund`).
@@ -338,5 +338,4 @@ nie Daten löscht).
 ## Noch nicht gebaut
 
 - Wartungsmodus, Produktfilter, Bulk-Aktionen, Bestell-/Kunden-Filter im Admin (siehe `TODO.md`)
-- Rating-Throttle/Moderation (ANALYSE-V2 S-C, Wiedervorlage Linus)
-- Kleinere Härtungen: Settings-Werte-Validierung, Throttle auf `paypal/order/create` (ANALYSE-V2 S-C)
+- Bestellbasierte Bewertungen (Route + Formular bis dahin deaktiviert, siehe `ANALYSE.md`)

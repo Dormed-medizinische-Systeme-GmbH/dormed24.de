@@ -5,13 +5,16 @@
 
     let {
         breadcrumbs = [],
+        actions,
         children,
     }: {
         breadcrumbs?: BreadcrumbItem[];
+        /** Header-Aktionen; Seiten setzen sie per setLayoutProps({ actions }). */
+        actions?: Snippet;
         children?: Snippet;
     } = $props();
 </script>
 
-<AppLayout {breadcrumbs}>
+<AppLayout {breadcrumbs} {actions}>
     {@render children?.()}
 </AppLayout>

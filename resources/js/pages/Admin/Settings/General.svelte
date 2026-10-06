@@ -14,6 +14,7 @@
     import { Button } from '@/components/ui/button';
     import { Input } from '@/components/ui/input';
     import { Label } from '@/components/ui/label';
+    import { guardUnsavedChanges } from '@/lib/unsavedChanges';
 
     let { settings }: { settings: Record<string, string> } = $props();
 
@@ -31,9 +32,16 @@
         },
     });
 
+    // Rückfrage beim Verlassen, solange Änderungen nicht gespeichert sind.
+    $effect(() => guardUnsavedChanges(() => form.isDirty));
+
     function submit(e: SubmitEvent) {
         e.preventDefault();
-        form.put(AdminSettingController.update.url());
+        form.put(AdminSettingController.update.url(), {
+            // Nach dem Speichern bleibt man auf der Seite: gespeicherte Werte
+            // werden der neue Ausgangsstand, sonst bliebe isDirty true.
+            onSuccess: () => form.defaults(),
+        });
     }
 </script>
 

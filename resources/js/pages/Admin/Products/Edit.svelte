@@ -1,11 +1,12 @@
 <script module lang="ts">
-    export const layout = {
-        breadcrumbs: [{ title: 'Produkte', href: '/admin/products' }, { title: 'Bearbeiten' }],
-    };
+    // Breadcrumb mit dem Produktnamen statt „Bearbeiten“ (Layout-Callback über die Page-Props).
+    export const layout = (props: { product: { name: string } }) => ({
+        breadcrumbs: [{ title: 'Produkte', href: '/admin/products' }, { title: props.product.name }],
+    });
 </script>
 
 <script lang="ts">
-    import { useForm, router } from '@inertiajs/svelte';
+    import { useForm, router, setLayoutProps } from '@inertiajs/svelte';
     import { GripVertical, Trash2, ImagePlus, Star, Plus, Check } from '@lucide/svelte';
     import * as AdminProductController from '@/actions/App/Http/Controllers/Admin/ProductController';
     import * as AdminProductVariantController from '@/actions/App/Http/Controllers/Admin/ProductVariantController';
@@ -17,7 +18,9 @@
     import { Label } from '@/components/ui/label';
     import * as Select from '@/components/ui/select';
     import * as Tabs from '@/components/ui/tabs';
+    import { guardUnsavedChanges } from '@/lib/unsavedChanges';
     import { cn } from '@/lib/utils';
+    import ProductActions from './ProductActions.svelte';
 
     type ProductImage = {
         id: number;
@@ -99,6 +102,18 @@
         form.put(AdminProductController.update.url(product.id));
     }
 
+    // Drei-Punkte-Menü (Anzeigen/Löschen) rechts im Admin-Header.
+    $effect(() => {
+        setLayoutProps({ actions: headerActions });
+    });
+
+    // Rückfrage beim Verlassen, solange die Stammdaten ungespeichert sind.
+    $effect(() => guardUnsavedChanges(() => form.isDirty));
+
+    // Bild- und Variationen-Aktionen laden nur die Props neu: Ungespeicherte
+    // Stammdaten und der aktive Reiter bleiben erhalten.
+    const keepPageState = { preserveState: true, preserveScroll: true } as const;
+
     // --- Image management ---
 
     // Lokale, editierbare Kopie der Bilder: re-derived, sobald sich die
@@ -122,6 +137,7 @@
         data.append('image', file);
 
         router.post(`/admin/products/${product.id}/images`, data, {
+            ...keepPageState,
             onFinish: () => {
                 uploading = false;
                 input.value = '';
@@ -130,7 +146,11 @@
     }
 
     function deleteImage(imageId: number) {
-        router.delete(`/admin/products/${product.id}/images/${imageId}`);
+        if (!confirm('Bild wirklich löschen?')) {
+            return;
+        }
+
+        router.delete(`/admin/products/${product.id}/images/${imageId}`, keepPageState);
     }
 
     function onDragStart(id: number) {
@@ -164,6 +184,7 @@
         router.patch(
             `/admin/products/${product.id}/images/reorder`,
             { ids: reordered.map((img) => img.id) },
+            keepPageState,
         );
 
         draggedId = null;
@@ -191,6 +212,7 @@
             AdminProductVariantController.store.url(product.id),
             { label: newVariant.label, price: newVariant.price, is_default: newVariant.is_default },
             {
+                ...keepPageState,
                 onSuccess: () => {
                     newVariant = { label: '', price: '', is_default: false };
                 },
@@ -208,6 +230,7 @@
             AdminProductVariantController.update.url({ product: product.id, variant: variantId }),
             { label: editVariant.label, price: editVariant.price, is_default: editVariant.is_default },
             {
+                ...keepPageState,
                 onSuccess: () => {
                     editingVariantId = null;
                 },
@@ -216,19 +239,22 @@
     }
 
     function deleteVariant(variantId: number) {
-        router.delete(AdminProductVariantController.destroy.url({ product: product.id, variant: variantId }));
+        if (!confirm('Variation wirklich löschen?')) {
+            return;
+        }
+
+        router.delete(AdminProductVariantController.destroy.url({ product: product.id, variant: variantId }), keepPageState);
     }
 </script>
+
+{#snippet headerActions()}
+    <ProductActions {product} showEdit={false} />
+{/snippet}
 
 <AppHead title="{product.name} bearbeiten — Admin" />
 
 <div class="flex h-full flex-1 flex-col gap-6 p-4">
-    <div class="flex items-center justify-between">
-        <div>
-            <h1 class="text-xl font-semibold">{product.name}</h1>
-            <p class="mt-0.5 text-sm text-muted-foreground">Produkt bearbeiten</p>
-        </div>
-    </div>
+    <h1 class="sr-only">{product.name} bearbeiten</h1>
 
     <Tabs.Root value="stammdaten">
         <Tabs.List>

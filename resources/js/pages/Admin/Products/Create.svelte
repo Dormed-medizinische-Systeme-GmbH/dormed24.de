@@ -14,6 +14,7 @@
     import { Input } from '@/components/ui/input';
     import { Label } from '@/components/ui/label';
     import * as Select from '@/components/ui/select';
+    import { guardUnsavedChanges } from '@/lib/unsavedChanges';
 
     type Manufacturer = { id: number; name: string };
     type Category = { slug: string; name: string };
@@ -49,6 +50,9 @@
     const selectedCategoryLabel = $derived(
         categories.find((c) => c.slug === form.category_slug)?.name ?? 'Kategorie wählen',
     );
+
+    // Rückfrage beim Verlassen, solange etwas eingegeben, aber nicht gespeichert ist.
+    $effect(() => guardUnsavedChanges(() => form.isDirty));
 
     // Fachrichtungen nur für Kategorien mit has_specialties (config/categories.php).
     const hasSpecialties = $derived(specialtyCategories.includes(form.category_slug));
