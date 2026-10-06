@@ -1,10 +1,11 @@
 <script module lang="ts">
-    export const layout = {
+    // Breadcrumb mit der Bestellnummer statt „Bestelldetail“ (Layout-Callback über die Page-Props).
+    export const layout = (props: { order: { id: number } }) => ({
         breadcrumbs: [
             { title: 'Bestellungen', href: '/admin/orders' },
-            { title: 'Bestelldetail' },
+            { title: `Bestellung #${props.order.id}` },
         ],
-    };
+    });
 </script>
 
 <script lang="ts">
