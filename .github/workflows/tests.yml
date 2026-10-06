@@ -69,5 +69,21 @@ jobs:
       - name: Check Frontend Types
         run: npm run types:check
 
+      # Auf Pull Requests wird die Testabdeckung gemessen und in die Job-
+      # Zusammenfassung geschrieben (nur Ausgabe, noch kein Mindestwert). Als
+      # Deploy-Gate auf main läuft weiter der schnelle Lauf ohne Messung.
       - name: Tests
+        if: github.event_name != 'pull_request'
         run: php artisan test
+
+      - name: Tests with coverage
+        if: github.event_name == 'pull_request'
+        run: |
+          set -o pipefail
+          php artisan test --coverage --no-ansi | tee coverage.txt
+          {
+            echo '### Testabdeckung'
+            echo '```'
+            tail -n 60 coverage.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
