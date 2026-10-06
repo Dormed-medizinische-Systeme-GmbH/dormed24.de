@@ -278,7 +278,7 @@
         <!-- Zahlungsinformationen -->
         <Card>
             <CardHeader>
-                <CardTitle>Zahlung</CardTitle>
+                <CardTitle>Zahlungsinformationen</CardTitle>
             </CardHeader>
             <CardContent class="space-y-2 text-sm">
                 <div class="flex justify-between">
