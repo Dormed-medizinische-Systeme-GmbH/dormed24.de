@@ -11,6 +11,7 @@
     import { Button } from '@/components/ui/button';
     import { Input } from '@/components/ui/input';
     import { Label } from '@/components/ui/label';
+    import { guardUnsavedChanges } from '@/lib/unsavedChanges';
 
     type Manufacturer = {
         id: number;
@@ -27,6 +28,9 @@
         country: manufacturer.country ?? '',
         contact_email: manufacturer.contact_email ?? '',
     });
+
+    // Rückfrage beim Verlassen, solange Änderungen nicht gespeichert sind.
+    $effect(() => guardUnsavedChanges(() => form.isDirty));
 
     function submit(e: SubmitEvent) {
         e.preventDefault();

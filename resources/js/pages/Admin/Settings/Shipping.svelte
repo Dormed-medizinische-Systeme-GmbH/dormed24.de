@@ -13,6 +13,7 @@
     import AppHead from '@/components/AppHead.svelte';
     import { Button } from '@/components/ui/button';
     import { Input } from '@/components/ui/input';
+    import { guardUnsavedChanges } from '@/lib/unsavedChanges';
 
     type ShippingMethod = {
         id: number;
@@ -33,6 +34,24 @@
     let newName = $state('');
     let newDescription = $state('');
     let newPrice = $state('');
+
+    // Ungespeichert = eine Zeile in Bearbeitung weicht vom Stand ab oder im
+    // „Neu“-Formular steht schon etwas.
+    const isDirty = $derived.by(() => {
+        const editing = methods.find((method) => method.id === editingId);
+
+        const editChanged =
+            editing !== undefined &&
+            (editName !== editing.name ||
+                editDescription !== (editing.description ?? '') ||
+                editPrice !== (editing.price ?? ''));
+
+        const newStarted = addingNew && (newName !== '' || newDescription !== '' || newPrice !== '');
+
+        return editChanged || newStarted;
+    });
+
+    $effect(() => guardUnsavedChanges(() => isDirty));
 
     function startEdit(method: ShippingMethod) {
         editingId = method.id;
@@ -59,6 +78,10 @@
     }
 
     function deleteMethod(id: number) {
+        if (!confirm('Versandart wirklich löschen?')) {
+            return;
+        }
+
         router.delete(`/admin/settings/shipping/${id}`);
     }
 
