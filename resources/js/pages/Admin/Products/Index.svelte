@@ -5,7 +5,7 @@
 </script>
 
 <script lang="ts">
-    import { router } from '@inertiajs/svelte';
+    import { router, setLayoutProps } from '@inertiajs/svelte';
     import ChevronDown from '@lucide/svelte/icons/chevron-down';
     import Plus from '@lucide/svelte/icons/plus';
     import {
@@ -147,26 +147,25 @@
             },
         },
     });
+
+    // Anzahl + „Produkt hinzufügen“ rechts im Admin-Header.
+    $effect(() => {
+        setLayoutProps({ actions: headerActions });
+    });
 </script>
+
+{#snippet headerActions()}
+    <span class="text-sm text-muted-foreground">{products.length} gesamt</span>
+    <Button onclick={() => router.visit(AdminProductController.create.url())}>
+        <Plus class="size-4" />
+        Produkt hinzufügen
+    </Button>
+{/snippet}
 
 <AppHead title="Produkte — Admin" />
 
 <div class="flex h-full flex-1 flex-col gap-4 p-4">
-    <div class="flex items-center justify-between">
-        <h1 class="text-xl font-semibold">Produkte</h1>
-        <div class="flex items-center gap-3">
-            <span class="text-sm text-muted-foreground"
-                >{products.length} gesamt</span
-            >
-            <Button
-                onclick={() =>
-                    router.visit(AdminProductController.create.url())}
-            >
-                <Plus class="size-4" />
-                Produkt hinzufügen
-            </Button>
-        </div>
-    </div>
+    <h1 class="sr-only">Produkte</h1>
 
     <div class="flex items-center gap-2">
         <Input
@@ -174,13 +173,13 @@
             value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
             oninput={(e) =>
                 table.getColumn('name')?.setFilterValue(e.currentTarget.value)}
-            class="max-w-sm"
+            class="min-w-0 flex-1"
         />
 
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 {#snippet children(props)}
-                    <Button {...props} variant="outline" class="ms-auto">
+                    <Button {...props} variant="outline" class="shrink-0">
                         Spalten <ChevronDown class="ml-2 size-4" />
                     </Button>
                 {/snippet}
