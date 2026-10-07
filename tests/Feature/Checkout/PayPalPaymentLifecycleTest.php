@@ -34,6 +34,18 @@ class PayPalPaymentLifecycleTest extends TestCase
      */
     public static ?float $refundedAmount = null;
 
+    /**
+     * Was beim Anlegen an PayPal ging.
+     *
+     * @var array<string, mixed>
+     */
+    public static array $createOrderData = [];
+
+    /**
+     * PayPal-Request-Id der Erstattung.
+     */
+    public static ?string $refundRequestId = null;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -41,6 +53,8 @@ class PayPalPaymentLifecycleTest extends TestCase
         Mail::fake();
         Setting::set('shop.email', 'shop@dormed.example');
         self::$refundedAmount = null;
+        self::$createOrderData = [];
+        self::$refundRequestId = null;
 
         config([
             'paypal.sandbox.client_id' => 'test-client-id',
@@ -60,6 +74,8 @@ class PayPalPaymentLifecycleTest extends TestCase
 
                     public function createOrder(array $data)
                     {
+                        PayPalPaymentLifecycleTest::$createOrderData = $data;
+
                         return PayPalFixtures::sdkResponse('orders/create');
                     }
 
@@ -71,6 +87,7 @@ class PayPalPaymentLifecycleTest extends TestCase
                     public function refundCapturedPayment(string $capture_id, string $invoice_id, float $amount, string $note)
                     {
                         PayPalPaymentLifecycleTest::$refundedAmount = $amount;
+                        PayPalPaymentLifecycleTest::$refundRequestId = $this->options['headers']['PayPal-Request-Id'] ?? null;
 
                         // So reagiert PayPal auf eine Erstattung über 0,00 €.
                         return $amount > 0
@@ -113,6 +130,12 @@ class PayPalPaymentLifecycleTest extends TestCase
         $this->assertSame('CREATED', $payment->status);
         $this->assertEquals(4390.00, (float) $payment->amount, 'createOrder liefert keinen Betrag: der Bestellbetrag muss gelten.');
 
+        $sent = self::$createOrderData;
+        $this->assertSame('SET_PROVIDED_ADDRESS', $sent['application_context']['shipping_preference']);
+        $this->assertSame('4390.00', $sent['purchase_units'][0]['amount']['value']);
+        $this->assertSame('Musterstraße 12', $sent['purchase_units'][0]['shipping']['address']['address_line_1']);
+        $this->assertArrayNotHasKey('address_line_2', $sent['purchase_units'][0]['shipping']['address'], 'Leere Felder gehen nicht an PayPal.');
+
         $this->actingAs($customer)
             ->postJson(route('paypal.order.capture'), ['paypal_order_id' => '5R197099C6919743A'])
             ->assertOk()
@@ -133,6 +156,7 @@ class PayPalPaymentLifecycleTest extends TestCase
             ->assertJson(['status' => 'refunded']);
 
         $this->assertSame(4390.0, self::$refundedAmount);
+        $this->assertSame('refund-5XV36579Y29910400-4390.00', self::$refundRequestId, 'Gleiche Erstattung, gleicher Idempotenz-Schlüssel.');
         $this->assertSame('REFUNDED', $payment->fresh()->status);
         $this->assertSame('refunded', $order->fresh()->status);
         // Bestätigungen gehen genau einmal raus, auch über Capture und Erstattung hinweg.

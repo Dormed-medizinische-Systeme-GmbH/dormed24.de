@@ -83,7 +83,7 @@ final class PayPalFixtures
      */
     public static function webhookEvent(string $eventType, string $resourceName, array $resourceOverrides = []): array
     {
-        $resourceType = str_starts_with($eventType, 'CHECKOUT.ORDER') ? 'checkout-order' : (str_contains($eventType, 'REFUNDED') ? 'refund' : 'capture');
+        $resourceType = str_starts_with($eventType, 'CHECKOUT.ORDER') ? 'checkout-order' : (str_contains($eventType, 'REFUNDED') || str_contains($eventType, 'REVERSED') ? 'refund' : 'capture');
 
         $event = [
             'id' => 'WH-'.strtoupper(substr(md5($eventType.$resourceName), 0, 17)),

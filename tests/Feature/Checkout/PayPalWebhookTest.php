@@ -199,8 +199,39 @@ class PayPalWebhookTest extends TestCase
         $this->postJson(route('paypal.webhook'), $this->captureCompletedEvent('CAPTURE777', '1.00'))
             ->assertOk();
 
-        $this->assertSame('APPROVED', $payment->fresh()->status);
+        $this->assertSame('MISMATCH', $payment->fresh()->status);
+        $this->assertSame('failed', $order->fresh()->status);
+    }
+
+    public function test_capture_pending_webhook_marks_payment_in_review_and_keeps_the_order_open(): void
+    {
+        $order = Order::factory()->create(['status' => 'pending', 'payment_method' => 'paypal']);
+        $payment = Payment::factory()->for($order)->create(['status' => 'APPROVED', 'paypal_order_id' => '5R197099C6919743A']);
+        $this->withVerifiedWebhook();
+
+        $this->postJson(route('paypal.webhook'), PayPalFixtures::webhookEvent('PAYMENT.CAPTURE.PENDING', 'webhooks/capture', [
+            'id' => 'CAPTURE-IN-REVIEW',
+            'status' => 'PENDING',
+        ]))->assertOk();
+
+        $this->assertSame('PENDING', $payment->fresh()->status);
+        $this->assertSame('CAPTURE-IN-REVIEW', $payment->fresh()->paypal_capture_id);
         $this->assertSame('pending', $order->fresh()->status);
+    }
+
+    public function test_capture_reversed_webhook_marks_payment_reversed_and_order_refunded(): void
+    {
+        $order = Order::factory()->create(['status' => 'paid', 'payment_method' => 'paypal']);
+        $payment = Payment::factory()->completed()->for($order)->create(['paypal_capture_id' => 'CAPTURE-REVERSED']);
+        $this->withVerifiedWebhook();
+
+        $event = $this->refundEvent('CAPTURE-REVERSED', (string) $payment->amount);
+        $event['event_type'] = 'PAYMENT.CAPTURE.REVERSED';
+
+        $this->postJson(route('paypal.webhook'), $event)->assertOk();
+
+        $this->assertSame('REVERSED', $payment->fresh()->status);
+        $this->assertSame('refunded', $order->fresh()->status);
     }
 
     public function test_order_approved_webhook_marks_created_payment_as_approved(): void

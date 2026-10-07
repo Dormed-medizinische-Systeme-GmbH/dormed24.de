@@ -75,13 +75,14 @@ class PayPalService
         if ($address && ! empty($address['first_name']) && ! empty($address['last_name'])) {
             $purchaseUnit['shipping'] = [
                 'name' => ['full_name' => trim($address['first_name'].' '.$address['last_name'])],
-                'address' => [
+                'address' => array_filter([
                     'address_line_1' => trim(($address['street'] ?? '').' '.($address['house_number'] ?? '')),
-                    'address_line_2' => $address['address_line2'] ?? '',
+                    // Leere Felder weglassen statt "" zu schicken.
+                    'address_line_2' => trim((string) ($address['address_line2'] ?? '')),
                     'admin_area_2' => $address['city'] ?? '',
                     'postal_code' => $address['zip'] ?? '',
                     'country_code' => $address['country'] ?? 'DE',
-                ],
+                ], fn (?string $value): bool => $value !== null && $value !== ''),
             ];
         }
 
@@ -93,6 +94,9 @@ class PayPalService
                 'locale' => 'de-DE',
                 'landing_page' => 'NO_PREFERENCE',
                 'user_action' => 'PAY_NOW',
+                // Lieferadresse kommt aus dem Checkout; der Käufer soll sie bei
+                // PayPal nicht ändern, sonst weicht sie von der Bestellung ab.
+                'shipping_preference' => isset($purchaseUnit['shipping']) ? 'SET_PROVIDED_ADDRESS' : 'NO_SHIPPING',
                 'return_url' => route('paypal.after-payment'),
                 'cancel_url' => route('checkout.index'),
             ],
@@ -127,21 +131,27 @@ class PayPalService
      *
      * @param  string  $captureId  The PayPal Capture/Transaction ID
      * @param  float  $amount  Amount to refund
+     * @param  string  $currency  Currency of the capture
      * @param  string  $note  Reason for refund
      * @return array<string, mixed>
      *
      * @throws \Throwable
      */
-    public function refundOrder(string $captureId, float $amount, string $note = 'Rückerstattung'): array
+    public function refundOrder(string $captureId, float $amount, string $currency = 'EUR', string $note = 'Rückerstattung'): array
     {
         $invoiceId = 'REFUND-'.str()->random(12);
 
-        $response = $this->asArray($this->client()->refundCapturedPayment(
-            $captureId,
-            $invoiceId,
-            $amount,
-            $note
-        ));
+        // Gleicher Schlüssel für dieselbe Erstattung: Ein Doppelklick oder ein
+        // Retry nach Timeout führt bei PayPal nicht zu einer zweiten Erstattung.
+        $response = $this->asArray($this->client()
+            ->setCurrency($currency)
+            ->withIdempotencyKey('refund-'.$captureId.'-'.number_format($amount, 2, '.', ''))
+            ->refundCapturedPayment(
+                $captureId,
+                $invoiceId,
+                $amount,
+                $note
+            ));
 
         $this->logResponse('refundOrder', $response);
 
