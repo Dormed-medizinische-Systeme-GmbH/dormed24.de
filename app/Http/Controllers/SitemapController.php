@@ -27,7 +27,9 @@ class SitemapController extends Controller
             $products = Product::select('id', 'updated_at')->get();
             $categories = Categories::all();
 
-            return view('sitemap', [
+            // Die XML-Deklaration steht nicht im Template: Bei short_open_tag=On
+            // hielte PHP "<?xml" dort für einen PHP-Tag.
+            return '<?xml version="1.0" encoding="UTF-8"?>'."\n".view('sitemap', [
                 'staticUrls' => $staticUrls,
                 'products' => $products,
                 'categories' => $categories,
