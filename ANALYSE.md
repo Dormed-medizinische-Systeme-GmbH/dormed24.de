@@ -22,6 +22,19 @@ Ausgeliefert wird davon nichts (Build-Tooling bzw. tree-shaken). Trotzdem
 sollte man `npm audit fix` versuchen und den Rest beim nächsten Kit-Update
 mitnehmen.
 
+### composer audit: 20 Hinweise in 4 Paketen (neu, 07.10.2026)
+
+- `league/commonmark`: 12 (9 hoch), u. a. Umgehung von `DisallowedRawHtml`.
+  Relevant nur, wenn Markdown aus Nutzereingaben gerendert wird.
+- `guzzlehttp/guzzle`: 6 (1 hoch), u. a. Umgehung hostbasierter Prüfungen.
+  Guzzle nutzt der PayPal-Client.
+- `laravel/framework` (v13.17.0): 1 niedrig, XSS auf der Debug-Seite (nur mit
+  `APP_DEBUG=true`).
+- `league/flysystem`: 1 niedrig.
+
+Abhilfe: `composer update` der betroffenen Pakete, danach volle Suite.
+Abhängigkeitsänderung, braucht Freigabe.
+
 ## 🟡 Businesslogik
 
 ### Doppel-Submit kann zwei Rechnungs-Orders erzeugen (V4 B-4)
@@ -58,10 +71,10 @@ mobiles Datenvolumen.
 
 ### PHPStan-Baseline: Restbestand (aus V1 #18 / V4 Q-3)
 
-Die Baseline hat noch 41 Einträge (Juli: 98). Warenkorb (Cart-DTO) und
-PayPal (`asArray()`-Normalisierung, Array-Shapes) sind erledigt. Größter Block
-sind 10 in `InstallFeaturesCommand`, der Rest verteilt sich mit 1 bis 5
-Einträgen auf Form Requests, Controller, Models und Seeder. Die Einträge sind
+Die Baseline hat noch 30 Einträge (Juli: 98). Warenkorb (Cart-DTO) und
+PayPal (`asArray()`-Normalisierung, Array-Shapes) sind erledigt, die Commands
+entfernt. Der Rest verteilt sich mit 1 bis 5 Einträgen auf Form Requests,
+Controller, Models und Seeder. Die Einträge sind
 nicht einzeln geprüft. Im PayPal-Block steckte ein echter Fehler (Webhook-
 Prüfung, #18), deshalb lohnt ein Durchgang statt bloßem Ignorieren.
 
@@ -90,37 +103,21 @@ Abdeckung laut CI-Lauf von PR #21: **89,7 %** von `app/`, 423 PHP-Tests, dazu
 
 ### Lücken
 
-| Datei | Abdeckung | Was fehlt |
-|---|---|---|
-| `Mail/PaymentConfirmationMail` | 14,3 % | Mails werden nur per `Mail::fake()` geprüft, nie gerendert |
-| `Mail/PaymentAmountMismatchMail` | 36,4 % | s. o. |
-| `Console/Commands/AddUser` | 0 % | kein Test |
-| `Console/Commands/InstallFeaturesCommand` | 0 % | kein Test |
-| `SitemapController` | 0 % | Smoke-Test, ebenso für FAQ, AGB, Impressum, Datenschutz, Widerruf und `/.well-known/passkey-endpoints` |
-| `Admin/ManufacturerController` | 55,6 % | |
-| `Auth/EnvAdmin` | 61,5 % | Remember-Token, `toArray`, `jsonSerialize` |
-| `Models/ProductImage` | 66,7 % | `url`-Accessor |
-| `Models/Order` | 69,2 % | Zeilen 68–77 |
-| `Providers/AppServiceProvider` | 73,9 % | |
-| `Console/Commands/ShowLegacyCredentials` | 77,3 % | |
-| `Admin/ProductController` | 79,3 % | |
-| `Support/Orders/OrderManager` | 83,3 % | Bestellung ohne Kunde, Mailversand wirft |
-| `PayPalController` | 92,4 % | `createOrder` mit leerem Warenkorb (400) oder unvollständiger Adresse (422), PayPal-Antwort ohne `id`, 409 bei abgeschlossener Zahlung, Exception in `afterPayment`, fehlgeschlagene Alarm-Mail bei Betragsabweichung |
-| `Services/PayPalService` | 93,1 % | fehlgeschlagener Access-Token, Exception in der Webhook-Prüfung, `showOrderDetails()` |
+| Datei                          | Abdeckung | Was fehlt                                                         |
+| ------------------------------ | --------- | ----------------------------------------------------------------- |
+| `Providers/AppServiceProvider` | 73,9 %    | Passwortregeln in Produktion (min. 12, gemischt, `uncompromised`) |
 
 ### Sonstiges
 
-- **Unit-Tests für reine Logik:** `Money`, `ProductFilters`, `ProductSort` und
-  `AddressRules` laufen nur über Feature-Tests. Schnelle, datenbankfreie
-  Unit-Tests fehlen.
+- **Unit-Tests für `ProductFilters`:** `ProductSort`, `AddressRules` und
+  `EnvAdmin` haben Unit-Tests, `Money` ist in `CartValueObjectsTest` abgedeckt.
+  `ProductFilters` läuft nur über die Feature-Tests der Produktliste.
 - **`markPaymentAndOrder()`** in `PayPalController`: Der Name sagt nicht, was
   die Methode tut (Webhook-Status auf Zahlung und Bestellung übertragen, mit
   Reihenfolge-Schutz).
 - **Fortify-Tests** skippen sich, wenn ein Feature in `config/fortify.php`
   fehlt. Aktuell sind alle aktiv; wird eines abgeschaltet, fällt die Abdeckung
   still weg.
-- **Temporäres entfernen:** `DeployCheckTest` samt Route `/deploy-check` und die
-  öffentliche Debug-Route `/test` (`test.hover-header`) in `routes/web.php`.
 - **Manueller PayPal-Sandbox-Browsertest** (seit V2 offen, seit V4 Pflicht):
   CSRF ist in PHPUnit deaktiviert, der Button-Flow lässt sich serverseitig nicht
   testen. Dabei auch einen echten Webhook prüfen, z. B. eine Erstattung im
@@ -139,6 +136,8 @@ Abdeckung laut CI-Lauf von PR #21: **89,7 %** von `app/`, 423 PHP-Tests, dazu
   Analytics oder Drittdiensten braucht es echtes Consent-Management.
 - Ungenutzte shadcn-Kit-Dateien unter `components/ui/` bleiben (`add --all`).
 - `ShopHeader-with-hover.svelte` bleibt als Backup.
+- Die Test-Route `/test` (`test.hover-header`, Landingpage mit Hover-Header)
+  bleibt vorerst öffentlich erreichbar.
 - Mails gehen synchron raus, ohne Queue-Worker.
 - Detailseiten nicht verfügbarer Produkte bleiben online, die Sitemap listet
   alle Produkte.

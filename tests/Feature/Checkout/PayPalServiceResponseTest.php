@@ -4,6 +4,8 @@ namespace Tests\Feature\Checkout;
 
 use App\Services\PayPalClientFactory;
 use App\Services\PayPalService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Srmklive\PayPal\Services\PayPal;
 use Tests\Support\PayPalFixtures;
 use Tests\TestCase;
@@ -19,9 +21,19 @@ class PayPalServiceResponseTest extends TestCase
      */
     private static array|string $captureResponse = [];
 
+    /**
+     * @var array<string, mixed>
+     */
+    private static array $tokenResponse = [];
+
+    private static ?\Throwable $webhookVerificationError = null;
+
     protected function setUp(): void
     {
         parent::setUp();
+
+        self::$tokenResponse = ['access_token' => 'TEST-TOKEN', 'token_type' => 'Bearer', 'expires_in' => 3600];
+        self::$webhookVerificationError = null;
 
         config([
             'paypal.sandbox.client_id' => 'test-client-id',
@@ -36,7 +48,12 @@ class PayPalServiceResponseTest extends TestCase
                 {
                     public function getAccessToken()
                     {
-                        return ['access_token' => 'TEST-TOKEN', 'token_type' => 'Bearer', 'expires_in' => 3600];
+                        return PayPalServiceResponseTest::tokenResponse();
+                    }
+
+                    public function verifyWebHookLocally(array $headers, string $webhook_id, string $raw_body): bool
+                    {
+                        throw PayPalServiceResponseTest::webhookVerificationError() ?? new \LogicException('nicht erwartet');
                     }
 
                     public function capturePaymentOrder(string $order_id, array $data = [])
@@ -54,6 +71,19 @@ class PayPalServiceResponseTest extends TestCase
     public static function captureResponse(): array|string
     {
         return self::$captureResponse;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function tokenResponse(): array
+    {
+        return self::$tokenResponse;
+    }
+
+    public static function webhookVerificationError(): ?\Throwable
+    {
+        return self::$webhookVerificationError;
     }
 
     public function test_array_response_is_returned_unchanged(): void
@@ -85,5 +115,27 @@ class PayPalServiceResponseTest extends TestCase
         $this->assertNull($service->getCaptureIdFromOrder([
             'purchase_units' => [['payments' => ['captures' => [['id' => 123]]]]],
         ]));
+    }
+
+    public function test_failed_authentication_throws_with_paypals_message(): void
+    {
+        self::$tokenResponse = ['error' => ['message' => 'Client Authentication failed']];
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('PayPal authentication failed: Client Authentication failed');
+
+        app(PayPalService::class)->captureOrder('ORDER-1');
+    }
+
+    public function test_webhook_is_rejected_when_the_verification_itself_fails(): void
+    {
+        config(['paypal.sandbox.webhook_id' => 'WH-TEST']);
+        // Z. B. Zertifikat von PayPal nicht abrufbar.
+        self::$webhookVerificationError = new \RuntimeException('cURL error 28: Operation timed out');
+        Log::shouldReceive('error')->once()->with('PayPal webhook verification failed', ['error' => 'cURL error 28: Operation timed out']);
+
+        $request = Request::create('/paypal/webhook', 'POST', content: '{}');
+
+        $this->assertFalse(app(PayPalService::class)->verifyWebhook($request));
     }
 }

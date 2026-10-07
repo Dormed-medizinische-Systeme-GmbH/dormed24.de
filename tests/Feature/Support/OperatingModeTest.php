@@ -122,19 +122,4 @@ class OperatingModeTest extends TestCase
         $this->assertSame('log', config('mail.default'));
         $this->assertNotSame('db.smtp.test', config('mail.mailers.smtp.host'));
     }
-
-    public function test_legacy_credentials_command_prints_env_lines_from_old_settings(): void
-    {
-        DB::table('settings')->insert([
-            ['key' => 'paypal.live.client_id', 'value' => 'live-client', 'created_at' => now(), 'updated_at' => now()],
-            ['key' => 'paypal.live.client_secret', 'value' => encrypt('live-secret'), 'created_at' => now(), 'updated_at' => now()],
-            ['key' => 'mail.smtp_host', 'value' => 'smtp.example.test', 'created_at' => now(), 'updated_at' => now()],
-        ]);
-
-        $this->artisan('settings:legacy-credentials')
-            ->expectsOutputToContain("PAYPAL_LIVE_CLIENT_ID='live-client'")
-            ->expectsOutputToContain("PAYPAL_LIVE_CLIENT_SECRET='live-secret'")
-            ->expectsOutputToContain("MAIL_LIVE_HOST='smtp.example.test'")
-            ->assertSuccessful();
-    }
 }

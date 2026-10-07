@@ -455,4 +455,33 @@ class ProductEditTest extends TestCase
 
         $this->assertDatabaseHas('products', ['id' => $product->id]);
     }
+
+    public function test_index_lists_products_with_manufacturer(): void
+    {
+        $product = Product::factory()->create(['name' => 'Ultraschallgerät X']);
+
+        $this->actingAsAdmin()
+            ->get(route('admin.products.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Admin/Products/Index')
+                ->where('products.0.name', 'Ultraschallgerät X')
+                ->where('products.0.manufacturer.id', $product->manufacturer_id)
+                ->has('categories'));
+    }
+
+    public function test_create_page_offers_manufacturers_categories_and_specialties(): void
+    {
+        $manufacturer = Manufacturer::factory()->create(['name' => 'Mindray']);
+
+        $this->actingAsAdmin()
+            ->get(route('admin.products.create'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Admin/Products/Create')
+                ->where('manufacturers.0.id', $manufacturer->id)
+                ->has('categories')
+                ->has('specialtyCategories')
+                ->has('specialties'));
+    }
 }

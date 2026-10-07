@@ -30,7 +30,7 @@ B2B/B2C-Shop für Medizintechnik (Ultraschallsysteme, Zubehör, Verbrauchsmateri
 
 - `Customer` — Shop-Kunden; Passkeys + 2FA via Fortify, implementiert `MustVerifyEmail`
 - **Bestell-Hebel:** `verified`-Middleware auf `checkout.confirm/address/submit` und `paypal.order.create/capture` — ohne bestätigte E-Mail keine Bestellung
-- `EnvAdmin` — genau ein Admin aus `ADMIN_EMAIL`/`ADMIN_PASSWORD` (bcrypt-Hash, `php artisan admin:hash-password`), Provider `env-admin`; eigener `LoginController`, kein Fortify, keine Admin-Tabelle
+- `EnvAdmin` — genau ein Admin aus `ADMIN_EMAIL`/`ADMIN_PASSWORD` (bcrypt-Hash, z. B. `Hash::make()` per Tinker), Provider `env-admin`; eigener `LoginController`, kein Fortify, keine Admin-Tabelle
 - In Svelte: `page.props.auth.user` ist immer der aktuelle `Customer`
 - TypeScript-Typ: `Customer` aus `@/types`
 
@@ -235,7 +235,7 @@ Regeln:
 - **Bestellen nur mit bestätigter E-Mail** (`verified`-Middleware, siehe Auth-Abschnitt).
 - **Angebotene Zahlarten sind fest verdrahtet**: Kauf auf Rechnung + PayPal (kein Admin-Setting, kein Provider-Umschalter). Labels/Reihenfolge in `config/shop.php`, Auswahl-UI: Radio auf `Checkout/Confirm`.
 - **Sandbox/Live** = `App\Support\PaymentMode`: live nur bei `APP_ENV=production` **und** `APP_DEBUG=false`, sonst sandbox. Kein Admin-Override, kein Setting.
-- **Zugangsdaten nur aus der Env:** PayPal (`PAYPAL_SANDBOX_*`/`PAYPAL_LIVE_*`, `config/paypal.php`) und SMTP (`MAIL_SANDBOX_*`/`MAIL_LIVE_*`, `config/mail.php` → `modes`, angewendet durch `ModeMailConfiguration`); der Modus wählt das Set. Nichts davon in `settings` oder im Admin-UI. Altdaten aus der DB: `php artisan settings:legacy-credentials`.
+- **Zugangsdaten nur aus der Env:** PayPal (`PAYPAL_SANDBOX_*`/`PAYPAL_LIVE_*`, `config/paypal.php`) und SMTP (`MAIL_SANDBOX_*`/`MAIL_LIVE_*`, `config/mail.php` → `modes`, angewendet durch `ModeMailConfiguration`); der Modus wählt das Set. Nichts davon in `settings` oder im Admin-UI.
 - **Webhooks** (`/paypal/webhook`): signaturverifiziert; `CAPTURE.COMPLETED` → `markPaid`; `CAPTURE.REFUNDED`/`DENIED` setzen Payment **und** Order (Achtung: beim Refund ist `resource.id` die Refund-ID, die Capture-ID steckt im `up`-Link).
 - **Benachrichtigungs-Empfänger** = fest Setting `shop.email` (dieselbe Kontakt-Mail-Adresse wie im Shop-Frontend), kein separates Feld, kein Fallback. Beide Bestellmails laufen **synchron** im Request (kein Queue-Worker nötig; bei ~5 Mails/Tag ist der Overhead vernachlässigbar).
 - **Admin-Bestellaktionen** unter `Admin/Orders/Show`: `orders.confirm-payment` (einzige manuelle Status-Änderung, s.u.) + PayPal-Refund (`orders.refund`).

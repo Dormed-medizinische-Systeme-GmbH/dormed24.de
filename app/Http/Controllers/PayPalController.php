@@ -66,6 +66,10 @@ class PayPalController extends Controller
             if (! isset($response['id'])) {
                 Log::error('PayPal createOrder failed', ['response' => $response]);
 
+                // Wie im Exception-Pfad: sonst bliebe die Bestellung ohne
+                // Zahlung als "offen" beim Kunden stehen.
+                $order->update(['status' => 'failed']);
+
                 return response()->json([
                     'error' => 'PayPal-Order konnte nicht erstellt werden.',
                 ], 500);

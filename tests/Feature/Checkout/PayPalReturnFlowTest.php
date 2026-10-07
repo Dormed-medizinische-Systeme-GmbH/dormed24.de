@@ -166,4 +166,35 @@ class PayPalReturnFlowTest extends TestCase
 
         $this->assertSame('paid', $order->fresh()->status);
     }
+
+    public function test_after_payment_capture_exception_redirects_to_error(): void
+    {
+        $payment = Payment::factory()->created()->create();
+
+        $this->mock(PayPalService::class, function ($mock): void {
+            $mock->shouldReceive('captureOrder')->once()->andThrow(new \RuntimeException('Timeout'));
+        });
+
+        $this->actingAs($payment->order->customer)
+            ->get(route('paypal.after-payment', ['token' => $payment->paypal_order_id]))
+            ->assertRedirect(route('checkout.error'));
+    }
+
+    public function test_after_payment_capture_exception_still_shows_success_when_completed_in_the_meantime(): void
+    {
+        $payment = Payment::factory()->created()->create();
+
+        $this->mock(PayPalService::class, function ($mock) use ($payment): void {
+            $mock->shouldReceive('captureOrder')->once()->andReturnUsing(function () use ($payment): never {
+                // Webhook war schneller, die Antwort auf den Capture ging verloren.
+                $payment->update(['status' => 'COMPLETED']);
+
+                throw new \RuntimeException('Timeout nach serverseitigem Capture');
+            });
+        });
+
+        $this->actingAs($payment->order->customer)
+            ->get(route('paypal.after-payment', ['token' => $payment->paypal_order_id]))
+            ->assertRedirect(route('checkout.success', ['paypal_order_id' => $payment->paypal_order_id]));
+    }
 }

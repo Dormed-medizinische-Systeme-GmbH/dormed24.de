@@ -1,0 +1,27 @@
+{
+    "_note": "Nach der Fehlerform von PayPal (vgl. payments/refund-zero-amount, echte Sandbox-Antwort), hier für eine abgelehnte Order-Anlage. Nicht live abgerufen.",
+    "spec": "checkout_orders_v2.json",
+    "method": "post",
+    "path": "/v2/checkout/orders",
+    "status": 422,
+    "body": {
+        "name": "UNPROCESSABLE_ENTITY",
+        "message": "The requested action could not be performed, semantically incorrect, or failed business validation.",
+        "debug_id": "b8a2c6f1e43d7",
+        "details": [
+            {
+                "issue": "CURRENCY_NOT_SUPPORTED_FOR_RECEIVER",
+                "field": "/purchase_units/@reference_id=='default'/amount/currency_code",
+                "value": "EUR",
+                "description": "This currency is currently not supported for the Payee's country.",
+                "location": "body"
+            }
+        ],
+        "links": [
+            {
+                "href": "https://developer.paypal.com/api/rest/reference/orders/v2/errors/#CURRENCY_NOT_SUPPORTED_FOR_RECEIVER",
+                "rel": "information_link"
+            }
+        ]
+    }
+}

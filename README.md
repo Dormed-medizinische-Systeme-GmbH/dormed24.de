@@ -28,7 +28,7 @@ Zwei getrennte Bereiche mit **zwei unabhängigen Auth-Guards**:
 | Bereich | Guard | Model | Login | Besonderheiten |
 | --- | --- | --- | --- | --- |
 | Shop-Frontend | `web` | `Customer` | `/login` (Fortify) | 2FA, Passkeys, E-Mail-Verifikation |
-| Admin-Panel | `admin` | `EnvAdmin` (aus der Env) | `/admin/login` | genau ein Admin über `ADMIN_EMAIL` / `ADMIN_PASSWORD` (Hash via `php artisan admin:hash-password`) |
+| Admin-Panel | `admin` | `EnvAdmin` (aus der Env) | `/admin/login` | genau ein Admin über `ADMIN_EMAIL` / `ADMIN_PASSWORD` (bcrypt-Hash, Klartext wird abgelehnt) |
 
 Zentrale Klassen (die „Geschäftslogik-Ecke"):
 
@@ -142,8 +142,9 @@ Shop-Frontend angezeigt wird) — kein separates Feld, kein Fallback.
 ### 7. Settings & Zugangsdaten
 
 - **Env (Server-`.env`), nicht in der Datenbank:**
-  - Admin-Zugang: `ADMIN_EMAIL` + `ADMIN_PASSWORD` (bcrypt-Hash, erzeugen mit
-    `php artisan admin:hash-password`). Es gibt genau einen Admin, keine
+  - Admin-Zugang: `ADMIN_EMAIL` + `ADMIN_PASSWORD` (bcrypt-Hash in einfachen
+    Anführungszeichen, erzeugen mit
+    `php artisan tinker --execute 'echo Hash::make("…");'`). Es gibt genau einen Admin, keine
     Admin-Tabelle.
   - PayPal: `PAYPAL_SANDBOX_*` und `PAYPAL_LIVE_*` (Client-ID, Secret,
     Merchant-ID, Webhook-ID; Live zusätzlich `PAYPAL_LIVE_APP_ID`), siehe
@@ -158,9 +159,6 @@ Shop-Frontend angezeigt wird) — kein separates Feld, kein Fallback.
   sonst sandbox (kein Admin-Override). Der Modus wählt das passende
   Zugangsdaten-Set für PayPal und SMTP. In der Sandbox zeigt das Frontend
   einen Banner.
-- Umzug von Altdaten: `php artisan settings:legacy-credentials` gibt früher in
-  der Datenbank gespeicherte PayPal-/SMTP-Zugangsdaten als Env-Zeilen aus
-  (nur auf dem Server ausführen, enthält Geheimnisse).
 
 ---
 

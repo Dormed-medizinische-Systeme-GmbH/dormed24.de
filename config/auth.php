@@ -37,8 +37,8 @@ return [
     |--------------------------------------------------------------------------
     | Shop-Admin
     |--------------------------------------------------------------------------
-    | Der einzige Admin-Zugang. ADMIN_PASSWORD ist ein bcrypt-Hash, erzeugt mit
-    | `php artisan admin:hash-password` (Klartext wird nicht akzeptiert). Ohne
+    | Der einzige Admin-Zugang. ADMIN_PASSWORD ist ein bcrypt-Hash, z. B. aus
+    | `Hash::make()` per Tinker (Klartext wird nicht akzeptiert). Ohne
     | ADMIN_EMAIL oder ADMIN_PASSWORD ist kein Admin-Login möglich.
     */
     'admin' => [

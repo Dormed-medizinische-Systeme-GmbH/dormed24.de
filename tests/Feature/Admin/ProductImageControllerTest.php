@@ -232,4 +232,13 @@ class ProductImageControllerTest extends TestCase
             ->patch(route('admin.products.images.reorder', $product), ['ids' => ['abc']])
             ->assertSessionHasErrors('ids.0');
     }
+
+    public function test_image_url_points_to_the_public_disk_and_is_serialized(): void
+    {
+        $product = Product::factory()->create();
+        $image = $product->images()->create(['path' => 'products/7/cover.webp', 'sort_order' => 0]);
+
+        $this->assertSame(Storage::disk('public')->url('products/7/cover.webp'), $image->url);
+        $this->assertSame($image->url, $image->toArray()['url']);
+    }
 }
