@@ -2,10 +2,13 @@
 
 namespace Tests\Feature\Checkout;
 
+use App\Mail\NewOrderMail;
+use App\Mail\OrderConfirmationMail;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Product;
+use App\Models\Setting;
 use App\Services\PayPalClientFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
@@ -36,6 +39,7 @@ class PayPalPaymentLifecycleTest extends TestCase
         parent::setUp();
 
         Mail::fake();
+        Setting::set('shop.email', 'shop@dormed.example');
         self::$refundedAmount = null;
 
         config([
@@ -120,6 +124,8 @@ class PayPalPaymentLifecycleTest extends TestCase
         $this->assertEquals(4390.00, (float) $payment->amount);
         $this->assertEquals(153.99, (float) $payment->fee);
         $this->assertSame('paid', $order->fresh()->status);
+        Mail::assertSent(OrderConfirmationMail::class, fn ($mail): bool => $mail->hasTo($customer->email));
+        Mail::assertSent(NewOrderMail::class, fn ($mail): bool => $mail->hasTo('shop@dormed.example'));
 
         $this->actingAsAdmin()
             ->postJson(route('admin.orders.refund', $order))
@@ -129,5 +135,8 @@ class PayPalPaymentLifecycleTest extends TestCase
         $this->assertSame(4390.0, self::$refundedAmount);
         $this->assertSame('REFUNDED', $payment->fresh()->status);
         $this->assertSame('refunded', $order->fresh()->status);
+        // Bestätigungen gehen genau einmal raus, auch über Capture und Erstattung hinweg.
+        Mail::assertSent(OrderConfirmationMail::class, 1);
+        Mail::assertSent(NewOrderMail::class, 1);
     }
 }
