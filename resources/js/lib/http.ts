@@ -32,7 +32,7 @@ export async function fetchJson<T = Record<string, unknown>>(
     return { ok: response.ok, status: response.status, data };
 }
 
-function xsrfToken(): string {
+export function xsrfToken(): string {
     return decodeURIComponent(
         document.cookie
             .split('; ')
