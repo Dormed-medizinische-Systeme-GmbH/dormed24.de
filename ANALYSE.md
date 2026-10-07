@@ -118,8 +118,6 @@ Abdeckung laut CI-Lauf von PR #21: **89,7 %** von `app/`, 423 PHP-Tests, dazu
 - **Fortify-Tests** skippen sich, wenn ein Feature in `config/fortify.php`
   fehlt. Aktuell sind alle aktiv; wird eines abgeschaltet, fällt die Abdeckung
   still weg.
-- **Temporäres entfernen:** `DeployCheckTest` samt Route `/deploy-check` und die
-  öffentliche Debug-Route `/test` (`test.hover-header`) in `routes/web.php`.
 - **Manueller PayPal-Sandbox-Browsertest** (seit V2 offen, seit V4 Pflicht):
   CSRF ist in PHPUnit deaktiviert, der Button-Flow lässt sich serverseitig nicht
   testen. Dabei auch einen echten Webhook prüfen, z. B. eine Erstattung im
@@ -138,6 +136,8 @@ Abdeckung laut CI-Lauf von PR #21: **89,7 %** von `app/`, 423 PHP-Tests, dazu
   Analytics oder Drittdiensten braucht es echtes Consent-Management.
 - Ungenutzte shadcn-Kit-Dateien unter `components/ui/` bleiben (`add --all`).
 - `ShopHeader-with-hover.svelte` bleibt als Backup.
+- Die Test-Route `/test` (`test.hover-header`, Landingpage mit Hover-Header)
+  bleibt vorerst öffentlich erreichbar.
 - Mails gehen synchron raus, ohne Queue-Worker.
 - Detailseiten nicht verfügbarer Produkte bleiben online, die Sitemap listet
   alle Produkte.
