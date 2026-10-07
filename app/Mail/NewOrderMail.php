@@ -10,6 +10,9 @@ use Illuminate\Mail\Mailables\Envelope;
 
 class NewOrderMail extends Mailable
 {
+    /**
+     * @param  array{items: array<int, array<string, mixed>>, subtotal: string, shipping_total: string, vat_rate: int, vat_amount: string, total: string}  $cart  OrderManager::summaryFromOrder()
+     */
     public function __construct(
         public readonly Order $order,
         public readonly array $cart,

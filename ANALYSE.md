@@ -46,14 +46,12 @@ mobiles Datenvolumen.
 
 ## 🔵 Code und Doku
 
-### PHPStan-Baseline: Restbestand (aus V1 #18 / V4 Q-3)
+### PHPStan-Baseline: 2 Einträge, beide bewusst
 
-Die Baseline hat noch 30 Einträge (Juli: 98). Warenkorb (Cart-DTO) und
-PayPal (`asArray()`-Normalisierung, Array-Shapes) sind erledigt, die Commands
-entfernt. Der Rest verteilt sich mit 1 bis 5 Einträgen auf Form Requests,
-Controller, Models und Seeder. Die Einträge sind
-nicht einzeln geprüft. Im PayPal-Block steckte ein echter Fehler (Webhook-
-Prüfung, #18), deshalb lohnt ein Durchgang statt bloßem Ignorieren.
+Übrig sind nur die `$this->command?->`-Aufrufe in `ProductSeeder` und
+`RatingSeeder`. Laravel typisiert `$command` als nie null, beim direkten
+Aufruf eines Seeders (z. B. `ProductSeederTest`) ist es aber null. Die
+Null-Sicherung bleibt deshalb.
 
 ## 🚀 Betrieb / Launch
 

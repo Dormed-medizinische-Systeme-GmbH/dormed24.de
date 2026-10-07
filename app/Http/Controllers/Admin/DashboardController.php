@@ -21,6 +21,7 @@ class DashboardController extends Controller
         $from = Carbon::today()->subDays($days - 1)->startOfDay();
 
         $rows = Order::query()
+            ->toBase()
             ->select(
                 DB::raw('date(created_at) as date'),
                 DB::raw('COUNT(*) as orders'),

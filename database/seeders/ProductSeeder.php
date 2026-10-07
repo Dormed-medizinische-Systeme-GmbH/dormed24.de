@@ -100,7 +100,7 @@ class ProductSeeder extends Seeder
             $rows = [];
 
             while (($data = fgetcsv($handle, 0, ';')) !== false) {
-                if ($data === [null] || $data === []) {
+                if ($data === [null]) {
                     continue;
                 }
 
