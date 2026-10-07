@@ -1,0 +1,26 @@
+{
+    "_note": "Erstattung angestoßen, noch nicht abgeschlossen.",
+    "spec": "payments_payment_v2.json",
+    "method": "post",
+    "path": "/v2/payments/captures/{capture_id}/refund",
+    "status": 201,
+    "body": {
+        "id": "1JU08902781691411",
+        "status": "PENDING",
+        "links": [
+            {
+                "href": "https://api.sandbox.paypal.com/v2/payments/refunds/1JU08902781691411",
+                "rel": "self",
+                "method": "GET"
+            },
+            {
+                "href": "https://api.sandbox.paypal.com/v2/payments/captures/5XV36579Y29910400",
+                "rel": "up",
+                "method": "GET"
+            }
+        ],
+        "status_details": {
+            "reason": "ECHECK"
+        }
+    }
+}

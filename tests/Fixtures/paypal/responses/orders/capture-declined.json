@@ -1,0 +1,73 @@
+{
+    "_note": "Capture von der Bank/PayPal abgelehnt.",
+    "spec": "checkout_orders_v2.json",
+    "method": "post",
+    "path": "/v2/checkout/orders/{id}/capture",
+    "status": 201,
+    "body": {
+        "id": "5R197099C6919743A",
+        "status": "COMPLETED",
+        "purchase_units": [
+            {
+                "reference_id": "default",
+                "payments": {
+                    "captures": [
+                        {
+                            "id": "5XV36579Y29910400",
+                            "status": "DECLINED",
+                            "amount": {
+                                "currency_code": "EUR",
+                                "value": "4390.00"
+                            },
+                            "final_capture": true,
+                            "seller_protection": {
+                                "status": "ELIGIBLE",
+                                "dispute_categories": [
+                                    "ITEM_NOT_RECEIVED",
+                                    "UNAUTHORIZED_TRANSACTION"
+                                ]
+                            },
+                            "links": [
+                                {
+                                    "href": "https://api.sandbox.paypal.com/v2/payments/captures/5XV36579Y29910400",
+                                    "rel": "self",
+                                    "method": "GET"
+                                },
+                                {
+                                    "href": "https://api.sandbox.paypal.com/v2/payments/captures/5XV36579Y29910400/refund",
+                                    "rel": "refund",
+                                    "method": "POST"
+                                },
+                                {
+                                    "href": "https://api.sandbox.paypal.com/v2/checkout/orders/5R197099C6919743A",
+                                    "rel": "up",
+                                    "method": "GET"
+                                }
+                            ],
+                            "create_time": "2026-10-07T06:44:36Z",
+                            "update_time": "2026-10-07T06:44:36Z"
+                        }
+                    ]
+                }
+            }
+        ],
+        "payer": {
+            "name": {
+                "given_name": "John",
+                "surname": "Doe"
+            },
+            "email_address": "sb-3xdck39855217@personal.example.com",
+            "payer_id": "2TNVE2PULBM66",
+            "address": {
+                "country_code": "DE"
+            }
+        },
+        "links": [
+            {
+                "href": "https://api.sandbox.paypal.com/v2/checkout/orders/5R197099C6919743A",
+                "rel": "self",
+                "method": "GET"
+            }
+        ]
+    }
+}

@@ -45,7 +45,7 @@ In der ersten Fassung stand, `AddressRules`, `ProductFilters`, `ProductSort`, `S
 - **`SitemapController`, statische Seiten (FAQ, AGB, Impressum, Datenschutz, Widerruf), `/.well-known/passkey-endpoints`:** Ein Smoke-Test pro Route reicht.
 - **Commands:** `AddUser`, `InstallFeaturesCommand` ohne jeden Test.
 - **`markPaymentAndOrder()`:** Reihenfolge-Schutz ist umgesetzt (spätes `DENIED` für bezahlte/erstattete Orders wird ignoriert, Teilerstattungen setzen die Order nicht auf `refunded`). Der Name der Methode ist weiterhin unklar.
-- **Weitere PayPal-Befunde aus dem Review, nicht umgesetzt:** Capture-Status `PENDING` und Währungsabgleich, `failed` trotz eingezogenem Geld, `cancelStalePendingPayPalOrders`, fehlende Webhook-Events (`PENDING`, `REVERSED`), `createOrder`-Payload (`shipping_preference`, leere `address_line_2`), Idempotenz-Header beim Refund.
+- **Weitere PayPal-Befunde aus dem Review, nicht umgesetzt:** Währungsabgleich, `failed` trotz eingezogenem Geld, `cancelStalePendingPayPalOrders`, fehlende Webhook-Events (`PENDING`, `REVERSED`), `createOrder`-Payload (`shipping_preference`, leere `address_line_2`), Idempotenz-Header beim Refund. (Erledigt: Der Capture-Status wird jetzt aus der Capture gelesen, nicht aus der Order. PENDING und DECLINED wurden vorher als bezahlt gebucht.)
 
 ## Offen: Schwächen bestehender Tests
 
@@ -54,8 +54,8 @@ In der ersten Fassung stand, `AddressRules`, `ProductFilters`, `ProductSort`, `S
 - `DeployCheckTest` ist laut eigenem Kommentar temporär. Zusammen mit der Route `/deploy-check` entfernen, sobald der Deploy verifiziert ist.
 - Viele Tests prüfen nur den Statuscode (`assertOk`), vor allem `ProductBrowsingTest` und `CategoryPageTest`. Ob die richtigen Produkte, Sortierung und Filter ankommen, bleibt offen. Nachziehen mit `assertInertia(...)` auf Props.
 - Debug-Route `/test` (`test.hover-header`) in `routes/web.php`: öffentlich erreichbar, laut Kommentar zum Entfernen vorgesehen.
-- Die PayPal-Tests mocken `PayPalService` vollständig. Ob die Mock-Rückgaben der echten SDK-Antwort entsprechen (Struktur von `purchase_units[0].payments.captures[0]`), ist nirgends gegen echte Beispielantworten abgesichert. Empfehlung: ein oder zwei aufgezeichnete Sandbox-Antworten als Fixture.
-- Annahme, nicht gegen das SDK geprüft: `blendbyte/paypal` meldet API-Fehler als Array statt als Exception. Der Refund-Fix ist in beiden Fällen richtig.
+- ~~PayPal-Mocks ohne Abgleich mit echten Antworten~~ **erledigt:** Alle PayPal-Tests nutzen `Tests\Support\PayPalFixtures`. Die Fixtures unter `tests/Fixtures/paypal/responses` basieren auf echten Sandbox-Antworten und werden bei jedem Laden gegen PayPals OpenAPI-Spezifikationen (`tests/Fixtures/paypal/openapi`) geprüft, inklusive Overrides. Overrides dürfen keine Felder erfinden. `PayPalPaymentLifecycleTest` prüft die ganze Kette (anlegen, bezahlen, erstatten) gegen den echten `PayPalService`.
+- ~~Annahme zur Fehlerform des SDK~~ **geprüft:** `blendbyte/paypal` liefert API-Fehler als `['error' => Body]` (`doPayPalRequest()`), keine Exception. Die Fixture `payments/refund-zero-amount` bildet das ab.
 
 ## Offen: Frontend
 

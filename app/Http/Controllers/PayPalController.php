@@ -262,8 +262,12 @@ class PayPalController extends Controller
      */
     private function completeCapture(Payment $payment, array $response): bool
     {
-        $captureStatus = $response['status'] ?? 'FAILED';
-        $capturedAmount = $response['purchase_units'][0]['payments']['captures'][0]['amount']['value'] ?? null;
+        // Maßgeblich ist der Status der Capture, nicht der der Order: PayPal
+        // setzt die Order nach dem Capture auf COMPLETED, auch wenn die
+        // Capture selbst noch PENDING (Prüfung) oder DECLINED ist.
+        $capture = $response['purchase_units'][0]['payments']['captures'][0] ?? [];
+        $captureStatus = $capture['status'] ?? 'FAILED';
+        $capturedAmount = $capture['amount']['value'] ?? null;
 
         if ($captureStatus === 'COMPLETED' && $capturedAmount !== null && number_format((float) $capturedAmount, 2, '.', '') !== number_format((float) $payment->order->total_amount, 2, '.', '')) {
             Log::error('PayPal capture amount mismatch', [
@@ -285,7 +289,6 @@ class PayPalController extends Controller
         }
 
         $payerName = trim(($response['payer']['name']['given_name'] ?? '').' '.($response['payer']['name']['surname'] ?? ''));
-        $capture = $response['purchase_units'][0]['payments']['captures'][0] ?? [];
 
         $payment->update([
             'status' => 'COMPLETED',

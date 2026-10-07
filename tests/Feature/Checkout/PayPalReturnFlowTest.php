@@ -8,6 +8,7 @@ use App\Models\Payment;
 use App\Services\PayPalService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use Tests\Support\PayPalFixtures;
 use Tests\TestCase;
 
 class PayPalReturnFlowTest extends TestCase
@@ -70,14 +71,14 @@ class PayPalReturnFlowTest extends TestCase
         $order = Order::factory()->create(['status' => 'pending']);
         $payment = Payment::factory()->created()->for($order)->create();
 
-        $this->mock(PayPalService::class, function ($mock) use ($payment): void {
+        $this->partialMock(PayPalService::class, function ($mock) use ($payment, $order): void {
             $mock->shouldReceive('captureOrder')
                 ->once()
                 ->with($payment->paypal_order_id)
-                ->andReturn(['status' => 'COMPLETED']);
-            $mock->shouldReceive('getCaptureIdFromOrder')
-                ->once()
-                ->andReturn('CAPTURE123456789');
+                ->andReturn(PayPalFixtures::capture('orders/capture-completed', [
+                    'id' => 'CAPTURE123456789',
+                    'amount' => ['value' => $order->total_amount],
+                ]));
         });
 
         $this->actingAs($order->customer)
@@ -94,7 +95,7 @@ class PayPalReturnFlowTest extends TestCase
         $payment = Payment::factory()->created()->create();
 
         $this->mock(PayPalService::class, function ($mock): void {
-            $mock->shouldReceive('captureOrder')->once()->andReturn(['status' => 'DECLINED']);
+            $mock->shouldReceive('captureOrder')->once()->andReturn(PayPalFixtures::sdkResponse('orders/capture-instrument-declined'));
         });
 
         $this->actingAs($payment->order->customer)

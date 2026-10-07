@@ -11,6 +11,7 @@ use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Srmklive\PayPal\Services\PayPal;
 use Symfony\Component\HttpFoundation\Response;
+use Tests\Support\PayPalFixtures;
 use Tests\TestCase;
 
 /**
@@ -131,16 +132,10 @@ class PayPalWebhookVerificationTest extends TestCase
 
     private function refundBody(Payment $payment): string
     {
-        return (string) json_encode([
-            'event_type' => 'PAYMENT.CAPTURE.REFUNDED',
-            'resource' => [
-                'id' => 'REFUND-SIGNED',
-                'amount' => ['value' => (string) $payment->amount, 'currency_code' => 'EUR'],
-                'links' => [
-                    ['rel' => 'up', 'href' => "https://api.sandbox.paypal.com/v2/payments/captures/{$payment->paypal_capture_id}"],
-                ],
-            ],
-        ]);
+        return (string) json_encode(PayPalFixtures::webhookEvent('PAYMENT.CAPTURE.REFUNDED', 'webhooks/refund', [
+            'amount' => ['value' => (string) $payment->amount],
+            'links' => [1 => ['href' => "https://api.sandbox.paypal.com/v2/payments/captures/{$payment->paypal_capture_id}"]],
+        ]));
     }
 
     /**
@@ -206,13 +201,10 @@ class PayPalWebhookVerificationTest extends TestCase
             'amount' => $order->total_amount,
         ]);
 
-        $this->postJson(route('paypal.webhook'), [
-            'event_type' => 'PAYMENT.CAPTURE.COMPLETED',
-            'resource' => [
-                'id' => 'CAPTURE-UNSIGNED',
-                'amount' => ['value' => (string) $order->total_amount],
-            ],
-        ])->assertStatus(400);
+        $this->postJson(route('paypal.webhook'), PayPalFixtures::webhookEvent('PAYMENT.CAPTURE.COMPLETED', 'webhooks/capture', [
+            'id' => 'CAPTURE-UNSIGNED',
+            'amount' => ['value' => (string) $order->total_amount],
+        ]))->assertStatus(400);
 
         $this->assertSame('APPROVED', $payment->fresh()->status);
         $this->assertSame('pending', $order->fresh()->status);

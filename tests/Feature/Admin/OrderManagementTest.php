@@ -11,6 +11,7 @@ use App\Services\PayPalService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\Support\PayPalFixtures;
 use Tests\TestCase;
 
 class OrderManagementTest extends TestCase
@@ -148,7 +149,7 @@ class OrderManagementTest extends TestCase
             $mock->shouldReceive('refundOrder')
                 ->once()
                 ->with($payment->paypal_capture_id, 49.9)
-                ->andReturn(['id' => 'REFUND1', 'status' => 'COMPLETED']);
+                ->andReturn(PayPalFixtures::sdkResponse('payments/refund-completed'));
         });
 
         $this->actingAsAdmin()
@@ -174,7 +175,7 @@ class OrderManagementTest extends TestCase
             $mock->shouldReceive('refundOrder')
                 ->once()
                 ->with($payment->paypal_capture_id, 4390.0)
-                ->andReturn(['id' => 'REFUND-FALLBACK', 'status' => 'COMPLETED']);
+                ->andReturn(PayPalFixtures::sdkResponse('payments/refund-completed'));
         });
 
         $this->actingAsAdmin()
@@ -189,12 +190,12 @@ class OrderManagementTest extends TestCase
     public static function rejectedRefundResponses(): array
     {
         return [
-            // Das SDK liefert API-Fehler als Array statt als Exception.
-            'error array' => [['type' => 'error', 'message' => 'INSTRUMENT_DECLINED']],
-            'error name' => [['name' => 'UNPROCESSABLE_ENTITY', 'details' => [['issue' => 'CAPTURE_FULLY_REFUNDED']]]],
-            'refund failed' => [['id' => 'REFUND2', 'status' => 'FAILED']],
-            'refund cancelled' => [['id' => 'REFUND3', 'status' => 'CANCELLED']],
-            'empty response' => [[]],
+            // Das SDK liefert API-Fehler als ['error' => Body] statt als Exception.
+            'API-Fehler 422 (Betrag 0)' => [PayPalFixtures::sdkResponse('payments/refund-zero-amount')],
+            'refund failed' => [PayPalFixtures::sdkResponse('payments/refund-failed')],
+            'refund cancelled' => [PayPalFixtures::sdkResponse('payments/refund-cancelled')],
+            // Nicht-JSON-Antwort, von PayPalService::asArray() normalisiert.
+            'non-JSON response' => [['error' => 'Bad Gateway']],
         ];
     }
 
@@ -223,7 +224,7 @@ class OrderManagementTest extends TestCase
         $payment = $this->paidPaypalOrderWithCapture();
 
         $this->mock(PayPalService::class, function ($mock): void {
-            $mock->shouldReceive('refundOrder')->once()->andReturn(['id' => 'REFUND4', 'status' => 'PENDING']);
+            $mock->shouldReceive('refundOrder')->once()->andReturn(PayPalFixtures::sdkResponse('payments/refund-pending'));
         });
 
         $this->actingAsAdmin()

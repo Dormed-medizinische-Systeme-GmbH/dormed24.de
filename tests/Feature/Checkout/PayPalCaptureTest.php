@@ -11,6 +11,7 @@ use App\Models\Setting;
 use App\Services\PayPalService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use Tests\Support\PayPalFixtures;
 use Tests\TestCase;
 
 class PayPalCaptureTest extends TestCase
@@ -49,14 +50,14 @@ class PayPalCaptureTest extends TestCase
         $order = Order::factory()->for($customer)->create(['status' => 'pending']);
         $payment = Payment::factory()->created()->for($order)->create();
 
-        $this->mock(PayPalService::class, function ($mock) use ($payment): void {
+        $this->partialMock(PayPalService::class, function ($mock) use ($payment, $order): void {
             $mock->shouldReceive('captureOrder')
                 ->once()
                 ->with($payment->paypal_order_id)
-                ->andReturn(['status' => 'COMPLETED']);
-            $mock->shouldReceive('getCaptureIdFromOrder')
-                ->once()
-                ->andReturn('CAPTURE123456789');
+                ->andReturn(PayPalFixtures::capture('orders/capture-completed', [
+                    'id' => 'CAPTURE123456789',
+                    'amount' => ['value' => $order->total_amount],
+                ]));
         });
 
         $this->actingAs($customer)
@@ -67,6 +68,7 @@ class PayPalCaptureTest extends TestCase
             ->assertJson(['status' => 'COMPLETED']);
 
         $this->assertSame('COMPLETED', $payment->fresh()->status);
+        $this->assertSame('CAPTURE123456789', $payment->fresh()->paypal_capture_id);
         $this->assertSame('paid', $order->fresh()->status);
     }
 
@@ -81,19 +83,9 @@ class PayPalCaptureTest extends TestCase
         $order = Order::factory()->for($customer)->create(['status' => 'pending', 'total_amount' => '4390.00']);
         $payment = Payment::factory()->created()->for($order)->create(['amount' => 0, 'fee' => null]);
 
-        $this->mock(PayPalService::class, function ($mock): void {
-            $mock->shouldReceive('captureOrder')->once()->andReturn([
-                'status' => 'COMPLETED',
-                'purchase_units' => [[
-                    'payments' => ['captures' => [[
-                        'id' => 'CAPTURE-AMOUNT',
-                        'status' => 'COMPLETED',
-                        'amount' => ['currency_code' => 'EUR', 'value' => '4390.00'],
-                        'seller_receivable_breakdown' => ['paypal_fee' => ['currency_code' => 'EUR', 'value' => '153.99']],
-                    ]]],
-                ]],
-            ]);
-            $mock->shouldReceive('getCaptureIdFromOrder')->once()->andReturn('CAPTURE-AMOUNT');
+        $this->partialMock(PayPalService::class, function ($mock): void {
+            // Echte Capture-Antwort: 4.390,00 €, Gebühr 153,99 €.
+            $mock->shouldReceive('captureOrder')->once()->andReturn(PayPalFixtures::sdkResponse('orders/capture-completed'));
         });
 
         $this->actingAs($customer)
@@ -111,11 +103,7 @@ class PayPalCaptureTest extends TestCase
     {
         $order = Order::factory()->create(['total_amount' => '4390.00']);
 
-        $payment = app(PayPalService::class)->recordPayment($order, [
-            'id' => 'PAYPAL-ORDER-NEW',
-            'status' => 'CREATED',
-            'links' => [],
-        ], 'CREATED');
+        $payment = app(PayPalService::class)->recordPayment($order, PayPalFixtures::sdkResponse('orders/create'), 'CREATED');
 
         $this->assertEquals(4390.00, (float) $payment->amount);
     }
@@ -130,16 +118,7 @@ class PayPalCaptureTest extends TestCase
             $mock->shouldReceive('captureOrder')
                 ->once()
                 ->with($payment->paypal_order_id)
-                ->andReturn([
-                    'status' => 'COMPLETED',
-                    'purchase_units' => [[
-                        'payments' => [
-                            'captures' => [[
-                                'amount' => ['value' => '1.00'],
-                            ]],
-                        ],
-                    ]],
-                ]);
+                ->andReturn(PayPalFixtures::capture('orders/capture-completed', ['amount' => ['value' => '1.00']]));
         });
 
         $this->actingAs($customer)
@@ -163,12 +142,9 @@ class PayPalCaptureTest extends TestCase
         $payment = Payment::factory()->created()->for($order)->create();
 
         $this->mock(PayPalService::class, function ($mock): void {
-            $mock->shouldReceive('captureOrder')->once()->andReturn([
-                'status' => 'COMPLETED',
-                'purchase_units' => [[
-                    'payments' => ['captures' => [['amount' => ['value' => '1.00']]]],
-                ]],
-            ]);
+            $mock->shouldReceive('captureOrder')->once()->andReturn(
+                PayPalFixtures::capture('orders/capture-completed', ['amount' => ['value' => '1.00']]),
+            );
         });
 
         $this->actingAs($customer)
@@ -186,9 +162,12 @@ class PayPalCaptureTest extends TestCase
         $order = Order::factory()->for($customer)->create(['status' => 'pending']);
         $payment = Payment::factory()->created()->for($order)->create();
 
-        $this->mock(PayPalService::class, function ($mock): void {
-            // z. B. eCheck: Capture angenommen, aber noch nicht abgeschlossen.
-            $mock->shouldReceive('captureOrder')->once()->andReturn(['status' => 'PENDING']);
+        $this->partialMock(PayPalService::class, function ($mock) use ($order): void {
+            // z. B. Prüfung bei PayPal: Die Order ist COMPLETED, die Capture
+            // selbst aber noch PENDING. Maßgeblich ist der Capture-Status.
+            $mock->shouldReceive('captureOrder')->once()->andReturn(
+                PayPalFixtures::capture('orders/capture-pending', ['amount' => ['value' => $order->total_amount]]),
+            );
         });
 
         $this->actingAs($customer)
@@ -199,6 +178,26 @@ class PayPalCaptureTest extends TestCase
             ->assertJson(['status' => 'FAILED']);
 
         $this->assertSame('failed', $order->fresh()->status);
+    }
+
+    public function test_declined_capture_in_completed_order_is_not_booked_as_paid(): void
+    {
+        $customer = Customer::factory()->create();
+        $order = Order::factory()->for($customer)->create(['status' => 'pending']);
+        $payment = Payment::factory()->created()->for($order)->create();
+
+        $this->partialMock(PayPalService::class, function ($mock) use ($order): void {
+            $mock->shouldReceive('captureOrder')->once()->andReturn(
+                PayPalFixtures::capture('orders/capture-declined', ['amount' => ['value' => $order->total_amount]]),
+            );
+        });
+
+        $this->actingAs($customer)
+            ->postJson(route('paypal.order.capture'), ['paypal_order_id' => $payment->paypal_order_id])
+            ->assertStatus(422);
+
+        $this->assertSame('FAILED', $payment->fresh()->status);
+        $this->assertNotSame('paid', $order->fresh()->status);
     }
 
     public function test_create_order_rejects_cart_with_unavailable_product(): void
@@ -256,7 +255,7 @@ class PayPalCaptureTest extends TestCase
         Payment::factory()->completed()->for($paidOrder)->create();
 
         $this->mock(PayPalService::class, function ($mock): void {
-            $mock->shouldReceive('createOrder')->once()->andReturn(['id' => 'PAY123', 'status' => 'CREATED']);
+            $mock->shouldReceive('createOrder')->once()->andReturn(PayPalFixtures::sdkResponse('orders/create'));
             $mock->shouldReceive('recordPayment')->once()->andReturn(new Payment);
         });
 
