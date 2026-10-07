@@ -8,7 +8,7 @@
 </script>
 
 <script lang="ts">
-    import { page } from '@inertiajs/svelte';
+    import { page, setLayoutProps } from '@inertiajs/svelte';
     import Save from '@lucide/svelte/icons/save';
     import Send from '@lucide/svelte/icons/send';
     import type { ProjectData } from 'grapesjs';
@@ -110,6 +110,11 @@
 
     onDestroy(() => autosave.cancel());
 
+    // Speicherstatus, Testmail und Speichern rechts im Admin-Header, wie bei Produkten.
+    $effect(() => {
+        setLayoutProps({ actions: headerActions });
+    });
+
     async function saveNow() {
         if (await autosave.flush()) {
             toast.success('Gespeichert.');
@@ -196,6 +201,33 @@
     );
 </script>
 
+{#snippet headerActions()}
+    <span
+        class="hidden text-sm text-muted-foreground sm:inline"
+        aria-live="polite"
+    >
+        {saveStateLabel}
+    </span>
+    <Button
+        variant="outline"
+        onclick={sendTest}
+        disabled={sendingTest || !testRecipient}
+        title={testRecipient
+            ? `Testmail an ${testRecipient}`
+            : 'In den Einstellungen ist keine Shop-E-Mail hinterlegt.'}
+    >
+        <Send class="size-4" />
+        {sendingTest ? 'Wird gesendet …' : 'Testmail an Admin'}
+    </Button>
+    <Button
+        onclick={saveNow}
+        disabled={!newsletter.editable || saveState === 'saving'}
+    >
+        <Save class="size-4" />
+        {saveState === 'saving' ? 'Speichert…' : 'Speichern'}
+    </Button>
+{/snippet}
+
 <svelte:window onkeydown={onKeydown} />
 
 <AppHead title={`Newsletter: ${newsletter.name}`} />
@@ -231,36 +263,6 @@
                 oninput={() => autosave.touch()}
             />
             <InputError message={errors.preheader} />
-        </div>
-    </div>
-
-    <div class="flex flex-wrap items-center justify-between gap-2">
-        <div class="flex items-center gap-1">
-            <span class="text-sm text-muted-foreground" aria-live="polite">
-                {saveStateLabel}
-            </span>
-        </div>
-        <div class="flex items-center gap-2">
-            <Button
-                variant="outline"
-                size="sm"
-                onclick={saveNow}
-                disabled={!newsletter.editable || saveState === 'saving'}
-            >
-                <Save class="size-4" />
-                Speichern
-            </Button>
-            <Button
-                size="sm"
-                onclick={sendTest}
-                disabled={sendingTest || !testRecipient}
-                title={testRecipient
-                    ? `Testmail an ${testRecipient}`
-                    : 'In den Einstellungen ist keine Shop-E-Mail hinterlegt.'}
-            >
-                <Send class="size-4" />
-                {sendingTest ? 'Wird gesendet …' : 'Testmail an Admin'}
-            </Button>
         </div>
     </div>
 
