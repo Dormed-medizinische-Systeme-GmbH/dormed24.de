@@ -15,13 +15,17 @@
         "format:check": "prettier --check resources/",
         "lint": "eslint . --fix",
         "lint:check": "eslint .",
-        "types:check": "svelte-check --tsconfig ./tsconfig.json"
+        "types:check": "svelte-check --tsconfig ./tsconfig.json",
+        "test": "vitest run",
+        "test:watch": "vitest"
     },
     "devDependencies": {
         "@eslint/js": "^9.19.0",
         "@laravel/vite-plugin-wayfinder": "^0.1.3",
         "@stylistic/eslint-plugin": "^5.10.0",
         "@tailwindcss/vite": "^4.1.11",
+        "@testing-library/jest-dom": "^7.0.1",
+        "@testing-library/svelte": "^5.4.2",
         "@types/node": "^22.13.5",
         "concurrently": "^9.0.1",
         "eslint": "^9.17.0",
@@ -29,13 +33,15 @@
         "eslint-import-resolver-typescript": "^4.4.4",
         "eslint-plugin-import": "^2.32.0",
         "eslint-plugin-svelte": "^3.1.0",
+        "jsdom": "^29.1.1",
         "prettier": "^3.4.2",
         "prettier-plugin-svelte": "^3.3.3",
         "prettier-plugin-tailwindcss": "^0.6.11",
         "svelte-check": "^4.1.4",
         "typescript": "^5.7.2",
         "typescript-eslint": "^8.23.0",
-        "vite": "^8.0.0"
+        "vite": "^8.0.0",
+        "vitest": "^4.1.11"
     },
     "dependencies": {
         "@inertiajs/svelte": "^3.0.0",

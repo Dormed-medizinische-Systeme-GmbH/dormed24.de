@@ -69,6 +69,11 @@ jobs:
       - name: Check Frontend Types
         run: npm run types:check
 
+      # Ebenfalls nach dem Build: die Komponenten importieren @/actions und
+      # @/routes. Konfiguration in vitest.config.ts.
+      - name: Frontend Tests
+        run: npm run test
+
       # Auf Pull Requests wird die Testabdeckung gemessen und in die Job-
       # Zusammenfassung geschrieben (nur Ausgabe, noch kein Mindestwert). Als
       # Deploy-Gate auf main läuft weiter der schnelle Lauf ohne Messung.
