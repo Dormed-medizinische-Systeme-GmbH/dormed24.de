@@ -4,6 +4,9 @@ namespace App\Support\Newsletter;
 
 use DOMDocument;
 use DOMElement;
+use DOMNameSpaceNode;
+use DOMNode;
+use DOMNodeList;
 use DOMXPath;
 
 /**
@@ -40,15 +43,11 @@ final class HtmlSanitizer
         $xpath = new DOMXPath($document);
 
         foreach (self::FORBIDDEN_ELEMENTS as $tag) {
-            foreach (iterator_to_array($xpath->query("//{$tag}") ?: []) as $node) {
-                $node->parentNode?->removeChild($node);
-            }
+            $this->removeAll($xpath->query("//{$tag}"));
         }
 
         // meta refresh leitet beim Öffnen im Browser weiter.
-        foreach (iterator_to_array($xpath->query("//meta[translate(@http-equiv, 'REFSH', 'refsh')='refresh']") ?: []) as $node) {
-            $node->parentNode?->removeChild($node);
-        }
+        $this->removeAll($xpath->query("//meta[translate(@http-equiv, 'REFSH', 'refsh')='refresh']"));
 
         /** @var DOMElement $element */
         foreach (iterator_to_array($xpath->query('//*[@*]') ?: []) as $element) {
@@ -67,6 +66,18 @@ final class HtmlSanitizer
         }
 
         return "<!doctype html>\n".$output;
+    }
+
+    /**
+     * @param  DOMNodeList<DOMNameSpaceNode|DOMNode>|false  $nodes
+     */
+    private function removeAll(DOMNodeList|false $nodes): void
+    {
+        foreach (iterator_to_array($nodes ?: []) as $node) {
+            if ($node instanceof DOMNode) {
+                $node->parentNode?->removeChild($node);
+            }
+        }
     }
 
     private function sanitizeAttributes(DOMElement $element): void
