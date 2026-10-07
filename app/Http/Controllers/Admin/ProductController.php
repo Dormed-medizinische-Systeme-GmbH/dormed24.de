@@ -49,6 +49,13 @@ class ProductController extends Controller
             'categories' => Categories::options(),
             'specialtyCategories' => Categories::slugsWithSpecialties(),
             'specialties' => Specialties::options(),
+            'ratings' => $product->ratings()->get()->map(fn ($rating) => [
+                'id' => $rating->id,
+                'stars' => $rating->stars,
+                'content' => $rating->content,
+                'created_at' => $rating->created_at?->format('d.m.Y'),
+                'verified' => $rating->isVerifiedPurchase(),
+            ])->values(),
         ]);
     }
 

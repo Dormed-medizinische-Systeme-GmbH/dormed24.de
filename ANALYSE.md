@@ -1,8 +1,9 @@
 # Analyse dormed-shop: offene Punkte
 
-Stand 06.10.2026. Zusammengeführt aus ANALYSE-V1 bis V4 (Juli 2026). Was dort
-eindeutig und vollständig erledigt war, ist entfernt. Jeder Punkt unten wurde
-gegen den aktuellen Code geprüft. In Klammern steht, woher er stammt.
+Stand 07.10.2026. Zusammengeführt aus ANALYSE-V1 bis V4 (Juli 2026) und dem
+Test-Review (früher `pocock.md`). Was dort eindeutig und vollständig erledigt
+war, ist entfernt. Jeder Punkt unten wurde gegen den aktuellen Code geprüft. In
+Klammern steht, woher er stammt.
 
 ## 🟠 Sicherheit und Abhängigkeiten
 
@@ -30,13 +31,15 @@ lesen beide einen gefüllten Warenkorb und legen zwei Orders an. Der
 Hold-to-confirm-Button macht das unwahrscheinlich. Abhilfe bei Bedarf:
 `Cache::lock` um den Submit oder ein Idempotency-Key aus der Session.
 
-### Bewertungen wieder freischalten, bestellbasiert (V1 #9 → V3 S-1)
+### Offene PayPal-Befunde (Test-Review)
 
-Route `POST /products/{product}/ratings` und das Formular auf der Produktseite
-sind seit Juli bewusst deaktiviert (Spam-Fläche). Beides soll gemeinsam
-zurückkommen, sobald Bewertungen an eine Bestellung gebunden sind.
-`RatingController` und `StoreRatingRequest` sind noch da, die zwei
-Submission-Tests in `RatingTest` sind `markTestSkipped`.
+- Währungsabgleich beim Capture: Betrag wird geprüft, Währung nicht.
+- Order wird `failed`, obwohl Geld eingezogen sein kann.
+- `cancelStalePendingPayPalOrders()` noch einmal prüfen.
+- Fehlende Webhook-Events: `PAYMENT.CAPTURE.PENDING`, `PAYMENT.CAPTURE.REVERSED`.
+- `createOrder`-Payload: `shipping_preference` fehlt, leere `address_line_2`
+  wird mitgeschickt.
+- Kein Idempotenz-Header (`PayPal-Request-Id`) beim Refund.
 
 ## 🔍 SEO
 
@@ -81,16 +84,52 @@ Prüfung, #18), deshalb lohnt ein Durchgang statt bloßem Ignorieren.
 
 ## 🧪 Tests
 
+Abdeckung laut CI-Lauf von PR #21: **89,7 %** von `app/`, 423 PHP-Tests, dazu
+107 Vitest-Tests. Gemessen wird nur auf Pull Requests (`tests.yml`, Schritt
+„Tests with coverage“), ohne Mindestwert. Vorschlag: `--min=85`.
+
+### Lücken
+
+| Datei | Abdeckung | Was fehlt |
+|---|---|---|
+| `Mail/PaymentConfirmationMail` | 14,3 % | Mails werden nur per `Mail::fake()` geprüft, nie gerendert |
+| `Mail/PaymentAmountMismatchMail` | 36,4 % | s. o. |
+| `Console/Commands/AddUser` | 0 % | kein Test |
+| `Console/Commands/InstallFeaturesCommand` | 0 % | kein Test |
+| `SitemapController` | 0 % | Smoke-Test, ebenso für FAQ, AGB, Impressum, Datenschutz, Widerruf und `/.well-known/passkey-endpoints` |
+| `Admin/ManufacturerController` | 55,6 % | |
+| `Auth/EnvAdmin` | 61,5 % | Remember-Token, `toArray`, `jsonSerialize` |
+| `Models/ProductImage` | 66,7 % | `url`-Accessor |
+| `Models/Order` | 69,2 % | Zeilen 68–77 |
+| `Providers/AppServiceProvider` | 73,9 % | |
+| `Console/Commands/ShowLegacyCredentials` | 77,3 % | |
+| `Admin/ProductController` | 79,3 % | |
+| `Support/Orders/OrderManager` | 83,3 % | Bestellung ohne Kunde, Mailversand wirft |
+| `PayPalController` | 92,4 % | `createOrder` mit leerem Warenkorb (400) oder unvollständiger Adresse (422), PayPal-Antwort ohne `id`, 409 bei abgeschlossener Zahlung, Exception in `afterPayment`, fehlgeschlagene Alarm-Mail bei Betragsabweichung |
+| `Services/PayPalService` | 93,1 % | fehlgeschlagener Access-Token, Exception in der Webhook-Prüfung, `showOrderDetails()` |
+
+### Sonstiges
+
+- **Unit-Tests für reine Logik:** `Money`, `ProductFilters`, `ProductSort` und
+  `AddressRules` laufen nur über Feature-Tests. Schnelle, datenbankfreie
+  Unit-Tests fehlen.
+- **`markPaymentAndOrder()`** in `PayPalController`: Der Name sagt nicht, was
+  die Methode tut (Webhook-Status auf Zahlung und Bestellung übertragen, mit
+  Reihenfolge-Schutz).
+- **Fortify-Tests** skippen sich, wenn ein Feature in `config/fortify.php`
+  fehlt. Aktuell sind alle aktiv; wird eines abgeschaltet, fällt die Abdeckung
+  still weg.
+- **Temporäres entfernen:** `DeployCheckTest` samt Route `/deploy-check` und die
+  öffentliche Debug-Route `/test` (`test.hover-header`) in `routes/web.php`.
 - **Manueller PayPal-Sandbox-Browsertest** (seit V2 offen, seit V4 Pflicht):
   CSRF ist in PHPUnit deaktiviert, der Button-Flow lässt sich serverseitig nicht
-  testen, und der Fehlerpfad antwortet seit V4 mit 422 statt auf die
-  Erfolgsseite zu leiten. Dabei auch einen echten Webhook prüfen, z. B. eine
-  Erstattung im PayPal-Dashboard: Die Bestellung muss danach auf `refunded`
-  stehen.
-- **End-to-End je Bezahlweg** (V1): Warenkorb → Bestellung → `paid` inklusive
-  Mail-Assertions, je einmal für Rechnung und PayPal. Einzelschritte sind
-  getestet (Checkout, Capture, Webhook, OrderManager), ein durchgehender Test
-  pro Weg ist nicht eindeutig vorhanden.
+  testen. Dabei auch einen echten Webhook prüfen, z. B. eine Erstattung im
+  PayPal-Dashboard: Die Bestellung muss danach auf `refunded` stehen.
+- **End-to-End je Bezahlweg** (V1): PayPal ist mit
+  `PayPalPaymentLifecycleTest` serverseitig durchgehend getestet (anlegen,
+  bezahlen, erstatten), aber ohne Mail-Assertions. Für Rechnung fehlt ein
+  durchgehender Test. Ein Browser-Test (Warenkorb → Checkout) bräuchte
+  Playwright, eine Abhängigkeitsentscheidung.
 
 ## 📌 Bewusste Entscheidungen (keine Aufgaben, nicht erneut melden)
 

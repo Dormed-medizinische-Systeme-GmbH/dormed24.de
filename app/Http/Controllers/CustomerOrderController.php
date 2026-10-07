@@ -35,6 +35,15 @@ class CustomerOrderController extends Controller
             'payments',
         ]);
 
+        // Bewertbar sind Artikel bezahlter Bestellungen, deren Produkt es noch
+        // gibt; "rated", wenn der Kunde das Produkt schon bewertet hat.
+        $ratedProductIds = $request->user()->ratings()->pluck('product_id')->all();
+        $ratingState = fn ($item): ?string => match (true) {
+            $order->status !== 'paid' || $item->product === null => null,
+            in_array($item->product_id, $ratedProductIds, true) => 'rated',
+            default => 'rateable',
+        };
+
         $summary = $orderManager->summaryFromOrder($order);
         $paymentLabels = collect(config('shop.cart.providers', []))
             ->flatMap(fn (array $provider) => $provider['methods'] ?? [])
@@ -52,10 +61,12 @@ class CustomerOrderController extends Controller
             'billing_address' => $order->billing_address,
             'items' => $order->items->map(fn ($item) => [
                 'id' => $item->id,
+                'product_id' => $item->product_id,
                 'product_name' => $item->product_name,
                 'unit_price' => (string) $item->unit_price,
                 'quantity' => $item->quantity,
                 'image_url' => $item->product?->images->first()?->url,
+                'rating' => $ratingState($item),
             ])->values(),
             'summary' => $summary,
             'customer_email' => $request->user()->email,

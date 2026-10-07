@@ -20,6 +20,7 @@
     } from '@lucide/svelte';
     import * as AdminProductController from '@/actions/App/Http/Controllers/Admin/ProductController';
     import * as AdminProductVariantController from '@/actions/App/Http/Controllers/Admin/ProductVariantController';
+    import * as AdminRatingController from '@/actions/App/Http/Controllers/Admin/RatingController';
     import AppHead from '@/components/AppHead.svelte';
     import SpecialtyPicker from '@/components/SpecialtyPicker.svelte';
     import TechnicalSpecsEditor from '@/components/TechnicalSpecsEditor.svelte';
@@ -61,6 +62,14 @@
         variants: ProductVariant[];
     };
 
+    type Rating = {
+        id: number;
+        stars: number;
+        content: string;
+        created_at: string | null;
+        verified: boolean;
+    };
+
     type Manufacturer = { id: number; name: string };
     type Category = { slug: string; name: string };
     type Specialty = { slug: string; name: string };
@@ -71,12 +80,14 @@
         categories,
         specialtyCategories,
         specialties,
+        ratings = [],
     }: {
         product: Product;
         manufacturers: Manufacturer[];
         categories: Category[];
         specialtyCategories: string[];
         specialties: Specialty[];
+        ratings?: Rating[];
     } = $props();
 
     // svelte-ignore state_referenced_locally
@@ -167,6 +178,21 @@
                 input.value = '';
             },
         });
+    }
+
+    function deleteRating(ratingId: number) {
+        if (
+            !confirm(
+                'Bewertung wirklich löschen? Sie verschwindet sofort von der Produktseite.',
+            )
+        ) {
+            return;
+        }
+
+        router.delete(
+            AdminRatingController.destroy.url(ratingId),
+            keepPageState,
+        );
     }
 
     function deleteImage(imageId: number) {
@@ -327,6 +353,16 @@
                         class="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-xs font-medium tabular-nums"
                     >
                         {variants.length}
+                    </span>
+                {/if}
+            </Tabs.Trigger>
+            <Tabs.Trigger value="bewertungen">
+                Bewertungen
+                {#if ratings.length > 0}
+                    <span
+                        class="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-xs font-medium tabular-nums"
+                    >
+                        {ratings.length}
                     </span>
                 {/if}
             </Tabs.Trigger>
@@ -713,6 +749,63 @@
                         Hinzufügen
                     </Button>
                 </div>
+            </div>
+        </Tabs.Content>
+
+        <Tabs.Content value="bewertungen">
+            <div class="mt-6 flex max-w-2xl flex-col gap-4">
+                <div>
+                    <h2 class="text-base font-semibold">Bewertungen</h2>
+                    <p class="text-sm text-muted-foreground">
+                        Bewertungen von Käufern sind sofort öffentlich. Hier
+                        lassen sich unpassende löschen.
+                    </p>
+                </div>
+
+                {#if ratings.length > 0}
+                    <div class="flex flex-col divide-y rounded-lg border">
+                        {#each ratings as rating (rating.id)}
+                            <div
+                                class="flex items-start justify-between gap-4 p-4"
+                            >
+                                <div class="min-w-0 space-y-1">
+                                    <p class="text-sm">
+                                        <span class="font-medium"
+                                            >{rating.stars} von 5 Sternen</span
+                                        >
+                                        {#if rating.created_at}
+                                            <span class="text-muted-foreground">
+                                                · {rating.created_at}</span
+                                            >
+                                        {/if}
+                                        <span class="text-muted-foreground">
+                                            · {rating.verified
+                                                ? 'Verifizierter Kauf'
+                                                : 'ohne Kaufbezug (Altbestand)'}</span
+                                        >
+                                    </p>
+                                    <p
+                                        class="text-sm whitespace-pre-line text-muted-foreground"
+                                    >
+                                        {rating.content}
+                                    </p>
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    class="shrink-0 text-destructive"
+                                    onclick={() => deleteRating(rating.id)}
+                                >
+                                    Löschen
+                                </Button>
+                            </div>
+                        {/each}
+                    </div>
+                {:else}
+                    <p class="text-sm text-muted-foreground">
+                        Noch keine Bewertungen.
+                    </p>
+                {/if}
             </div>
         </Tabs.Content>
     </Tabs.Root>

@@ -30,7 +30,11 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // JSON-Clients (fetchJson: Bewertung, PayPal-Button, Bestelldetails)
+        // bekommen auch Fehler als JSON: 401/403/422 statt Redirect auf Login
+        // bzw. zurück. Sonst folgt fetch dem Redirect und hält die HTML-Seite
+        // für einen Erfolg. Inertia-Anfragen wollen HTML und sind nicht betroffen.
         $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*'),
+            fn (Request $request) => $request->is('api/*') || $request->wantsJson(),
         );
     })->create();

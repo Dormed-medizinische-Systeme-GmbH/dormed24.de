@@ -1,5 +1,6 @@
 <script lang="ts">
-    import { Form, Link, router } from '@inertiajs/svelte';
+    import { Link, router } from '@inertiajs/svelte';
+    import BadgeCheck from '@lucide/svelte/icons/badge-check';
     import Minus from '@lucide/svelte/icons/minus';
     import Plus from '@lucide/svelte/icons/plus';
     import ShoppingCart from '@lucide/svelte/icons/shopping-cart';
@@ -8,7 +9,7 @@
     import * as ProductController from '@/actions/App/Http/Controllers/ProductController';
     import AppFooter from '@/components/AppFooter.svelte';
     import AppHead from '@/components/AppHead.svelte';
-    import InputError from '@/components/InputError.svelte';
+    import RatingForm from '@/components/RatingForm.svelte';
     import ShopBreadcrumbs from '@/components/ShopBreadcrumbs.svelte';
     import ShopHeader from '@/components/ShopHeader.svelte';
     import SortimentShowcase from '@/components/SortimentShowcase.svelte';
@@ -17,7 +18,6 @@
     import * as Empty from '@/components/ui/empty';
     import { Label } from '@/components/ui/label';
     import * as Select from '@/components/ui/select';
-    import { Textarea } from '@/components/ui/textarea';
     import { formatPrice } from '@/lib/currency';
     import { cn } from '@/lib/utils';
     import cartRoutes from '@/routes/cart';
@@ -50,6 +50,7 @@
         stars: number;
         content: string;
         created_at: string | null;
+        verified: boolean;
     };
 
     type RatingSummary = {
@@ -69,11 +70,13 @@
         product,
         ratings,
         ratingSummary,
+        canRate = false,
         similarProducts = [],
     }: {
         product: Product;
         ratings: Rating[];
         ratingSummary: RatingSummary;
+        canRate?: boolean;
         similarProducts?: SimilarProduct[];
     } = $props();
 
@@ -92,7 +95,7 @@
     let activeTab = $state<'beschreibung' | 'technische-daten' | 'bewertungen'>(
         'beschreibung',
     );
-    let ratingStars = $state(5);
+    let ratingSubmitted = $state(false);
     let showAllRatings = $state(false);
     const RATINGS_PREVIEW_LIMIT = 3;
     let activeImageIndex = $state(0);
@@ -209,10 +212,6 @@
     const jsonLdHtml = $derived(
         `<script type="application/ld+json">${productSchema}<` + `/script>`,
     );
-
-    function starLabel(stars: number): string {
-        return `${stars} Stern${stars === 1 ? '' : 'e'}`;
-    }
 
     function addToCart() {
         router.post(
@@ -662,12 +661,25 @@
                                             <div
                                                 class="flex items-center justify-between gap-4"
                                             >
-                                                {#if rating.created_at}
-                                                    <span
-                                                        class="text-sm text-muted-foreground"
-                                                        >{rating.created_at}</span
-                                                    >
-                                                {/if}
+                                                <div
+                                                    class="flex flex-wrap items-center gap-2 text-sm text-muted-foreground"
+                                                >
+                                                    {#if rating.created_at}
+                                                        <span
+                                                            >{rating.created_at}</span
+                                                        >
+                                                    {/if}
+                                                    {#if rating.verified}
+                                                        <span
+                                                            class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700"
+                                                        >
+                                                            <BadgeCheck
+                                                                class="size-3.5"
+                                                            />
+                                                            Verifizierter Kauf
+                                                        </span>
+                                                    {/if}
+                                                </div>
                                                 <div
                                                     class="flex items-center gap-1 text-[#f59e0b]"
                                                 >
@@ -728,19 +740,7 @@
                             {/if}
                         </div>
 
-                        <!--
-                            TODO: Bewertung darf nicht mehr ueber die Produktseite
-                            abgegeben werden - geplant ist ein Modal aus der
-                            Bestellung heraus (nur fuer tatsaechlich gekaufte
-                            Produkte, z.B. per "hat gekauft"-Middleware).
-                            Wenn Rating ordentlich aus der Bestellung heraus
-                            implementiert ist, kann das hier wieder reaktiviert
-                            und richtig konfiguriert werden.
-                            Die zugehoerige Route ist ebenfalls deaktiviert
-                            (routes/public/rating.php) - beides wird GEMEINSAM
-                            reaktiviert.
-                        -->
-                        {#if false}
+                        {#if canRate}
                             <div
                                 class="rounded-xl border border-border bg-white p-6"
                             >
@@ -748,89 +748,32 @@
                                     Bewertung abgeben
                                 </h2>
                                 <p class="mt-2 text-sm text-muted-foreground">
-                                    Ohne Login. Später kann die Moderation oder
-                                    Verknüpfung zu Kunden ergänzt werden.
+                                    Sie haben dieses Produkt gekauft. Ihre
+                                    Bewertung erscheint anonym als
+                                    „Verifizierter Kauf“.
                                 </p>
-
-                                <Form
-                                    action={`/products/${product.id}/ratings`}
-                                    method="post"
-                                    resetOnSuccess={['content']}
-                                    class="mt-6 space-y-5"
-                                >
-                                    {#snippet children({ errors, processing })}
-                                        <input
-                                            type="hidden"
-                                            name="stars"
-                                            value={ratingStars}
-                                        />
-
-                                        <div class="grid gap-2">
-                                            <Label for="rating-stars"
-                                                >Sterne</Label
-                                            >
-                                            <div
-                                                id="rating-stars"
-                                                class="star-wrapper"
-                                            >
-                                                {#each [1, 2, 3, 4, 5] as star (star)}
-                                                    <button
-                                                        type="button"
-                                                        class={cn(
-                                                            `star-button s${star}`,
-                                                            star <=
-                                                                ratingStars &&
-                                                                'active',
-                                                        )}
-                                                        onclick={() =>
-                                                            (ratingStars =
-                                                                star)}
-                                                        aria-label={starLabel(
-                                                            star,
-                                                        )}
-                                                        aria-pressed={star ===
-                                                            ratingStars}
-                                                    >
-                                                        <Star class="size-12" />
-                                                    </button>
-                                                {/each}
-                                            </div>
-                                            <p
-                                                class="text-sm text-muted-foreground"
-                                            >
-                                                {starLabel(ratingStars)}
-                                            </p>
-                                            <InputError
-                                                message={errors.stars}
-                                            />
-                                        </div>
-
-                                        <div class="grid gap-2">
-                                            <Label for="content"
-                                                >Bewertung</Label
-                                            >
-                                            <Textarea
-                                                id="content"
-                                                name="content"
-                                                rows={5}
-                                                required
-                                                placeholder="Wie zufrieden sind Sie mit dem Produkt?"
-                                            />
-                                            <InputError
-                                                message={errors.content}
-                                            />
-                                        </div>
-
-                                        <Button
-                                            type="submit"
-                                            class="w-full bg-primary text-white hover:bg-primary/90"
-                                            disabled={processing}
-                                        >
-                                            Bewertung senden
-                                        </Button>
-                                    {/snippet}
-                                </Form>
+                                <div class="mt-6">
+                                    <RatingForm
+                                        productId={product.id}
+                                        onSubmitted={() => {
+                                            ratingSubmitted = true;
+                                            router.reload({
+                                                only: [
+                                                    'ratings',
+                                                    'ratingSummary',
+                                                    'canRate',
+                                                ],
+                                            });
+                                        }}
+                                    />
+                                </div>
                             </div>
+                        {:else if ratingSubmitted}
+                            <p
+                                class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800"
+                            >
+                                Danke für Ihre Bewertung!
+                            </p>
                         {/if}
                     </div>
                 {/if}
@@ -842,30 +785,3 @@
 
     <AppFooter />
 </div>
-
-<style>
-    .star-wrapper {
-        display: inline-flex;
-        direction: rtl;
-    }
-
-    .star-button {
-        margin: 4px;
-        color: #d1d5db;
-        text-decoration: none;
-        transition: all 0.5s;
-    }
-
-    .star-button:hover {
-        color: gold;
-        transform: scale(1.3);
-    }
-
-    .star-button:hover ~ .star-button {
-        color: gold;
-    }
-
-    .star-button.active {
-        color: gold;
-    }
-</style>

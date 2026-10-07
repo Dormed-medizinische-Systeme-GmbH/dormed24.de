@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Customer;
 use App\Models\Product;
 use App\Support\Products\ProductFilters;
 use App\Support\Products\ProductSort;
@@ -56,7 +57,7 @@ class ProductController extends Controller
         ]);
     }
 
-    public function show(Product $product): Response
+    public function show(Request $request, Product $product): Response
     {
         $product->load(['manufacturer', 'ratings', 'images', 'variants']);
         $product->loadAvg('ratings', 'stars');
@@ -96,6 +97,7 @@ class ProductController extends Controller
                 'stars' => $rating->stars,
                 'content' => $rating->content,
                 'created_at' => $rating->created_at?->format('d.m.Y'),
+                'verified' => $rating->isVerifiedPurchase(),
             ])->values(),
             'ratingSummary' => [
                 'average' => $product->ratings_avg_stars !== null
@@ -103,6 +105,9 @@ class ProductController extends Controller
                     : null,
                 'count' => $product->ratings->count(),
             ],
+            // Formular nur für eingeloggte Kunden mit bezahltem Kauf, die
+            // noch nicht bewertet haben.
+            'canRate' => $request->user() instanceof Customer && $request->user()->canRate($product),
             'similarProducts' => $similarProducts,
         ]);
     }
