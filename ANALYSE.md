@@ -103,20 +103,15 @@ Abdeckung laut CI-Lauf von PR #21: **89,7 %** von `app/`, 423 PHP-Tests, dazu
 
 ### Lücken
 
-| Datei                            | Abdeckung | Was fehlt                                                                                                                                                                                                             |
-| -------------------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Mail/PaymentConfirmationMail`   | 14,3 %    | Mails werden nur per `Mail::fake()` geprüft, nie gerendert                                                                                                                                                            |
-| `Mail/PaymentAmountMismatchMail` | 36,4 %    | s. o.                                                                                                                                                                                                                 |
-| `SitemapController`              | 0 %       | Smoke-Test, ebenso für FAQ, AGB, Impressum, Datenschutz, Widerruf und `/.well-known/passkey-endpoints`                                                                                                                |
-| `Admin/ManufacturerController`   | 55,6 %    |                                                                                                                                                                                                                       |
-| `Auth/EnvAdmin`                  | 61,5 %    | Remember-Token, `toArray`, `jsonSerialize`                                                                                                                                                                            |
-| `Models/ProductImage`            | 66,7 %    | `url`-Accessor                                                                                                                                                                                                        |
-| `Models/Order`                   | 69,2 %    | Zeilen 68–77                                                                                                                                                                                                          |
-| `Providers/AppServiceProvider`   | 73,9 %    |                                                                                                                                                                                                                       |
-| `Admin/ProductController`        | 79,3 %    |                                                                                                                                                                                                                       |
-| `Support/Orders/OrderManager`    | 83,3 %    | Bestellung ohne Kunde, Mailversand wirft                                                                                                                                                                              |
-| `PayPalController`               | 92,4 %    | `createOrder` mit leerem Warenkorb (400) oder unvollständiger Adresse (422), PayPal-Antwort ohne `id`, 409 bei abgeschlossener Zahlung, Exception in `afterPayment`, fehlgeschlagene Alarm-Mail bei Betragsabweichung |
-| `Services/PayPalService`         | 93,1 %    | fehlgeschlagener Access-Token, Exception in der Webhook-Prüfung, `showOrderDetails()`                                                                                                                                 |
+| Datei                          | Abdeckung | Was fehlt                                  |
+| ------------------------------ | --------- | ------------------------------------------ |
+| `Admin/ManufacturerController` | 55,6 %    |                                            |
+| `Auth/EnvAdmin`                | 61,5 %    | Remember-Token, `toArray`, `jsonSerialize` |
+| `Models/ProductImage`          | 66,7 %    | `url`-Accessor                             |
+| `Models/Order`                 | 69,2 %    | Zeilen 68–77                               |
+| `Providers/AppServiceProvider` | 73,9 %    |                                            |
+| `Admin/ProductController`      | 79,3 %    |                                            |
+| `Support/Orders/OrderManager`  | 83,3 %    | Bestellung ohne Kunde, Mailversand wirft   |
 
 ### Sonstiges
 

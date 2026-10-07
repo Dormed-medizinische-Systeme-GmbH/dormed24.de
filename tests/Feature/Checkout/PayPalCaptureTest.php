@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\Setting;
 use App\Services\PayPalService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Tests\Support\PayPalFixtures;
 use Tests\TestCase;
@@ -401,5 +402,101 @@ class PayPalCaptureTest extends TestCase
 
         $this->assertSame('FAILED', $payment->fresh()->status);
         $this->assertSame('failed', $order->fresh()->status);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function cartSession(Product $product, bool $completeAddress = true): array
+    {
+        return ['cart' => [
+            'items' => [(string) $product->id => 1],
+            'shipping_address' => [
+                'first_name' => 'Erika',
+                'last_name' => 'Mustermann',
+                'street' => $completeAddress ? 'Musterstraße' : '',
+                'house_number' => '1',
+                'zip' => '44135',
+                'city' => 'Dortmund',
+                'country' => 'DE',
+            ],
+        ]];
+    }
+
+    public function test_create_order_rejects_empty_cart(): void
+    {
+        $this->mock(PayPalService::class, fn ($mock) => $mock->shouldNotReceive('createOrder'));
+
+        $this->actingAs(Customer::factory()->create())
+            ->postJson(route('paypal.order.create'), ['agreed_to_terms' => true])
+            ->assertStatus(400)
+            ->assertJson(['error' => 'Warenkorb ist leer.']);
+
+        $this->assertSame(0, Order::query()->count());
+    }
+
+    public function test_create_order_rejects_incomplete_shipping_address(): void
+    {
+        $product = Product::factory()->create(['price' => '10.00']);
+        $this->mock(PayPalService::class, fn ($mock) => $mock->shouldNotReceive('createOrder'));
+
+        $this->actingAs(Customer::factory()->create())
+            ->withSession($this->cartSession($product, completeAddress: false))
+            ->postJson(route('paypal.order.create'), ['agreed_to_terms' => true])
+            ->assertUnprocessable()
+            ->assertJson(['error' => 'Bitte vervollständigen Sie Ihre Lieferadresse.']);
+
+        $this->assertSame(0, Order::query()->count());
+    }
+
+    public function test_create_order_without_paypal_order_id_fails_the_order(): void
+    {
+        $product = Product::factory()->create(['price' => '10.00']);
+        $this->mock(PayPalService::class, function ($mock): void {
+            $mock->shouldReceive('createOrder')->once()->andReturn(PayPalFixtures::sdkResponse('orders/create-unprocessable'));
+            $mock->shouldNotReceive('recordPayment');
+        });
+
+        $this->actingAs(Customer::factory()->create())
+            ->withSession($this->cartSession($product))
+            ->postJson(route('paypal.order.create'), ['agreed_to_terms' => true])
+            ->assertStatus(500)
+            ->assertJson(['error' => 'PayPal-Order konnte nicht erstellt werden.']);
+
+        $this->assertSame('failed', Order::query()->sole()->status);
+        $this->assertSame(0, Payment::query()->count());
+    }
+
+    public function test_capture_of_completed_payment_is_rejected_as_conflict(): void
+    {
+        $customer = Customer::factory()->create();
+        $order = Order::factory()->for($customer)->create(['status' => 'paid']);
+        $payment = Payment::factory()->completed()->for($order)->create();
+        $this->mock(PayPalService::class, fn ($mock) => $mock->shouldNotReceive('captureOrder'));
+
+        $this->actingAs($customer)
+            ->postJson(route('paypal.order.capture'), ['paypal_order_id' => $payment->paypal_order_id])
+            ->assertConflict();
+    }
+
+    public function test_amount_mismatch_alert_failure_is_logged_and_does_not_break_the_capture_response(): void
+    {
+        Setting::set('shop.email', 'shop@dormed.example');
+        Mail::shouldReceive('to')->andThrow(new \RuntimeException('SMTP down'));
+        Log::shouldReceive('channel')->with('mail')->andReturnSelf();
+        Log::shouldReceive('error')->once()->with('Amount mismatch alert mail failed', \Mockery::type('array'));
+        Log::shouldReceive('warning', 'info', 'error')->zeroOrMoreTimes();
+
+        $customer = Customer::factory()->create();
+        $order = Order::factory()->for($customer)->create(['status' => 'pending', 'total_amount' => '100.00']);
+        $payment = Payment::factory()->created()->for($order)->create();
+        $this->mock(PayPalService::class, fn ($mock) => $mock->shouldReceive('captureOrder')->once()->andReturn(
+            PayPalFixtures::capture('orders/capture-completed', ['amount' => ['value' => '1.00']]),
+        ));
+
+        $this->actingAs($customer)
+            ->postJson(route('paypal.order.capture'), ['paypal_order_id' => $payment->paypal_order_id])
+            ->assertUnprocessable()
+            ->assertJson(['status' => 'FAILED']);
     }
 }

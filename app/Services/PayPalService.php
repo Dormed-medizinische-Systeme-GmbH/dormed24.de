@@ -196,18 +196,6 @@ class PayPalService
     }
 
     /**
-     * Show PayPal Order details.
-     *
-     * @return array<string, mixed>
-     *
-     * @throws \Throwable
-     */
-    public function showOrderDetails(string $paypalOrderId): array
-    {
-        return $this->asArray($this->client()->showOrderDetails($paypalOrderId));
-    }
-
-    /**
      * Extract the capture ID from a captured order response.
      *
      * Reiner Array-Zugriff wie im SDK-Helper, aber ohne den Umweg über
