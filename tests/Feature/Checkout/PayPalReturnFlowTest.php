@@ -143,4 +143,26 @@ class PayPalReturnFlowTest extends TestCase
             ->get(route('checkout.success', ['paypal_order_id' => $payment->paypal_order_id]))
             ->assertRedirect(route('home'));
     }
+
+    public function test_after_payment_redirects_to_success_when_the_payment_was_completed_in_the_meantime(): void
+    {
+        $order = Order::factory()->create(['status' => 'pending']);
+        $payment = Payment::factory()->created()->for($order)->create();
+
+        $this->mock(PayPalService::class, function ($mock) use ($payment): void {
+            $mock->shouldReceive('captureOrder')->once()->andReturnUsing(function () use ($payment): array {
+                // Der JS-Capture oder der Webhook war schneller.
+                $payment->update(['status' => 'COMPLETED', 'paypal_capture_id' => 'CAPTURE-WON-THE-RACE']);
+                $payment->order->update(['status' => 'paid']);
+
+                return ['name' => 'UNPROCESSABLE_ENTITY', 'details' => [['issue' => 'ORDER_ALREADY_CAPTURED']]];
+            });
+        });
+
+        $this->actingAs($order->customer)
+            ->get(route('paypal.after-payment', ['token' => $payment->paypal_order_id]))
+            ->assertRedirect(route('checkout.success', ['paypal_order_id' => $payment->paypal_order_id]));
+
+        $this->assertSame('paid', $order->fresh()->status);
+    }
 }

@@ -277,4 +277,80 @@ class PayPalCaptureTest extends TestCase
         $response->assertStatus(500);
         $this->assertArrayNotHasKey('debug', $response->json());
     }
+
+    /**
+     * Simuliert: Return-URL oder Webhook waren schneller und haben die
+     * Zahlung zwischenzeitlich abgeschlossen, während unser Capture-Request
+     * noch lief. Dessen Capture scheitert bei PayPal dann (bereits erfasst).
+     */
+    private function completeConcurrently(Payment $payment): void
+    {
+        $payment->update(['status' => 'COMPLETED', 'paypal_capture_id' => 'CAPTURE-WON-THE-RACE']);
+        $payment->order->update(['status' => 'paid']);
+    }
+
+    public function test_failed_capture_does_not_downgrade_a_payment_completed_in_the_meantime(): void
+    {
+        $customer = Customer::factory()->create();
+        $order = Order::factory()->for($customer)->create(['status' => 'pending']);
+        $payment = Payment::factory()->created()->for($order)->create();
+
+        $this->mock(PayPalService::class, function ($mock) use ($payment): void {
+            $mock->shouldReceive('captureOrder')->once()->andReturnUsing(function () use ($payment): array {
+                $this->completeConcurrently($payment);
+
+                return ['name' => 'UNPROCESSABLE_ENTITY', 'details' => [['issue' => 'ORDER_ALREADY_CAPTURED']]];
+            });
+        });
+
+        $this->actingAs($customer)
+            ->postJson(route('paypal.order.capture'), ['paypal_order_id' => $payment->paypal_order_id])
+            ->assertOk()
+            ->assertJson(['status' => 'COMPLETED']);
+
+        $this->assertSame('COMPLETED', $payment->fresh()->status);
+        $this->assertSame('CAPTURE-WON-THE-RACE', $payment->fresh()->paypal_capture_id);
+        $this->assertSame('paid', $order->fresh()->status);
+    }
+
+    public function test_capture_exception_does_not_downgrade_a_payment_completed_in_the_meantime(): void
+    {
+        $customer = Customer::factory()->create();
+        $order = Order::factory()->for($customer)->create(['status' => 'pending']);
+        $payment = Payment::factory()->created()->for($order)->create();
+
+        $this->mock(PayPalService::class, function ($mock) use ($payment): void {
+            $mock->shouldReceive('captureOrder')->once()->andReturnUsing(function () use ($payment): never {
+                $this->completeConcurrently($payment);
+
+                throw new \RuntimeException('Timeout nach serverseitigem Capture');
+            });
+        });
+
+        $this->actingAs($customer)
+            ->postJson(route('paypal.order.capture'), ['paypal_order_id' => $payment->paypal_order_id])
+            ->assertOk()
+            ->assertJson(['status' => 'COMPLETED']);
+
+        $this->assertSame('COMPLETED', $payment->fresh()->status);
+        $this->assertSame('paid', $order->fresh()->status);
+    }
+
+    public function test_capture_exception_still_fails_an_order_that_is_not_paid(): void
+    {
+        $customer = Customer::factory()->create();
+        $order = Order::factory()->for($customer)->create(['status' => 'pending']);
+        $payment = Payment::factory()->created()->for($order)->create();
+
+        $this->mock(PayPalService::class, function ($mock): void {
+            $mock->shouldReceive('captureOrder')->once()->andThrow(new \RuntimeException('boom'));
+        });
+
+        $this->actingAs($customer)
+            ->postJson(route('paypal.order.capture'), ['paypal_order_id' => $payment->paypal_order_id])
+            ->assertStatus(500);
+
+        $this->assertSame('FAILED', $payment->fresh()->status);
+        $this->assertSame('failed', $order->fresh()->status);
+    }
 }

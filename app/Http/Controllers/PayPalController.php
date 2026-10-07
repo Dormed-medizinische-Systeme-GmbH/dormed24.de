@@ -15,6 +15,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Response as InertiaResponse;
@@ -132,12 +133,9 @@ class PayPalController extends Controller
                 ]);
             }
 
-            $payment->update([
-                'status' => 'FAILED',
-                'response_data' => $response,
-            ]);
-
-            $payment->order->update(['status' => 'failed']);
+            if ($this->markCaptureFailed($payment, $response)) {
+                return $this->alreadyCompletedResponse($paypalOrderId);
+            }
 
             // Non-2xx, damit der PayPal-Button den Fehlerpfad nimmt statt auf
             // die Erfolgsseite weiterzuleiten (Kunde sähe sonst "Vielen Dank"
@@ -153,14 +151,9 @@ class PayPalController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            $payment->update([
-                'status' => 'FAILED',
-                'response_data' => [
-                    'error' => $e->getMessage(),
-                ],
-            ]);
-
-            $payment->order->update(['status' => 'failed']);
+            if ($this->markCaptureFailed($payment, ['error' => $e->getMessage()])) {
+                return $this->alreadyCompletedResponse($paypalOrderId);
+            }
 
             return response()->json([
                 'error' => 'Zahlung konnte nicht abgeschlossen werden.',
@@ -243,14 +236,18 @@ class PayPalController extends Controller
                 return to_route('checkout.success', ['paypal_order_id' => $token]);
             }
 
-            return to_route('checkout.error');
+            return $this->hasCompleted($payment)
+                ? to_route('checkout.success', ['paypal_order_id' => $token])
+                : to_route('checkout.error');
         } catch (\Throwable $e) {
             Log::error('PayPal afterPayment capture failed', [
                 'token' => $token,
                 'error' => $e->getMessage(),
             ]);
 
-            return to_route('checkout.error');
+            return $this->hasCompleted($payment)
+                ? to_route('checkout.success', ['paypal_order_id' => $token])
+                : to_route('checkout.error');
         }
     }
 
@@ -302,6 +299,48 @@ class PayPalController extends Controller
         $this->cartService->clear();
 
         return true;
+    }
+
+    /**
+     * Mark a failed capture on payment and order without overwriting a
+     * payment that Return-URL, JS-Capture or webhook completed in the
+     * meantime (the losing capture request then fails at PayPal as "already
+     * captured"). Returns true if the payment is in fact COMPLETED.
+     *
+     * @param  array<string, mixed>  $responseData
+     */
+    private function markCaptureFailed(Payment $payment, array $responseData): bool
+    {
+        return DB::transaction(function () use ($payment, $responseData): bool {
+            /** @var Payment $current */
+            $current = Payment::query()->whereKey($payment->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($current->status === 'COMPLETED') {
+                return true;
+            }
+
+            $current->update(['status' => 'FAILED', 'response_data' => $responseData]);
+
+            Order::query()
+                ->whereKey($current->order_id)
+                ->whereNotIn('status', ['paid', 'refunded'])
+                ->update(['status' => 'failed']);
+
+            return false;
+        });
+    }
+
+    private function hasCompleted(Payment $payment): bool
+    {
+        return Payment::query()->whereKey($payment->getKey())->value('status') === 'COMPLETED';
+    }
+
+    private function alreadyCompletedResponse(string $paypalOrderId): JsonResponse
+    {
+        return response()->json([
+            'status' => 'COMPLETED',
+            'paypal_order_id' => $paypalOrderId,
+        ]);
     }
 
     /**
@@ -436,6 +475,22 @@ class PayPalController extends Controller
             return;
         }
 
+        // Teilerstattungen (z.B. direkt im PayPal-Dashboard) erledigen die
+        // Zahlung nicht: Payment und Order bleiben bezahlt, der Betreiber
+        // sieht den Vorgang im Log.
+        $refundedAmount = $resource['amount']['value'] ?? null;
+        $payment = Payment::query()->where('paypal_capture_id', $captureId)->first();
+
+        if ($payment && $refundedAmount !== null && number_format((float) $refundedAmount, 2, '.', '') !== number_format((float) $payment->amount, 2, '.', '')) {
+            Log::warning('PayPal webhook: partial refund ignored', [
+                'capture_id' => $captureId,
+                'refunded' => $refundedAmount,
+                'captured' => $payment->amount,
+            ]);
+
+            return;
+        }
+
         $this->markPaymentAndOrder($captureId, 'REFUNDED', 'refunded');
     }
 
@@ -447,6 +502,21 @@ class PayPalController extends Controller
         $captureId = $resource['id'] ?? null;
 
         if (! $captureId) {
+            return;
+        }
+
+        // Webhooks kommen unsortiert: ein spätes DENIED darf eine bereits
+        // bezahlte oder erstattete Order nicht auf failed zurückdrehen.
+        $order = Order::query()
+            ->whereHas('payments', fn ($q) => $q->where('paypal_capture_id', $captureId))
+            ->first();
+
+        if ($order && in_array($order->status, ['paid', 'refunded'], true)) {
+            Log::info('PayPal webhook: ignoring late denial for settled order', [
+                'capture_id' => $captureId,
+                'order_id' => $order->id,
+            ]);
+
             return;
         }
 
