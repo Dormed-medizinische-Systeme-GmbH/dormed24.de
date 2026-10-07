@@ -77,26 +77,4 @@ class AdminAccessTest extends TestCase
             ->get(route('admin.dashboard'))
             ->assertRedirect(route('admin.login'));
     }
-
-    public function test_hash_password_command_prints_env_line_with_bcrypt_hash(): void
-    {
-        $this->artisan('admin:hash-password')
-            ->expectsQuestion('Neues Admin-Passwort (mind. 12 Zeichen)', 'ein-sicheres-passwort')
-            ->expectsQuestion('Passwort wiederholen', 'ein-sicheres-passwort')
-            ->expectsOutputToContain("ADMIN_PASSWORD='$2y$")
-            ->assertSuccessful();
-    }
-
-    public function test_hash_password_command_rejects_short_and_mismatching_passwords(): void
-    {
-        $this->artisan('admin:hash-password')
-            ->expectsQuestion('Neues Admin-Passwort (mind. 12 Zeichen)', 'zu-kurz')
-            ->expectsOutputToContain('mindestens 12 Zeichen')
-            ->expectsQuestion('Neues Admin-Passwort (mind. 12 Zeichen)', 'ein-sicheres-passwort')
-            ->expectsQuestion('Passwort wiederholen', 'ein-anderes-passwort')
-            ->expectsOutputToContain('stimmen nicht überein')
-            ->expectsQuestion('Neues Admin-Passwort (mind. 12 Zeichen)', 'ein-sicheres-passwort')
-            ->expectsQuestion('Passwort wiederholen', 'ein-sicheres-passwort')
-            ->assertSuccessful();
-    }
 }

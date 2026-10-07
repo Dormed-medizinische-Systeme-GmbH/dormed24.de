@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Log;
 /**
  * User-Provider für den `admin`-Guard: genau ein Admin aus der Konfiguration
  * (config('auth.admin'), gespeist aus ADMIN_EMAIL / ADMIN_PASSWORD). ADMIN_PASSWORD muss ein bcrypt-Hash sein, erzeugt mit
- * `php artisan admin:hash-password`. Fehlt etwas, ist kein Admin-Login möglich.
+ * `Hash::make()` (z. B. per Tinker). Fehlt etwas, ist kein Admin-Login möglich.
  */
 final class EnvAdminUserProvider implements UserProvider
 {
@@ -89,7 +89,7 @@ final class EnvAdminUserProvider implements UserProvider
 
         // Klartext-Passwörter in der Env werden bewusst nicht akzeptiert.
         if (password_get_info($passwordHash)['algo'] === null) {
-            Log::warning('ADMIN_PASSWORD ist kein Passwort-Hash. Admin-Login ist deaktiviert, bis ein Hash per `php artisan admin:hash-password` gesetzt ist.');
+            Log::warning('ADMIN_PASSWORD ist kein Passwort-Hash. Admin-Login ist deaktiviert, bis dort ein bcrypt-Hash steht.');
 
             return null;
         }
