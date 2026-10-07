@@ -30,14 +30,6 @@ lesen beide einen gefüllten Warenkorb und legen zwei Orders an. Der
 Hold-to-confirm-Button macht das unwahrscheinlich. Abhilfe bei Bedarf:
 `Cache::lock` um den Submit oder ein Idempotency-Key aus der Session.
 
-### Bewertungen wieder freischalten, bestellbasiert (V1 #9 → V3 S-1)
-
-Route `POST /products/{product}/ratings` und das Formular auf der Produktseite
-sind seit Juli bewusst deaktiviert (Spam-Fläche). Beides soll gemeinsam
-zurückkommen, sobald Bewertungen an eine Bestellung gebunden sind.
-`RatingController` und `StoreRatingRequest` sind noch da, die zwei
-Submission-Tests in `RatingTest` sind `markTestSkipped`.
-
 ## 🔍 SEO
 
 ### Produkt-Cover werden unskaliert ausgeliefert (V4 SEO-3, zurückgestellt)

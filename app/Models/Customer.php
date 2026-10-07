@@ -54,6 +54,40 @@ class Customer extends Authenticatable implements MustVerifyEmail, PasskeyUser
     }
 
     /**
+     * @return HasMany<Rating, $this>
+     */
+    public function ratings(): HasMany
+    {
+        return $this->hasMany(Rating::class);
+    }
+
+    /**
+     * Jüngste bezahlte Bestellung, die das Produkt enthält. Nur sie
+     * berechtigt zu einer Bewertung: offene Rechnungen, fehlgeschlagene,
+     * stornierte und erstattete Bestellungen zählen nicht.
+     */
+    public function paidOrderContaining(Product $product): ?Order
+    {
+        return $this->orders()
+            ->where('status', 'paid')
+            ->whereHas('items', fn ($query) => $query->where('product_id', $product->id))
+            ->first();
+    }
+
+    public function hasRated(Product $product): bool
+    {
+        return $this->ratings()->where('product_id', $product->id)->exists();
+    }
+
+    /**
+     * Gekauft und bezahlt, aber noch nicht bewertet.
+     */
+    public function canRate(Product $product): bool
+    {
+        return ! $this->hasRated($product) && $this->paidOrderContaining($product) !== null;
+    }
+
+    /**
      * The customer's default shipping address (type shipping or both).
      * Shared by checkout prefill and the address settings page.
      */

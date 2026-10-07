@@ -1,15 +1,18 @@
 <script lang="ts">
     import AppHead from '@/components/AppHead.svelte';
     import Heading from '@/components/Heading.svelte';
+    import RateProductButton from '@/components/RateProductButton.svelte';
     import { formatPrice } from '@/lib/currency';
     import { orderStatusBadgeClass, orderStatusLabel } from '@/lib/orderStatus';
 
     type OrderItem = {
         id: number;
+        product_id: number | null;
         product_name: string;
         unit_price: string;
         quantity: number;
         image_url: string | null;
+        rating: 'rateable' | 'rated' | null;
     };
 
     type AddressSnapshot = Record<string, string> | null;
@@ -138,7 +141,7 @@
     <div class="overflow-hidden rounded-3xl border bg-white shadow-sm">
         {#each order.items as item (item.id)}
             <div
-                class="flex flex-col gap-4 border-b px-5 py-5 last:border-b-0 sm:flex-row sm:items-center sm:justify-between"
+                class="flex flex-col gap-4 border-b px-5 py-5 last:border-b-0 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
             >
                 <div class="flex items-start gap-4">
                     <div
@@ -175,6 +178,16 @@
                         (Number(item.unit_price) * item.quantity).toFixed(2),
                     )}*
                 </div>
+
+                {#if item.product_id && item.rating}
+                    <div class="w-full sm:pl-20">
+                        <RateProductButton
+                            productId={item.product_id}
+                            productName={item.product_name}
+                            rating={item.rating}
+                        />
+                    </div>
+                {/if}
             </div>
         {/each}
     </div>

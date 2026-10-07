@@ -12,6 +12,7 @@
     import UserCog from '@lucide/svelte/icons/user-cog';
     import X from '@lucide/svelte/icons/x';
     import AddressForm from '@/components/AddressForm.svelte';
+    import RateProductButton from '@/components/RateProductButton.svelte';
     import { Button } from '@/components/ui/button';
     import { Checkbox } from '@/components/ui/checkbox';
     import {
@@ -57,10 +58,12 @@
         billing_address: AddressSnapshot;
         items: {
             id: number;
+            product_id: number | null;
             product_name: string;
             unit_price: string;
             quantity: number;
             image_url: string | null;
+            rating: 'rateable' | 'rated' | null;
         }[];
         summary: {
             subtotal: string;
@@ -496,7 +499,7 @@
                                     >
                                         {#each selectedOrder.items as item (item.id)}
                                             <div
-                                                class="flex items-center gap-3 border-b px-4 py-3 last:border-b-0"
+                                                class="flex flex-wrap items-center gap-3 border-b px-4 py-3 last:border-b-0"
                                             >
                                                 <div
                                                     class="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded bg-gray-100"
@@ -538,6 +541,15 @@
                                                         ).toFixed(2),
                                                     )}*
                                                 </span>
+                                                {#if item.product_id && item.rating}
+                                                    <div class="w-full pl-13">
+                                                        <RateProductButton
+                                                            productId={item.product_id}
+                                                            productName={item.product_name}
+                                                            rating={item.rating}
+                                                        />
+                                                    </div>
+                                                {/if}
                                             </div>
                                         {/each}
                                     </div>
