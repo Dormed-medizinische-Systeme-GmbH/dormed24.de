@@ -603,7 +603,7 @@ class PayPalController extends Controller
             return;
         }
 
-        $this->markPaymentAndOrder($captureId, 'REFUNDED', 'refunded');
+        $this->setStatusByCaptureId($captureId, 'REFUNDED', 'refunded');
     }
 
     /**
@@ -634,7 +634,7 @@ class PayPalController extends Controller
             return;
         }
 
-        $this->markPaymentAndOrder($captureId, 'FAILED', 'failed');
+        $this->setStatusByCaptureId($captureId, 'FAILED', 'failed');
     }
 
     /**
@@ -675,14 +675,15 @@ class PayPalController extends Controller
 
         Log::warning('PayPal webhook: capture reversed by PayPal', ['capture_id' => $captureId]);
 
-        $this->markPaymentAndOrder($captureId, 'REVERSED', 'refunded');
+        $this->setStatusByCaptureId($captureId, 'REVERSED', 'refunded');
     }
 
     /**
-     * Update payment and its order together so webhook-driven status changes
-     * (refund/denial) stay consistent with the admin refund flow.
+     * Setzt den Status der Zahlung zur Capture und den ihrer Bestellung in
+     * einem Schritt (Erstattung, Ablehnung, Rückbuchung per Webhook). Ob der
+     * Übergang erlaubt ist (Reihenfolge-Schutz), prüfen die Aufrufer.
      */
-    private function markPaymentAndOrder(string $captureId, string $paymentStatus, string $orderStatus): void
+    private function setStatusByCaptureId(string $captureId, string $paymentStatus, string $orderStatus): void
     {
         /** @var Payment|null $payment */
         $payment = Payment::query()
@@ -696,8 +697,10 @@ class PayPalController extends Controller
             return;
         }
 
-        $payment->update(['status' => $paymentStatus]);
-        $payment->order?->update(['status' => $orderStatus]);
+        DB::transaction(function () use ($payment, $paymentStatus, $orderStatus): void {
+            $payment->update(['status' => $paymentStatus]);
+            $payment->order?->update(['status' => $orderStatus]);
+        });
     }
 
     /**

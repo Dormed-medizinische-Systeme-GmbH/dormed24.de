@@ -87,9 +87,6 @@ Abdeckung laut CI-Lauf von PR #21: **89,7 %** von `app/`, 423 PHP-Tests, dazu
 - **Unit-Tests für `ProductFilters`:** `ProductSort`, `AddressRules` und
   `EnvAdmin` haben Unit-Tests, `Money` ist in `CartValueObjectsTest` abgedeckt.
   `ProductFilters` läuft nur über die Feature-Tests der Produktliste.
-- **`markPaymentAndOrder()`** in `PayPalController`: Der Name sagt nicht, was
-  die Methode tut (Webhook-Status auf Zahlung und Bestellung übertragen, mit
-  Reihenfolge-Schutz).
 - **Fortify-Tests** skippen sich, wenn ein Feature in `config/fortify.php`
   fehlt. Aktuell sind alle aktiv; wird eines abgeschaltet, fällt die Abdeckung
   still weg.
