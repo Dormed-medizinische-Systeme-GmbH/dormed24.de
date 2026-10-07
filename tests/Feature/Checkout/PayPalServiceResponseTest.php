@@ -5,6 +5,7 @@ namespace Tests\Feature\Checkout;
 use App\Services\PayPalClientFactory;
 use App\Services\PayPalService;
 use Srmklive\PayPal\Services\PayPal;
+use Tests\Support\PayPalFixtures;
 use Tests\TestCase;
 
 /**
@@ -57,11 +58,11 @@ class PayPalServiceResponseTest extends TestCase
 
     public function test_array_response_is_returned_unchanged(): void
     {
-        self::$captureResponse = ['id' => 'ORDER-1', 'status' => 'COMPLETED'];
+        self::$captureResponse = PayPalFixtures::body('orders/capture-completed');
 
         $this->assertSame(
-            ['id' => 'ORDER-1', 'status' => 'COMPLETED'],
-            app(PayPalService::class)->captureOrder('ORDER-1'),
+            PayPalFixtures::body('orders/capture-completed'),
+            app(PayPalService::class)->captureOrder('5R197099C6919743A'),
         );
     }
 
@@ -79,10 +80,8 @@ class PayPalServiceResponseTest extends TestCase
     {
         $service = app(PayPalService::class);
 
-        $this->assertSame('CAPTURE-9', $service->getCaptureIdFromOrder([
-            'purchase_units' => [['payments' => ['captures' => [['id' => 'CAPTURE-9']]]]],
-        ]));
-        $this->assertNull($service->getCaptureIdFromOrder(['status' => 'APPROVED']));
+        $this->assertSame('5XV36579Y29910400', $service->getCaptureIdFromOrder(PayPalFixtures::body('orders/capture-completed')));
+        $this->assertNull($service->getCaptureIdFromOrder(PayPalFixtures::body('orders/create')));
         $this->assertNull($service->getCaptureIdFromOrder([
             'purchase_units' => [['payments' => ['captures' => [['id' => 123]]]]],
         ]));

@@ -1,0 +1,27 @@
+{
+    "_note": "Echte Sandbox-Antwort (Staging, 07.10.2026): Erstattung mit Betrag 0,00.",
+    "spec": "payments_payment_v2.json",
+    "method": "post",
+    "path": "/v2/payments/captures/{capture_id}/refund",
+    "status": 422,
+    "body": {
+        "name": "UNPROCESSABLE_ENTITY",
+        "message": "The requested action could not be performed, semantically incorrect, or failed business validation.",
+        "debug_id": "f2250072182fb",
+        "details": [
+            {
+                "issue": "CANNOT_BE_ZERO_OR_NEGATIVE",
+                "field": "/amount/value",
+                "value": "0.00",
+                "description": "The value of the field should be greater than zero.",
+                "location": "body"
+            }
+        ],
+        "links": [
+            {
+                "href": "https://developer.paypal.com/docs/api/payments/v2/#error-CANNOT_BE_ZERO_OR_NEGATIVE",
+                "rel": "information_link"
+            }
+        ]
+    }
+}

@@ -1,0 +1,47 @@
+{
+    "_note": "Resource von PAYMENT.CAPTURE.DENIED.",
+    "spec": "payments_payment_v2.json",
+    "method": "get",
+    "path": "/v2/payments/captures/{capture_id}",
+    "status": 200,
+    "body": {
+        "id": "5XV36579Y29910400",
+        "status": "DECLINED",
+        "amount": {
+            "currency_code": "EUR",
+            "value": "4390.00"
+        },
+        "final_capture": true,
+        "seller_protection": {
+            "status": "ELIGIBLE",
+            "dispute_categories": [
+                "ITEM_NOT_RECEIVED",
+                "UNAUTHORIZED_TRANSACTION"
+            ]
+        },
+        "links": [
+            {
+                "href": "https://api.sandbox.paypal.com/v2/payments/captures/5XV36579Y29910400",
+                "rel": "self",
+                "method": "GET"
+            },
+            {
+                "href": "https://api.sandbox.paypal.com/v2/payments/captures/5XV36579Y29910400/refund",
+                "rel": "refund",
+                "method": "POST"
+            },
+            {
+                "href": "https://api.sandbox.paypal.com/v2/checkout/orders/5R197099C6919743A",
+                "rel": "up",
+                "method": "GET"
+            }
+        ],
+        "create_time": "2026-10-07T06:44:36Z",
+        "update_time": "2026-10-07T06:44:36Z",
+        "supplementary_data": {
+            "related_ids": {
+                "order_id": "5R197099C6919743A"
+            }
+        }
+    }
+}

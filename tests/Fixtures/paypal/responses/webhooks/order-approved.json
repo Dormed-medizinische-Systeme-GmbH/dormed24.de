@@ -1,0 +1,45 @@
+{
+    "_note": "Resource von CHECKOUT.ORDER.APPROVED (Order-Objekt).",
+    "spec": "checkout_orders_v2.json",
+    "method": "get",
+    "path": "/v2/checkout/orders/{id}",
+    "status": 200,
+    "body": {
+        "id": "5R197099C6919743A",
+        "status": "APPROVED",
+        "intent": "CAPTURE",
+        "purchase_units": [
+            {
+                "reference_id": "default",
+                "amount": {
+                    "currency_code": "EUR",
+                    "value": "4390.00"
+                }
+            }
+        ],
+        "payer": {
+            "name": {
+                "given_name": "John",
+                "surname": "Doe"
+            },
+            "email_address": "sb-3xdck39855217@personal.example.com",
+            "payer_id": "2TNVE2PULBM66",
+            "address": {
+                "country_code": "DE"
+            }
+        },
+        "create_time": "2026-10-07T06:44:02Z",
+        "links": [
+            {
+                "href": "https://api.sandbox.paypal.com/v2/checkout/orders/5R197099C6919743A",
+                "rel": "self",
+                "method": "GET"
+            },
+            {
+                "href": "https://api.sandbox.paypal.com/v2/checkout/orders/5R197099C6919743A/capture",
+                "rel": "capture",
+                "method": "POST"
+            }
+        ]
+    }
+}

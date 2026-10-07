@@ -10,6 +10,7 @@ use App\Services\PayPalService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\Support\PayPalFixtures;
 use Tests\TestCase;
 
 class PayPalWebhookTest extends TestCase
@@ -23,15 +24,41 @@ class PayPalWebhookTest extends TestCase
         });
     }
 
+    /**
+     * PAYMENT.CAPTURE.REFUNDED liefert die Refund-Resource: "id" ist die
+     * Refund-ID, die Capture-ID steht im up-Link (Fixture: links[1]).
+     *
+     * @return array<string, mixed>
+     */
+    private function refundEvent(string $captureId, string $refundedAmount): array
+    {
+        return PayPalFixtures::webhookEvent('PAYMENT.CAPTURE.REFUNDED', 'webhooks/refund', [
+            'amount' => ['value' => $refundedAmount],
+            'links' => [1 => ['href' => "https://api.sandbox.paypal.com/v2/payments/captures/{$captureId}"]],
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $overrides
+     * @return array<string, mixed>
+     */
+    private function captureCompletedEvent(string $captureId, string $amount, array $overrides = []): array
+    {
+        return PayPalFixtures::webhookEvent('PAYMENT.CAPTURE.COMPLETED', 'webhooks/capture', array_replace_recursive([
+            'id' => $captureId,
+            'amount' => ['value' => $amount],
+            'seller_receivable_breakdown' => ['gross_amount' => ['value' => $amount]],
+        ], $overrides));
+    }
+
     public function test_webhook_rejects_unverified_requests(): void
     {
         $this->mock(PayPalService::class, function ($mock): void {
             $mock->shouldReceive('verifyWebhook')->once()->andReturn(false);
         });
 
-        $this->postJson(route('paypal.webhook'), [
-            'event_type' => 'PAYMENT.CAPTURE.COMPLETED',
-        ])->assertStatus(400);
+        $this->postJson(route('paypal.webhook'), PayPalFixtures::webhookEvent('PAYMENT.CAPTURE.COMPLETED', 'webhooks/capture'))
+            ->assertStatus(400);
     }
 
     public function test_refund_webhook_updates_payment_and_order(): void
@@ -41,18 +68,8 @@ class PayPalWebhookTest extends TestCase
 
         $this->withVerifiedWebhook();
 
-        // PAYMENT.CAPTURE.REFUNDED carries a refund resource: "id" is the
-        // refund id, the capture id sits in the "up" link.
-        $this->postJson(route('paypal.webhook'), [
-            'event_type' => 'PAYMENT.CAPTURE.REFUNDED',
-            'resource' => [
-                'id' => 'REFUND123',
-                'links' => [
-                    ['rel' => 'self', 'href' => 'https://api.paypal.com/v2/payments/refunds/REFUND123'],
-                    ['rel' => 'up', 'href' => "https://api.paypal.com/v2/payments/captures/{$payment->paypal_capture_id}"],
-                ],
-            ],
-        ])->assertOk();
+        $this->postJson(route('paypal.webhook'), $this->refundEvent($payment->paypal_capture_id, $payment->amount))
+            ->assertOk();
 
         $this->assertSame('REFUNDED', $payment->fresh()->status);
         $this->assertSame('refunded', $order->fresh()->status);
@@ -65,13 +82,10 @@ class PayPalWebhookTest extends TestCase
 
         $this->withVerifiedWebhook();
 
-        // PAYMENT.CAPTURE.DENIED carries the capture itself.
-        $this->postJson(route('paypal.webhook'), [
-            'event_type' => 'PAYMENT.CAPTURE.DENIED',
-            'resource' => [
-                'id' => $payment->paypal_capture_id,
-            ],
-        ])->assertOk();
+        // PAYMENT.CAPTURE.DENIED liefert die Capture selbst.
+        $this->postJson(route('paypal.webhook'), PayPalFixtures::webhookEvent('PAYMENT.CAPTURE.DENIED', 'webhooks/capture-denied', [
+            'id' => $payment->paypal_capture_id,
+        ]))->assertOk();
 
         $this->assertSame('FAILED', $payment->fresh()->status);
         $this->assertSame('failed', $order->fresh()->status);
@@ -84,15 +98,8 @@ class PayPalWebhookTest extends TestCase
 
         $this->withVerifiedWebhook();
 
-        $this->postJson(route('paypal.webhook'), [
-            'event_type' => 'PAYMENT.CAPTURE.REFUNDED',
-            'resource' => [
-                'id' => 'REFUND123',
-                'links' => [
-                    ['rel' => 'up', 'href' => 'https://api.paypal.com/v2/payments/captures/UNKNOWNCAPTURE'],
-                ],
-            ],
-        ])->assertOk();
+        $this->postJson(route('paypal.webhook'), $this->refundEvent('UNKNOWNCAPTURE', $payment->amount))
+            ->assertOk();
 
         $this->assertSame('COMPLETED', $payment->fresh()->status);
         $this->assertSame('paid', $order->fresh()->status);
@@ -109,12 +116,8 @@ class PayPalWebhookTest extends TestCase
 
         // PayPal stellt Webhooks at-least-once und unsortiert zu: ein
         // CAPTURE.COMPLETED kann nach dem Refund (erneut) eintreffen.
-        $this->postJson(route('paypal.webhook'), [
-            'event_type' => 'PAYMENT.CAPTURE.COMPLETED',
-            'resource' => [
-                'id' => $payment->paypal_capture_id,
-            ],
-        ])->assertOk();
+        $this->postJson(route('paypal.webhook'), $this->captureCompletedEvent($payment->paypal_capture_id, $order->total_amount))
+            ->assertOk();
 
         $this->assertSame('REFUNDED', $payment->fresh()->status);
         $this->assertSame('refunded', $order->fresh()->status);
@@ -132,13 +135,8 @@ class PayPalWebhookTest extends TestCase
 
         $this->withVerifiedWebhook();
 
-        $this->postJson(route('paypal.webhook'), [
-            'event_type' => 'PAYMENT.CAPTURE.COMPLETED',
-            'resource' => [
-                'id' => 'CAPTURE555',
-                'amount' => ['value' => (string) $order->total_amount],
-            ],
-        ])->assertOk();
+        $this->postJson(route('paypal.webhook'), $this->captureCompletedEvent('CAPTURE555', $order->total_amount))
+            ->assertOk();
 
         $this->assertSame('COMPLETED', $payment->fresh()->status);
         $this->assertSame('paid', $order->fresh()->status);
@@ -156,14 +154,9 @@ class PayPalWebhookTest extends TestCase
 
         $this->withVerifiedWebhook();
 
-        $this->postJson(route('paypal.webhook'), [
-            'event_type' => 'PAYMENT.CAPTURE.COMPLETED',
-            'resource' => [
-                'id' => 'CAPTURE-WEBHOOK-AMOUNT',
-                'amount' => ['value' => '4390.00', 'currency_code' => 'EUR'],
-                'seller_receivable_breakdown' => ['paypal_fee' => ['value' => '153.99', 'currency_code' => 'EUR']],
-            ],
-        ])->assertOk();
+        // Echte Capture-Resource: 4.390,00 €, Gebühr 153,99 €.
+        $this->postJson(route('paypal.webhook'), $this->captureCompletedEvent('CAPTURE-WEBHOOK-AMOUNT', '4390.00'))
+            ->assertOk();
 
         $payment->refresh();
         $this->assertSame('COMPLETED', $payment->status);
@@ -182,16 +175,8 @@ class PayPalWebhookTest extends TestCase
 
         $this->withVerifiedWebhook();
 
-        $this->postJson(route('paypal.webhook'), [
-            'event_type' => 'PAYMENT.CAPTURE.REFUNDED',
-            'resource' => [
-                'id' => 'REFUND-LEGACY',
-                'amount' => ['value' => '4390.00', 'currency_code' => 'EUR'],
-                'links' => [
-                    ['rel' => 'up', 'href' => "https://api.paypal.com/v2/payments/captures/{$payment->paypal_capture_id}"],
-                ],
-            ],
-        ])->assertOk();
+        $this->postJson(route('paypal.webhook'), $this->refundEvent($payment->paypal_capture_id, '4390.00'))
+            ->assertOk();
 
         $this->assertSame('REFUNDED', $payment->fresh()->status);
         $this->assertSame('refunded', $order->fresh()->status);
@@ -211,13 +196,8 @@ class PayPalWebhookTest extends TestCase
 
         $this->withVerifiedWebhook();
 
-        $this->postJson(route('paypal.webhook'), [
-            'event_type' => 'PAYMENT.CAPTURE.COMPLETED',
-            'resource' => [
-                'id' => 'CAPTURE777',
-                'amount' => ['value' => '1.00'],
-            ],
-        ])->assertOk();
+        $this->postJson(route('paypal.webhook'), $this->captureCompletedEvent('CAPTURE777', '1.00'))
+            ->assertOk();
 
         $this->assertSame('APPROVED', $payment->fresh()->status);
         $this->assertSame('pending', $order->fresh()->status);
@@ -229,10 +209,9 @@ class PayPalWebhookTest extends TestCase
 
         $this->withVerifiedWebhook();
 
-        $this->postJson(route('paypal.webhook'), [
-            'event_type' => 'CHECKOUT.ORDER.APPROVED',
-            'resource' => ['id' => 'ORDER-APPROVE-1'],
-        ])->assertOk();
+        $this->postJson(route('paypal.webhook'), PayPalFixtures::webhookEvent('CHECKOUT.ORDER.APPROVED', 'webhooks/order-approved', [
+            'id' => 'ORDER-APPROVE-1',
+        ]))->assertOk();
 
         $this->assertSame('APPROVED', $payment->fresh()->status);
     }
@@ -243,10 +222,9 @@ class PayPalWebhookTest extends TestCase
 
         $this->withVerifiedWebhook();
 
-        $this->postJson(route('paypal.webhook'), [
-            'event_type' => 'CHECKOUT.ORDER.APPROVED',
-            'resource' => ['id' => 'ORDER-APPROVE-2'],
-        ])->assertOk();
+        $this->postJson(route('paypal.webhook'), PayPalFixtures::webhookEvent('CHECKOUT.ORDER.APPROVED', 'webhooks/order-approved', [
+            'id' => 'ORDER-APPROVE-2',
+        ]))->assertOk();
 
         $this->assertSame('COMPLETED', $payment->fresh()->status);
     }
@@ -257,7 +235,7 @@ class PayPalWebhookTest extends TestCase
 
         $order = Order::factory()->create(['status' => 'pending', 'payment_method' => 'paypal']);
         $payment = Payment::factory()->created()->for($order)->create([
-            'paypal_order_id' => 'ORDER-RELATED-1',
+            'paypal_order_id' => 'ORDERRELATED1',
             'amount' => $order->total_amount,
         ]);
 
@@ -265,14 +243,9 @@ class PayPalWebhookTest extends TestCase
 
         // Die Capture-ID ist noch nicht gespeichert: Zuordnung nur über
         // supplementary_data.related_ids.order_id.
-        $this->postJson(route('paypal.webhook'), [
-            'event_type' => 'PAYMENT.CAPTURE.COMPLETED',
-            'resource' => [
-                'id' => 'CAPTURE-RELATED-1',
-                'amount' => ['value' => (string) $order->total_amount],
-                'supplementary_data' => ['related_ids' => ['order_id' => 'ORDER-RELATED-1']],
-            ],
-        ])->assertOk();
+        $this->postJson(route('paypal.webhook'), $this->captureCompletedEvent('CAPTURE-RELATED-1', $order->total_amount, [
+            'supplementary_data' => ['related_ids' => ['order_id' => 'ORDERRELATED1']],
+        ]))->assertOk();
 
         $payment->refresh();
         $this->assertSame('COMPLETED', $payment->status);
@@ -289,13 +262,9 @@ class PayPalWebhookTest extends TestCase
 
         $this->withVerifiedWebhook();
 
-        $this->postJson(route('paypal.webhook'), [
-            'event_type' => 'PAYMENT.CAPTURE.COMPLETED',
-            'resource' => [
-                'id' => 'CAPTURE-UNKNOWN',
-                'supplementary_data' => ['related_ids' => ['order_id' => 'ORDER-UNKNOWN']],
-            ],
-        ])->assertOk();
+        $this->postJson(route('paypal.webhook'), $this->captureCompletedEvent('CAPTURE-UNKNOWN', $order->total_amount, [
+            'supplementary_data' => ['related_ids' => ['order_id' => 'ORDERUNKNOWN']],
+        ]))->assertOk();
 
         $this->assertSame('CREATED', $payment->fresh()->status);
         $this->assertSame('pending', $order->fresh()->status);
@@ -318,13 +287,7 @@ class PayPalWebhookTest extends TestCase
             $mock->shouldReceive('verifyWebhook')->twice()->andReturn(true);
         });
 
-        $payload = [
-            'event_type' => 'PAYMENT.CAPTURE.COMPLETED',
-            'resource' => [
-                'id' => 'CAPTURE-TWICE',
-                'amount' => ['value' => (string) $order->total_amount],
-            ],
-        ];
+        $payload = $this->captureCompletedEvent('CAPTURE-TWICE', $order->total_amount);
 
         $this->postJson(route('paypal.webhook'), $payload)->assertOk();
         $this->postJson(route('paypal.webhook'), $payload)->assertOk();
@@ -341,6 +304,7 @@ class PayPalWebhookTest extends TestCase
 
         $this->withVerifiedWebhook();
 
+        // Bewusst kein vollständiges PayPal-Event: Nur der Typ zählt.
         $this->postJson(route('paypal.webhook'), [
             'event_type' => 'CUSTOMER.DISPUTE.CREATED',
             'resource' => ['id' => $payment->paypal_capture_id],
@@ -371,6 +335,7 @@ class PayPalWebhookTest extends TestCase
 
         $this->withVerifiedWebhook();
 
+        // Bewusst kaputtes Event (Resource ohne id), keine PayPal-Fixture.
         $this->postJson(route('paypal.webhook'), [
             'event_type' => $eventType,
             'resource' => [],
@@ -402,10 +367,9 @@ class PayPalWebhookTest extends TestCase
 
         // PayPal liefert unsortiert: ein DENIED zu einer längst bezahlten
         // (oder erstatteten) Capture darf den Abschluss nicht zurückdrehen.
-        $this->postJson(route('paypal.webhook'), [
-            'event_type' => 'PAYMENT.CAPTURE.DENIED',
-            'resource' => ['id' => $payment->paypal_capture_id],
-        ])->assertOk();
+        $this->postJson(route('paypal.webhook'), PayPalFixtures::webhookEvent('PAYMENT.CAPTURE.DENIED', 'webhooks/capture-denied', [
+            'id' => $payment->paypal_capture_id,
+        ]))->assertOk();
 
         $this->assertSame($paymentStatus, $payment->fresh()->status);
         $this->assertSame($orderStatus, $order->fresh()->status);
@@ -418,16 +382,8 @@ class PayPalWebhookTest extends TestCase
 
         $this->withVerifiedWebhook();
 
-        $this->postJson(route('paypal.webhook'), [
-            'event_type' => 'PAYMENT.CAPTURE.REFUNDED',
-            'resource' => [
-                'id' => 'REFUND-PARTIAL',
-                'amount' => ['value' => '10.00', 'currency_code' => 'EUR'],
-                'links' => [
-                    ['rel' => 'up', 'href' => "https://api.paypal.com/v2/payments/captures/{$payment->paypal_capture_id}"],
-                ],
-            ],
-        ])->assertOk();
+        $this->postJson(route('paypal.webhook'), $this->refundEvent($payment->paypal_capture_id, '10.00'))
+            ->assertOk();
 
         $this->assertSame('COMPLETED', $payment->fresh()->status);
         $this->assertSame('paid', $order->fresh()->status);
@@ -440,16 +396,8 @@ class PayPalWebhookTest extends TestCase
 
         $this->withVerifiedWebhook();
 
-        $this->postJson(route('paypal.webhook'), [
-            'event_type' => 'PAYMENT.CAPTURE.REFUNDED',
-            'resource' => [
-                'id' => 'REFUND-FULL',
-                'amount' => ['value' => '100.00', 'currency_code' => 'EUR'],
-                'links' => [
-                    ['rel' => 'up', 'href' => "https://api.paypal.com/v2/payments/captures/{$payment->paypal_capture_id}"],
-                ],
-            ],
-        ])->assertOk();
+        $this->postJson(route('paypal.webhook'), $this->refundEvent($payment->paypal_capture_id, '100.00'))
+            ->assertOk();
 
         $this->assertSame('REFUNDED', $payment->fresh()->status);
         $this->assertSame('refunded', $order->fresh()->status);

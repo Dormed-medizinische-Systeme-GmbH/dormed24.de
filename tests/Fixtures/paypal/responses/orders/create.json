@@ -1,0 +1,33 @@
+{
+    "_note": "Echte Sandbox-Antwort (Staging, 07.10.2026). Prefer: return=minimal ist Default: nur id, status, links, KEIN Betrag.",
+    "spec": "checkout_orders_v2.json",
+    "method": "post",
+    "path": "/v2/checkout/orders",
+    "status": 201,
+    "body": {
+        "id": "5R197099C6919743A",
+        "status": "CREATED",
+        "links": [
+            {
+                "href": "https://api.sandbox.paypal.com/v2/checkout/orders/5R197099C6919743A",
+                "rel": "self",
+                "method": "GET"
+            },
+            {
+                "href": "https://www.sandbox.paypal.com/checkoutnow?token=5R197099C6919743A",
+                "rel": "approve",
+                "method": "GET"
+            },
+            {
+                "href": "https://api.sandbox.paypal.com/v2/checkout/orders/5R197099C6919743A",
+                "rel": "update",
+                "method": "PATCH"
+            },
+            {
+                "href": "https://api.sandbox.paypal.com/v2/checkout/orders/5R197099C6919743A/capture",
+                "rel": "capture",
+                "method": "POST"
+            }
+        ]
+    }
+}
