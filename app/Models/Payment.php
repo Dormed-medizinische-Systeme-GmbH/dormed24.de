@@ -50,6 +50,17 @@ class Payment extends Model
     }
 
     /**
+     * Eingezogener Betrag. Zahlungen von vor Oktober 2026 haben amount = 0,
+     * weil er beim Capture nicht nachgetragen wurde. Dann gilt der
+     * Bestellbetrag: Eine bezahlte Order hat ihn nachweislich eingezogen,
+     * sonst wäre sie am Betragsabgleich im Capture-Pfad gescheitert.
+     */
+    public function capturedAmount(): float
+    {
+        return (float) $this->amount > 0 ? (float) $this->amount : (float) $this->order?->total_amount;
+    }
+
+    /**
      * @return BelongsTo<Order, $this>
      */
     public function order(): BelongsTo

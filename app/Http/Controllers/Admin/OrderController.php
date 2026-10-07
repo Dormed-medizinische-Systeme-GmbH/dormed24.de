@@ -124,7 +124,7 @@ class OrderController extends Controller
         }
 
         try {
-            $response = $payPalService->refundOrder($payment->paypal_capture_id, (float) $payment->amount);
+            $response = $payPalService->refundOrder($payment->paypal_capture_id, $payment->capturedAmount());
 
             // Das SDK meldet API-Fehler als Array statt als Exception: ohne
             // Statusprüfung würde eine abgelehnte Erstattung als erfolgreich

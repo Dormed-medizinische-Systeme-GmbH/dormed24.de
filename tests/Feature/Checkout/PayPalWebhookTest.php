@@ -144,6 +144,59 @@ class PayPalWebhookTest extends TestCase
         $this->assertSame('paid', $order->fresh()->status);
     }
 
+    public function test_capture_completed_webhook_stores_captured_amount_and_fee(): void
+    {
+        $order = Order::factory()->create(['status' => 'pending', 'payment_method' => 'paypal', 'total_amount' => '4390.00']);
+        $payment = Payment::factory()->for($order)->create([
+            'status' => 'APPROVED',
+            'paypal_capture_id' => 'CAPTURE-WEBHOOK-AMOUNT',
+            'amount' => 0,
+            'fee' => null,
+        ]);
+
+        $this->withVerifiedWebhook();
+
+        $this->postJson(route('paypal.webhook'), [
+            'event_type' => 'PAYMENT.CAPTURE.COMPLETED',
+            'resource' => [
+                'id' => 'CAPTURE-WEBHOOK-AMOUNT',
+                'amount' => ['value' => '4390.00', 'currency_code' => 'EUR'],
+                'seller_receivable_breakdown' => ['paypal_fee' => ['value' => '153.99', 'currency_code' => 'EUR']],
+            ],
+        ])->assertOk();
+
+        $payment->refresh();
+        $this->assertSame('COMPLETED', $payment->status);
+        $this->assertEquals(4390.00, (float) $payment->amount);
+        $this->assertEquals(153.99, (float) $payment->fee);
+    }
+
+    /**
+     * Zahlungen von vor dem Betrags-Fix haben amount = 0. Eine volle
+     * Erstattung darf dann nicht als Teilerstattung ignoriert werden.
+     */
+    public function test_full_refund_webhook_is_applied_when_payment_amount_is_missing(): void
+    {
+        $order = Order::factory()->create(['status' => 'paid', 'payment_method' => 'paypal', 'total_amount' => '4390.00']);
+        $payment = Payment::factory()->completed()->for($order)->create(['amount' => 0]);
+
+        $this->withVerifiedWebhook();
+
+        $this->postJson(route('paypal.webhook'), [
+            'event_type' => 'PAYMENT.CAPTURE.REFUNDED',
+            'resource' => [
+                'id' => 'REFUND-LEGACY',
+                'amount' => ['value' => '4390.00', 'currency_code' => 'EUR'],
+                'links' => [
+                    ['rel' => 'up', 'href' => "https://api.paypal.com/v2/payments/captures/{$payment->paypal_capture_id}"],
+                ],
+            ],
+        ])->assertOk();
+
+        $this->assertSame('REFUNDED', $payment->fresh()->status);
+        $this->assertSame('refunded', $order->fresh()->status);
+    }
+
     public function test_capture_completed_webhook_rejects_amount_mismatch(): void
     {
         $order = Order::factory()->create([
