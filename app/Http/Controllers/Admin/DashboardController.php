@@ -21,6 +21,7 @@ class DashboardController extends Controller
         $from = Carbon::today()->subDays($days - 1)->startOfDay();
 
         $rows = Order::query()
+            ->toBase()
             ->select(
                 DB::raw('date(created_at) as date'),
                 DB::raw('COUNT(*) as orders'),
@@ -40,8 +41,8 @@ class DashboardController extends Controller
 
                 return [
                     'date' => $date,
-                    'orders' => (int) ($row?->orders ?? 0),
-                    'revenue' => (float) ($row?->revenue ?? 0),
+                    'orders' => (int) ($row->orders ?? 0),
+                    'revenue' => (float) ($row->revenue ?? 0),
                 ];
             });
 

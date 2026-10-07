@@ -148,7 +148,7 @@ class OrderManagementTest extends TestCase
         $this->mock(PayPalService::class, function ($mock) use ($payment): void {
             $mock->shouldReceive('refundOrder')
                 ->once()
-                ->with($payment->paypal_capture_id, 49.9)
+                ->with($payment->paypal_capture_id, 49.9, 'EUR')
                 ->andReturn(PayPalFixtures::sdkResponse('payments/refund-completed'));
         });
 
@@ -174,7 +174,7 @@ class OrderManagementTest extends TestCase
         $this->mock(PayPalService::class, function ($mock) use ($payment): void {
             $mock->shouldReceive('refundOrder')
                 ->once()
-                ->with($payment->paypal_capture_id, 4390.0)
+                ->with($payment->paypal_capture_id, 4390.0, 'EUR')
                 ->andReturn(PayPalFixtures::sdkResponse('payments/refund-completed'));
         });
 
@@ -264,5 +264,30 @@ class OrderManagementTest extends TestCase
         $this->postJson(route('admin.orders.refund', $payment->order))->assertRedirect(route('admin.login'));
 
         $this->assertSame('COMPLETED', $payment->fresh()->status);
+    }
+
+    public function test_captured_payment_with_mismatched_amount_can_be_refunded(): void
+    {
+        $order = Order::factory()->create(['status' => 'failed', 'payment_method' => 'paypal', 'total_amount' => '100.00']);
+        $payment = Payment::factory()->for($order)->create([
+            'status' => 'MISMATCH',
+            'paypal_capture_id' => 'CAPTURE-MISMATCH',
+            'amount' => '1.00',
+            'currency' => 'EUR',
+        ]);
+
+        $this->mock(PayPalService::class, function ($mock): void {
+            $mock->shouldReceive('refundOrder')
+                ->once()
+                ->with('CAPTURE-MISMATCH', 1.0, 'EUR')
+                ->andReturn(PayPalFixtures::sdkResponse('payments/refund-completed'));
+        });
+
+        $this->actingAsAdmin()
+            ->postJson(route('admin.orders.refund', $order))
+            ->assertOk();
+
+        $this->assertSame('REFUNDED', $payment->fresh()->status);
+        $this->assertSame('refunded', $order->fresh()->status);
     }
 }

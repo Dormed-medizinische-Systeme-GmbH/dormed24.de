@@ -58,6 +58,8 @@ class Address extends Model
 
     /**
      * Normiertes Address-Array für Order-Snapshots / PayPal.
+     *
+     * @return array<string, string|null>
      */
     public function toAddressArray(): array
     {

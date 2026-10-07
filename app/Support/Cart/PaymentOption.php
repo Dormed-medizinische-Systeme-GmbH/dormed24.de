@@ -22,6 +22,26 @@ final readonly class PaymentOption implements Arrayable
     ) {}
 
     /**
+     * Bezeichnungen der konfigurierten Zahlarten, nach ID.
+     *
+     * @return array<string, string>
+     */
+    public static function configuredLabels(): array
+    {
+        /** @var array<string, array{methods?: list<array{id: string, label: string}>}> $providers */
+        $providers = config('shop.cart.providers', []);
+        $labels = [];
+
+        foreach ($providers as $provider) {
+            foreach ($provider['methods'] ?? [] as $method) {
+                $labels[(string) $method['id']] = $method['label'];
+            }
+        }
+
+        return $labels;
+    }
+
+    /**
      * @return PaymentOptionArray
      */
     public function toArray(): array

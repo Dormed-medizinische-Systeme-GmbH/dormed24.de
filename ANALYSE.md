@@ -22,19 +22,6 @@ Ausgeliefert wird davon nichts (Build-Tooling bzw. tree-shaken). Trotzdem
 sollte man `npm audit fix` versuchen und den Rest beim nächsten Kit-Update
 mitnehmen.
 
-### composer audit: 20 Hinweise in 4 Paketen (neu, 07.10.2026)
-
-- `league/commonmark`: 12 (9 hoch), u. a. Umgehung von `DisallowedRawHtml`.
-  Relevant nur, wenn Markdown aus Nutzereingaben gerendert wird.
-- `guzzlehttp/guzzle`: 6 (1 hoch), u. a. Umgehung hostbasierter Prüfungen.
-  Guzzle nutzt der PayPal-Client.
-- `laravel/framework` (v13.17.0): 1 niedrig, XSS auf der Debug-Seite (nur mit
-  `APP_DEBUG=true`).
-- `league/flysystem`: 1 niedrig.
-
-Abhilfe: `composer update` der betroffenen Pakete, danach volle Suite.
-Abhängigkeitsänderung, braucht Freigabe.
-
 ## 🟡 Businesslogik
 
 ### Doppel-Submit kann zwei Rechnungs-Orders erzeugen (V4 B-4)
@@ -43,16 +30,6 @@ Abhängigkeitsänderung, braucht Freigabe.
 lesen beide einen gefüllten Warenkorb und legen zwei Orders an. Der
 Hold-to-confirm-Button macht das unwahrscheinlich. Abhilfe bei Bedarf:
 `Cache::lock` um den Submit oder ein Idempotency-Key aus der Session.
-
-### Offene PayPal-Befunde (Test-Review)
-
-- Währungsabgleich beim Capture: Betrag wird geprüft, Währung nicht.
-- Order wird `failed`, obwohl Geld eingezogen sein kann.
-- `cancelStalePendingPayPalOrders()` noch einmal prüfen.
-- Fehlende Webhook-Events: `PAYMENT.CAPTURE.PENDING`, `PAYMENT.CAPTURE.REVERSED`.
-- `createOrder`-Payload: `shipping_preference` fehlt, leere `address_line_2`
-  wird mitgeschickt.
-- Kein Idempotenz-Header (`PayPal-Request-Id`) beim Refund.
 
 ## 🔍 SEO
 
@@ -69,14 +46,12 @@ mobiles Datenvolumen.
 
 ## 🔵 Code und Doku
 
-### PHPStan-Baseline: Restbestand (aus V1 #18 / V4 Q-3)
+### PHPStan-Baseline: 2 Einträge, beide bewusst
 
-Die Baseline hat noch 30 Einträge (Juli: 98). Warenkorb (Cart-DTO) und
-PayPal (`asArray()`-Normalisierung, Array-Shapes) sind erledigt, die Commands
-entfernt. Der Rest verteilt sich mit 1 bis 5 Einträgen auf Form Requests,
-Controller, Models und Seeder. Die Einträge sind
-nicht einzeln geprüft. Im PayPal-Block steckte ein echter Fehler (Webhook-
-Prüfung, #18), deshalb lohnt ein Durchgang statt bloßem Ignorieren.
+Übrig sind nur die `$this->command?->`-Aufrufe in `ProductSeeder` und
+`RatingSeeder`. Laravel typisiert `$command` als nie null, beim direkten
+Aufruf eines Seeders (z. B. `ProductSeederTest`) ist es aber null. Die
+Null-Sicherung bleibt deshalb.
 
 ## 🚀 Betrieb / Launch
 
@@ -112,9 +87,6 @@ Abdeckung laut CI-Lauf von PR #21: **89,7 %** von `app/`, 423 PHP-Tests, dazu
 - **Unit-Tests für `ProductFilters`:** `ProductSort`, `AddressRules` und
   `EnvAdmin` haben Unit-Tests, `Money` ist in `CartValueObjectsTest` abgedeckt.
   `ProductFilters` läuft nur über die Feature-Tests der Produktliste.
-- **`markPaymentAndOrder()`** in `PayPalController`: Der Name sagt nicht, was
-  die Methode tut (Webhook-Status auf Zahlung und Bestellung übertragen, mit
-  Reihenfolge-Schutz).
 - **Fortify-Tests** skippen sich, wenn ein Feature in `config/fortify.php`
   fehlt. Aktuell sind alle aktiv; wird eines abgeschaltet, fällt die Abdeckung
   still weg.
@@ -142,6 +114,8 @@ Abdeckung laut CI-Lauf von PR #21: **89,7 %** von `app/`, 423 PHP-Tests, dazu
 - Detailseiten nicht verfügbarer Produkte bleiben online, die Sitemap listet
   alle Produkte.
 - Dashboard-Umsatz ohne `is_test`-Filter.
+- PayPal-Zahlungen in Prüfung (`PENDING`) zeigen dem Kunden einen Hinweis
+  statt der Erfolgsseite; die Bestätigung kommt per Webhook und Mail.
 - Rechnungs-Orders bleiben `pending`, ohne Auto-Cleanup. Verwaiste
   PayPal-Orders anderer Kunden bleiben stehen.
 - Inhaltliche Überschneidung `/informationen/zahlung` und

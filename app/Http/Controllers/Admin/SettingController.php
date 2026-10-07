@@ -88,9 +88,12 @@ class SettingController extends Controller
         }
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function loadSettings(): array
     {
-        $raw = Setting::all(['key', 'value'])->pluck('value', 'key');
+        $raw = Setting::query()->pluck('value', 'key');
 
         $settings = [
             'shop.name' => $raw->get('shop.name', ''),

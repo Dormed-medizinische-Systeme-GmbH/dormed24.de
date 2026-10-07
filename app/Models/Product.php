@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property list<array{label: string, value: string}>|null $technical_specs
  * @property string $price
  * @property bool $is_available
+ * @property float|string|null $ratings_avg_stars nur mit withAvg('ratings', 'stars') geladen
  */
 #[Fillable(['manufacturer_id', 'category_slug', 'specialties', 'name', 'description', 'technical_specs', 'price', 'is_available'])]
 class Product extends Model
@@ -99,6 +100,10 @@ class Product extends Model
         return $this->hasMany(OrderItem::class);
     }
 
+    /**
+     * @param  Builder<Product>  $query
+     * @return Builder<Product>
+     */
     public function scopeAvailable(Builder $query): Builder
     {
         return $query->where('is_available', true);

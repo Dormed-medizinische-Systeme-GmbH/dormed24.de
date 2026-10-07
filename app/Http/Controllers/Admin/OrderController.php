@@ -114,7 +114,9 @@ class OrderController extends Controller
     {
         /** @var Payment|null $payment */
         $payment = $order->payments()
-            ->where('status', 'COMPLETED')
+            // MISMATCH: eingezogen, aber Betrag/Währung weichen ab - das Geld
+            // muss zurück, die Bestellung wird nicht erfüllt.
+            ->whereIn('status', ['COMPLETED', 'MISMATCH'])
             ->whereNotNull('paypal_capture_id')
             ->latest()
             ->first();
@@ -124,7 +126,7 @@ class OrderController extends Controller
         }
 
         try {
-            $response = $payPalService->refundOrder($payment->paypal_capture_id, $payment->capturedAmount());
+            $response = $payPalService->refundOrder($payment->paypal_capture_id, $payment->capturedAmount(), $payment->currency ?: 'EUR');
 
             // Das SDK meldet API-Fehler als Array statt als Exception: ohne
             // Statusprüfung würde eine abgelehnte Erstattung als erfolgreich

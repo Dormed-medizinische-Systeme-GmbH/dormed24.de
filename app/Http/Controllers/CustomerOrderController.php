@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Support\Cart\PaymentOption;
 use App\Support\Orders\OrderManager;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -45,10 +46,7 @@ class CustomerOrderController extends Controller
         };
 
         $summary = $orderManager->summaryFromOrder($order);
-        $paymentLabels = collect(config('shop.cart.providers', []))
-            ->flatMap(fn (array $provider) => $provider['methods'] ?? [])
-            ->mapWithKeys(fn (array $method) => [$method['id'] => $method['label']])
-            ->all();
+        $paymentLabels = PaymentOption::configuredLabels();
 
         $payload = [
             'id' => $order->id,

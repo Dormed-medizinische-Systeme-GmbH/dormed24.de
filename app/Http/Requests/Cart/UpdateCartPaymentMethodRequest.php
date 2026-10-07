@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Cart;
 
+use App\Support\Cart\PaymentOption;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -12,18 +13,16 @@ class UpdateCartPaymentMethodRequest extends FormRequest
         return true;
     }
 
+    /**
+     * @return array<string, array<int, mixed>>
+     */
     public function rules(): array
     {
         return [
             'payment_method' => [
                 'required',
                 'string',
-                Rule::in(
-                    collect(config('shop.cart.providers', []))
-                        ->flatMap(fn (array $provider) => $provider['methods'] ?? [])
-                        ->pluck('id')
-                        ->all(),
-                ),
+                Rule::in(array_keys(PaymentOption::configuredLabels())),
             ],
         ];
     }

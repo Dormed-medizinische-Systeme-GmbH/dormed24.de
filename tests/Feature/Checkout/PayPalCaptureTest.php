@@ -129,8 +129,33 @@ class PayPalCaptureTest extends TestCase
             ->assertStatus(422)
             ->assertJson(['status' => 'FAILED']);
 
-        $this->assertSame('FAILED', $payment->fresh()->status);
+        // Geld ist eingezogen: Capture bleibt mit Betrag gespeichert und erstattbar.
+        $this->assertSame('MISMATCH', $payment->fresh()->status);
+        $this->assertSame('5XV36579Y29910400', $payment->fresh()->paypal_capture_id);
+        $this->assertEquals(1.00, (float) $payment->fresh()->amount);
         $this->assertSame('failed', $order->fresh()->status);
+    }
+
+    public function test_capture_in_foreign_currency_is_rejected_like_an_amount_mismatch(): void
+    {
+        Mail::fake();
+        Setting::set('shop.email', 'shop@dormed.example');
+        $customer = Customer::factory()->create();
+        $order = Order::factory()->for($customer)->create(['status' => 'pending', 'total_amount' => '100.00']);
+        $payment = Payment::factory()->created()->for($order)->create(['currency' => 'EUR']);
+
+        $this->mock(PayPalService::class, fn ($mock) => $mock->shouldReceive('captureOrder')->once()->andReturn(
+            PayPalFixtures::capture('orders/capture-completed', ['amount' => ['value' => '100.00', 'currency_code' => 'USD']]),
+        ));
+
+        $this->actingAs($customer)
+            ->postJson(route('paypal.order.capture'), ['paypal_order_id' => $payment->paypal_order_id])
+            ->assertUnprocessable();
+
+        $this->assertSame('MISMATCH', $payment->fresh()->status);
+        $this->assertSame('USD', $payment->fresh()->currency);
+        $this->assertSame('failed', $order->fresh()->status);
+        Mail::assertSent(PaymentAmountMismatchMail::class);
     }
 
     public function test_capture_amount_mismatch_alerts_the_operator(): void
@@ -176,9 +201,36 @@ class PayPalCaptureTest extends TestCase
                 'paypal_order_id' => $payment->paypal_order_id,
             ])
             ->assertStatus(422)
-            ->assertJson(['status' => 'FAILED']);
+            ->assertJson(['status' => 'PENDING'])
+            ->assertJsonPath('error', fn (string $message) => str_contains($message, 'geprüft'));
 
-        $this->assertSame('failed', $order->fresh()->status);
+        // In Prüfung ist nicht fehlgeschlagen: die Bestellung bleibt offen,
+        // der Webhook COMPLETED oder DENIED entscheidet.
+        $this->assertSame('PENDING', $payment->fresh()->status);
+        $this->assertSame('pending', $order->fresh()->status);
+    }
+
+    public function test_new_paypal_attempt_does_not_cancel_an_order_whose_payment_is_in_review(): void
+    {
+        $customer = Customer::factory()->create();
+        $product = Product::factory()->create(['price' => '10.00']);
+        $inReview = Order::factory()->for($customer)->create(['status' => 'pending', 'payment_method' => 'paypal']);
+        Payment::factory()->for($inReview)->create(['status' => 'PENDING']);
+        $abandoned = Order::factory()->for($customer)->create(['status' => 'pending', 'payment_method' => 'paypal']);
+        Payment::factory()->created()->for($abandoned)->create();
+
+        $this->mock(PayPalService::class, function ($mock): void {
+            $mock->shouldReceive('createOrder')->once()->andReturn(PayPalFixtures::sdkResponse('orders/create'));
+            $mock->shouldReceive('recordPayment')->once();
+        });
+
+        $this->actingAs($customer)
+            ->withSession($this->cartSession($product))
+            ->postJson(route('paypal.order.create'), ['agreed_to_terms' => true])
+            ->assertOk();
+
+        $this->assertSame('pending', $inReview->fresh()->status);
+        $this->assertSame('cancelled', $abandoned->fresh()->status);
     }
 
     public function test_declined_capture_in_completed_order_is_not_booked_as_paid(): void

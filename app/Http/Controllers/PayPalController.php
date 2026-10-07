@@ -22,6 +22,8 @@ use Inertia\Response as InertiaResponse;
 
 class PayPalController extends Controller
 {
+    private const PENDING_MESSAGE = 'Ihre Zahlung wird von PayPal noch geprüft. Sie erhalten eine Bestätigung per E-Mail, sobald sie abgeschlossen ist. Bitte zahlen Sie nicht erneut.';
+
     public function __construct(
         private readonly PayPalService $payPalService,
         private readonly CartService $cartService,
@@ -129,12 +131,21 @@ class PayPalController extends Controller
 
         try {
             $response = $this->payPalService->captureOrder($paypalOrderId);
+            $result = $this->completeCapture($payment, $response);
 
-            if ($this->completeCapture($payment, $response)) {
+            if ($result === 'completed') {
                 return response()->json([
                     'status' => 'COMPLETED',
                     'paypal_order_id' => $paypalOrderId,
                 ]);
+            }
+
+            if ($result === 'pending') {
+                return response()->json([
+                    'status' => 'PENDING',
+                    'paypal_order_id' => $paypalOrderId,
+                    'error' => self::PENDING_MESSAGE,
+                ], 422);
             }
 
             if ($this->markCaptureFailed($payment, $response)) {
@@ -195,6 +206,8 @@ class PayPalController extends Controller
             'PAYMENT.CAPTURE.COMPLETED' => $this->handleCaptureCompleted($resource),
             'PAYMENT.CAPTURE.REFUNDED' => $this->handleCaptureRefunded($resource),
             'PAYMENT.CAPTURE.DENIED' => $this->handleCaptureDenied($resource),
+            'PAYMENT.CAPTURE.PENDING' => $this->handleCapturePending($resource),
+            'PAYMENT.CAPTURE.REVERSED' => $this->handleCaptureReversed($resource),
             default => Log::info('PayPal webhook: unhandled event type', ['event_type' => $eventType]),
         };
 
@@ -235,9 +248,14 @@ class PayPalController extends Controller
         // If still pending/created, try to capture
         try {
             $response = $this->payPalService->captureOrder($token);
+            $result = $this->completeCapture($payment, $response);
 
-            if ($this->completeCapture($payment, $response)) {
+            if ($result === 'completed') {
                 return to_route('checkout.success', ['paypal_order_id' => $token]);
+            }
+
+            if ($result === 'pending') {
+                return to_route('checkout.index')->with('error', self::PENDING_MESSAGE);
             }
 
             return $this->hasCompleted($payment)
@@ -259,12 +277,18 @@ class PayPalController extends Controller
      * Shared capture completion for the JS-SDK capture endpoint and the
      * return-URL fallback: verifies the captured amount against the order,
      * persists the capture on the payment, marks the order paid (idempotent)
-     * and clears the cart. Returns false when the capture did not complete
-     * or the amount does not match — the callers decide how to fail.
+     * and clears the cart.
+     *
+     * - "completed": bezahlt.
+     * - "pending": PayPal prüft die Zahlung noch; Payment PENDING, die
+     *   Bestellung bleibt offen, der Webhook entscheidet später.
+     * - "failed": nicht abgeschlossen oder Betrag/Währung weichen ab; die
+     *   Aufrufer markieren den Fehlschlag.
      *
      * @param  array<string, mixed>  $response
+     * @return 'completed'|'pending'|'failed'
      */
-    private function completeCapture(Payment $payment, array $response): bool
+    private function completeCapture(Payment $payment, array $response): string
     {
         // Maßgeblich ist der Status der Capture, nicht der der Order: PayPal
         // setzt die Order nach dem Capture auf COMPLETED, auch wenn die
@@ -272,24 +296,36 @@ class PayPalController extends Controller
         $capture = $response['purchase_units'][0]['payments']['captures'][0] ?? [];
         $captureStatus = $capture['status'] ?? 'FAILED';
         $capturedAmount = $capture['amount']['value'] ?? null;
+        $capturedCurrency = $capture['amount']['currency_code'] ?? null;
 
-        if ($captureStatus === 'COMPLETED' && $capturedAmount !== null && number_format((float) $capturedAmount, 2, '.', '') !== number_format((float) $payment->order->total_amount, 2, '.', '')) {
+        if ($captureStatus === 'COMPLETED' && ! $this->captureMatchesOrder($payment, $capturedAmount, $capturedCurrency)) {
             Log::error('PayPal capture amount mismatch', [
                 'paypal_order_id' => $payment->paypal_order_id,
                 'captured' => $capturedAmount,
+                'currency' => $capturedCurrency,
                 'expected' => $payment->order->total_amount,
             ]);
 
-            // Das Geld ist bei PayPal bereits eingezogen, die Order wird aber
-            // failed - ohne aktive Meldung bliebe das nur im Log haengen und
-            // braeuchte Zufall, um aufzufallen (V4 B-1).
-            $this->notifyAmountMismatch($payment, (string) $capturedAmount);
+            $this->recordMismatchedCapture($payment, (string) ($capture['id'] ?? ''), $capture);
 
-            return false;
+            return 'failed';
+        }
+
+        if ($captureStatus === 'PENDING') {
+            Payment::query()
+                ->whereKey($payment->getKey())
+                ->whereIn('status', ['CREATED', 'APPROVED', 'FAILED'])
+                ->update([
+                    'status' => 'PENDING',
+                    'paypal_capture_id' => $capture['id'] ?? null,
+                    'response_data' => $response,
+                ]);
+
+            return 'pending';
         }
 
         if ($captureStatus !== 'COMPLETED') {
-            return false;
+            return 'failed';
         }
 
         $payerName = trim(($response['payer']['name']['given_name'] ?? '').' '.($response['payer']['name']['surname'] ?? ''));
@@ -311,7 +347,52 @@ class PayPalController extends Controller
         $this->orderManager->markPaid($payment->order);
         $this->cartService->clear();
 
-        return true;
+        return 'completed';
+    }
+
+    /**
+     * Betrag und Währung der Capture gegen die Bestellung. Fehlt die Währung
+     * in der Antwort, gilt die der Zahlung.
+     */
+    private function captureMatchesOrder(Payment $payment, mixed $capturedAmount, mixed $capturedCurrency): bool
+    {
+        $amountMatches = $capturedAmount === null
+            || number_format((float) $capturedAmount, 2, '.', '') === number_format((float) $payment->order->total_amount, 2, '.', '');
+        $currencyMatches = $capturedCurrency === null
+            || strtoupper((string) $capturedCurrency) === strtoupper($payment->currency ?: (string) config('paypal.currency', 'EUR'));
+
+        return $amountMatches && $currencyMatches;
+    }
+
+    /**
+     * Eingezogen, aber Betrag oder Währung passen nicht zur Bestellung: Das
+     * Geld liegt bei PayPal, die Bestellung wird nicht erfüllt. Die Capture
+     * wird mit Betrag gespeichert (Status MISMATCH), damit der Admin sie
+     * erstatten kann, und der Betreiber bekommt eine Mail (V4 B-1).
+     *
+     * @param  array<string, mixed>  $capture
+     */
+    private function recordMismatchedCapture(Payment $payment, string $captureId, array $capture): void
+    {
+        DB::transaction(function () use ($payment, $captureId, $capture): void {
+            Payment::query()
+                ->whereKey($payment->getKey())
+                ->whereNotIn('status', ['COMPLETED', 'REFUNDED'])
+                ->update([
+                    'status' => 'MISMATCH',
+                    'paypal_capture_id' => $captureId !== '' ? $captureId : null,
+                    'amount' => $capture['amount']['value'] ?? $payment->amount,
+                    'currency' => $capture['amount']['currency_code'] ?? $payment->currency,
+                    'fee' => $capture['seller_receivable_breakdown']['paypal_fee']['value'] ?? $payment->fee,
+                ]);
+
+            Order::query()
+                ->whereKey($payment->order_id)
+                ->whereNotIn('status', ['paid', 'refunded'])
+                ->update(['status' => 'failed']);
+        });
+
+        $this->notifyAmountMismatch($payment, (string) ($capture['amount']['value'] ?? ''));
     }
 
     /**
@@ -332,7 +413,10 @@ class PayPalController extends Controller
                 return true;
             }
 
-            $current->update(['status' => 'FAILED', 'response_data' => $responseData]);
+            // Eingezogene Capture mit Abweichung bleibt erstattbar.
+            if ($current->status !== 'MISMATCH') {
+                $current->update(['status' => 'FAILED', 'response_data' => $responseData]);
+            }
 
             Order::query()
                 ->whereKey($current->order_id)
@@ -452,15 +536,21 @@ class PayPalController extends Controller
         // verifiziert, die Capture stammt aus der eigenen Order - trotzdem
         // gilt dieselbe Defense-in-Depth-Regel für alle drei Pfade.
         $capturedAmount = $resource['amount']['value'] ?? null;
+        $capturedCurrency = $resource['amount']['currency_code'] ?? null;
 
-        if ($capturedAmount !== null && number_format((float) $capturedAmount, 2, '.', '') !== number_format((float) $payment->order->total_amount, 2, '.', '')) {
+        if (! $this->captureMatchesOrder($payment, $capturedAmount, $capturedCurrency)) {
             Log::error('PayPal webhook capture amount mismatch', [
                 'capture_id' => $captureId,
                 'captured' => $capturedAmount,
+                'currency' => $capturedCurrency,
                 'expected' => $payment->order->total_amount,
             ]);
 
-            $this->notifyAmountMismatch($payment, (string) $capturedAmount);
+            if ($payment->status !== 'COMPLETED') {
+                $this->recordMismatchedCapture($payment, (string) $captureId, $resource);
+            } else {
+                $this->notifyAmountMismatch($payment, (string) $capturedAmount);
+            }
 
             return;
         }
@@ -513,7 +603,7 @@ class PayPalController extends Controller
             return;
         }
 
-        $this->markPaymentAndOrder($captureId, 'REFUNDED', 'refunded');
+        $this->setStatusByCaptureId($captureId, 'REFUNDED', 'refunded');
     }
 
     /**
@@ -544,14 +634,56 @@ class PayPalController extends Controller
             return;
         }
 
-        $this->markPaymentAndOrder($captureId, 'FAILED', 'failed');
+        $this->setStatusByCaptureId($captureId, 'FAILED', 'failed');
     }
 
     /**
-     * Update payment and its order together so webhook-driven status changes
-     * (refund/denial) stay consistent with the admin refund flow.
+     * Handle PAYMENT.CAPTURE.PENDING webhook: PayPal prüft die Zahlung noch.
+     * Die Bestellung bleibt offen; COMPLETED oder DENIED folgen per Webhook.
+     *
+     * @param  array<string, mixed>  $resource
      */
-    private function markPaymentAndOrder(string $captureId, string $paymentStatus, string $orderStatus): void
+    private function handleCapturePending(array $resource): void
+    {
+        $captureId = $resource['id'] ?? null;
+        $orderId = $resource['supplementary_data']['related_ids']['order_id'] ?? null;
+
+        if (! $captureId || ! $orderId) {
+            return;
+        }
+
+        Payment::query()
+            ->where('paypal_order_id', $orderId)
+            ->whereIn('status', ['CREATED', 'APPROVED', 'FAILED'])
+            ->update(['status' => 'PENDING', 'paypal_capture_id' => $captureId]);
+    }
+
+    /**
+     * Handle PAYMENT.CAPTURE.REVERSED webhook: PayPal hat das Geld an den
+     * Käufer zurückgebucht (z. B. nach einem Konflikt). Wirkt für den Shop
+     * wie eine volle Erstattung, kommt aber nicht vom Shop.
+     *
+     * @param  array<string, mixed>  $resource
+     */
+    private function handleCaptureReversed(array $resource): void
+    {
+        $captureId = $this->captureIdFromRefundResource($resource);
+
+        if (! $captureId) {
+            return;
+        }
+
+        Log::warning('PayPal webhook: capture reversed by PayPal', ['capture_id' => $captureId]);
+
+        $this->setStatusByCaptureId($captureId, 'REVERSED', 'refunded');
+    }
+
+    /**
+     * Setzt den Status der Zahlung zur Capture und den ihrer Bestellung in
+     * einem Schritt (Erstattung, Ablehnung, Rückbuchung per Webhook). Ob der
+     * Übergang erlaubt ist (Reihenfolge-Schutz), prüfen die Aufrufer.
+     */
+    private function setStatusByCaptureId(string $captureId, string $paymentStatus, string $orderStatus): void
     {
         /** @var Payment|null $payment */
         $payment = Payment::query()
@@ -565,8 +697,10 @@ class PayPalController extends Controller
             return;
         }
 
-        $payment->update(['status' => $paymentStatus]);
-        $payment->order?->update(['status' => $orderStatus]);
+        DB::transaction(function () use ($payment, $paymentStatus, $orderStatus): void {
+            $payment->update(['status' => $paymentStatus]);
+            $payment->order?->update(['status' => $orderStatus]);
+        });
     }
 
     /**
@@ -594,7 +728,9 @@ class PayPalController extends Controller
             ->where('customer_id', $customer->id)
             ->where('payment_method', 'paypal')
             ->where('status', 'pending')
-            ->whereDoesntHave('payments', fn ($q) => $q->where('status', 'COMPLETED'))
+            // Auch keine Bestellungen, deren Zahlung PayPal noch prüft oder bei
+            // denen Geld mit Abweichung eingegangen ist.
+            ->whereDoesntHave('payments', fn ($q) => $q->whereIn('status', ['COMPLETED', 'PENDING', 'MISMATCH']))
             ->update(['status' => 'cancelled']);
     }
 }

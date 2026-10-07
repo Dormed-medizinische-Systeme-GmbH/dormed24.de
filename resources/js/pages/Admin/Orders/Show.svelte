@@ -81,8 +81,11 @@
         CREATED: 'Erstellt',
         APPROVED: 'Bestätigt',
         COMPLETED: 'Abgeschlossen',
+        PENDING: 'In Prüfung bei PayPal',
+        MISMATCH: 'Betrag abweichend (erstatten)',
         FAILED: 'Fehlgeschlagen',
         REFUNDED: 'Rückerstattet',
+        REVERSED: 'Von PayPal zurückgebucht',
     };
 
     const orderedAt = $derived(
@@ -103,7 +106,9 @@
         order.payment_method === 'invoice' && order.status === 'pending',
     );
     const canRefund = $derived(
-        order.payments.some((p) => p.status === 'COMPLETED'),
+        order.payments.some((p) =>
+            ['COMPLETED', 'MISMATCH'].includes(p.status),
+        ),
     );
 
     async function confirmPayment() {
