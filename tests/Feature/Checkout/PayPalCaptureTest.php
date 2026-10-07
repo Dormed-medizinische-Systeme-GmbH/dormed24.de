@@ -70,6 +70,56 @@ class PayPalCaptureTest extends TestCase
         $this->assertSame('paid', $order->fresh()->status);
     }
 
+    /**
+     * Beim Anlegen kennt PayPal nur id/status/links, der Betrag steht erst in
+     * der Capture-Antwort. Ohne Nachtragen blieb amount auf 0 und die
+     * Admin-Erstattung schickte 0,00 € an PayPal (422).
+     */
+    public function test_capture_stores_captured_amount_currency_and_fee(): void
+    {
+        $customer = Customer::factory()->create();
+        $order = Order::factory()->for($customer)->create(['status' => 'pending', 'total_amount' => '4390.00']);
+        $payment = Payment::factory()->created()->for($order)->create(['amount' => 0, 'fee' => null]);
+
+        $this->mock(PayPalService::class, function ($mock): void {
+            $mock->shouldReceive('captureOrder')->once()->andReturn([
+                'status' => 'COMPLETED',
+                'purchase_units' => [[
+                    'payments' => ['captures' => [[
+                        'id' => 'CAPTURE-AMOUNT',
+                        'status' => 'COMPLETED',
+                        'amount' => ['currency_code' => 'EUR', 'value' => '4390.00'],
+                        'seller_receivable_breakdown' => ['paypal_fee' => ['currency_code' => 'EUR', 'value' => '153.99']],
+                    ]]],
+                ]],
+            ]);
+            $mock->shouldReceive('getCaptureIdFromOrder')->once()->andReturn('CAPTURE-AMOUNT');
+        });
+
+        $this->actingAs($customer)
+            ->postJson(route('paypal.order.capture'), ['paypal_order_id' => $payment->paypal_order_id])
+            ->assertOk();
+
+        $payment->refresh();
+        $this->assertSame('COMPLETED', $payment->status);
+        $this->assertEquals(4390.00, (float) $payment->amount);
+        $this->assertSame('EUR', $payment->currency);
+        $this->assertEquals(153.99, (float) $payment->fee);
+    }
+
+    public function test_recording_a_created_order_uses_the_order_total_as_amount(): void
+    {
+        $order = Order::factory()->create(['total_amount' => '4390.00']);
+
+        $payment = app(PayPalService::class)->recordPayment($order, [
+            'id' => 'PAYPAL-ORDER-NEW',
+            'status' => 'CREATED',
+            'links' => [],
+        ], 'CREATED');
+
+        $this->assertEquals(4390.00, (float) $payment->amount);
+    }
+
     public function test_capture_rejects_amount_mismatch(): void
     {
         $customer = Customer::factory()->create();

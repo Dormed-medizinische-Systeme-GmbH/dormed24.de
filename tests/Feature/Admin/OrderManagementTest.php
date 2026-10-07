@@ -161,6 +161,29 @@ class OrderManagementTest extends TestCase
     }
 
     /**
+     * Zahlungen aus der Zeit vor dem Fix haben amount = 0. Dann wird der
+     * Bestellbetrag erstattet: Eine bezahlte Order hat ihn nachweislich
+     * eingezogen, sonst wäre sie am Betragsabgleich gescheitert.
+     */
+    public function test_refund_falls_back_to_order_total_when_payment_amount_is_missing(): void
+    {
+        $order = Order::factory()->create(['status' => 'paid', 'payment_method' => 'paypal', 'total_amount' => '4390.00']);
+        $payment = Payment::factory()->completed()->for($order)->create(['amount' => 0]);
+
+        $this->mock(PayPalService::class, function ($mock) use ($payment): void {
+            $mock->shouldReceive('refundOrder')
+                ->once()
+                ->with($payment->paypal_capture_id, 4390.0)
+                ->andReturn(['id' => 'REFUND-FALLBACK', 'status' => 'COMPLETED']);
+        });
+
+        $this->actingAsAdmin()
+            ->postJson(route('admin.orders.refund', $order))
+            ->assertOk()
+            ->assertJson(['status' => 'refunded']);
+    }
+
+    /**
      * @return array<string, array{array<string, mixed>}>
      */
     public static function rejectedRefundResponses(): array

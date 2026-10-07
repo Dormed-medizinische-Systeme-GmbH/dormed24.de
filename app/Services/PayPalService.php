@@ -239,7 +239,10 @@ class PayPalService
             'paypal_payer_id' => $payer['payer_id'] ?? null,
             'paypal_capture_id' => $capture['id'] ?? null,
             'status' => $status,
-            'amount' => $capture['amount']['value'] ?? $purchaseUnit['amount']['value'] ?? 0,
+            // Die createOrder-Antwort enthält nur id/status/links: dann gilt der
+            // angefragte Bestellbetrag, bis completeCapture() den eingezogenen
+            // Betrag einträgt.
+            'amount' => $capture['amount']['value'] ?? $purchaseUnit['amount']['value'] ?? $order->total_amount,
             'currency' => $capture['amount']['currency_code'] ?? $purchaseUnit['amount']['currency_code'] ?? 'EUR',
             'fee' => $capture['seller_receivable_breakdown']['paypal_fee']['value'] ?? null,
             'payer_email' => $payer['email_address'] ?? null,

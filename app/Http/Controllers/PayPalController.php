@@ -285,10 +285,16 @@ class PayPalController extends Controller
         }
 
         $payerName = trim(($response['payer']['name']['given_name'] ?? '').' '.($response['payer']['name']['surname'] ?? ''));
+        $capture = $response['purchase_units'][0]['payments']['captures'][0] ?? [];
 
         $payment->update([
             'status' => 'COMPLETED',
             'paypal_capture_id' => $this->payPalService->getCaptureIdFromOrder($response),
+            // Eingezogener Betrag, Währung und Gebühr stehen erst in der
+            // Capture-Antwort; die Admin-Erstattung erstattet genau diesen Betrag.
+            'amount' => $capture['amount']['value'] ?? $payment->amount,
+            'currency' => $capture['amount']['currency_code'] ?? $payment->currency,
+            'fee' => $capture['seller_receivable_breakdown']['paypal_fee']['value'] ?? $payment->fee,
             'paypal_payer_id' => $response['payer']['payer_id'] ?? $payment->paypal_payer_id,
             'payer_email' => $response['payer']['email_address'] ?? $payment->payer_email,
             'payer_name' => $payerName !== '' ? $payerName : $payment->payer_name,
@@ -460,6 +466,9 @@ class PayPalController extends Controller
             $payment->update([
                 'status' => 'COMPLETED',
                 'paypal_capture_id' => $captureId,
+                'amount' => $resource['amount']['value'] ?? $payment->amount,
+                'currency' => $resource['amount']['currency_code'] ?? $payment->currency,
+                'fee' => $resource['seller_receivable_breakdown']['paypal_fee']['value'] ?? $payment->fee,
                 'response_data' => $resource,
             ]);
         }
@@ -485,13 +494,13 @@ class PayPalController extends Controller
         // Zahlung nicht: Payment und Order bleiben bezahlt, der Betreiber
         // sieht den Vorgang im Log.
         $refundedAmount = $resource['amount']['value'] ?? null;
-        $payment = Payment::query()->where('paypal_capture_id', $captureId)->first();
+        $payment = Payment::query()->where('paypal_capture_id', $captureId)->with('order')->first();
 
-        if ($payment && $refundedAmount !== null && number_format((float) $refundedAmount, 2, '.', '') !== number_format((float) $payment->amount, 2, '.', '')) {
+        if ($payment && $refundedAmount !== null && number_format((float) $refundedAmount, 2, '.', '') !== number_format($payment->capturedAmount(), 2, '.', '')) {
             Log::warning('PayPal webhook: partial refund ignored', [
                 'capture_id' => $captureId,
                 'refunded' => $refundedAmount,
-                'captured' => $payment->amount,
+                'captured' => $payment->capturedAmount(),
             ]);
 
             return;
