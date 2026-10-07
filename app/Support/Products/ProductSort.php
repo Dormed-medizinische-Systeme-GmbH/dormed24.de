@@ -18,13 +18,13 @@ class ProductSort
     {
         $sort = (string) $request->input('sort', 'name_asc');
 
-        [$column, $direction] = match ($sort) {
-            'name_desc' => ['name', 'desc'],
-            'price_asc' => ['price', 'asc'],
-            'price_desc' => ['price', 'desc'],
-            default => ['name', 'asc'],
+        return match ($sort) {
+            'name_desc' => [$sort, 'name', 'desc'],
+            'price_asc' => [$sort, 'price', 'asc'],
+            'price_desc' => [$sort, 'price', 'desc'],
+            // Unbekannte Werte nicht ans Frontend zurückgeben: die
+            // Sortierauswahl zeigte sonst nichts an.
+            default => ['name_asc', 'name', 'asc'],
         };
-
-        return [$sort, $column, $direction];
     }
 }

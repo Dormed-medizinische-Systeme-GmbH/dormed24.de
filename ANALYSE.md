@@ -103,21 +103,15 @@ Abdeckung laut CI-Lauf von PR #21: **89,7 %** von `app/`, 423 PHP-Tests, dazu
 
 ### Lücken
 
-| Datei                          | Abdeckung | Was fehlt                                  |
-| ------------------------------ | --------- | ------------------------------------------ |
-| `Admin/ManufacturerController` | 55,6 %    |                                            |
-| `Auth/EnvAdmin`                | 61,5 %    | Remember-Token, `toArray`, `jsonSerialize` |
-| `Models/ProductImage`          | 66,7 %    | `url`-Accessor                             |
-| `Models/Order`                 | 69,2 %    | Zeilen 68–77                               |
-| `Providers/AppServiceProvider` | 73,9 %    |                                            |
-| `Admin/ProductController`      | 79,3 %    |                                            |
-| `Support/Orders/OrderManager`  | 83,3 %    | Bestellung ohne Kunde, Mailversand wirft   |
+| Datei                          | Abdeckung | Was fehlt                                                         |
+| ------------------------------ | --------- | ----------------------------------------------------------------- |
+| `Providers/AppServiceProvider` | 73,9 %    | Passwortregeln in Produktion (min. 12, gemischt, `uncompromised`) |
 
 ### Sonstiges
 
-- **Unit-Tests für reine Logik:** `Money`, `ProductFilters`, `ProductSort` und
-  `AddressRules` laufen nur über Feature-Tests. Schnelle, datenbankfreie
-  Unit-Tests fehlen.
+- **Unit-Tests für `ProductFilters`:** `ProductSort`, `AddressRules` und
+  `EnvAdmin` haben Unit-Tests, `Money` ist in `CartValueObjectsTest` abgedeckt.
+  `ProductFilters` läuft nur über die Feature-Tests der Produktliste.
 - **`markPaymentAndOrder()`** in `PayPalController`: Der Name sagt nicht, was
   die Methode tut (Webhook-Status auf Zahlung und Bestellung übertragen, mit
   Reihenfolge-Schutz).

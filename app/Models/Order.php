@@ -62,18 +62,4 @@ class Order extends Model
     {
         return $this->hasMany(Payment::class);
     }
-
-    public function shippingFullName(): ?string
-    {
-        $a = $this->shipping_address;
-
-        return $a ? trim(($a['first_name'] ?? '').' '.($a['last_name'] ?? '')) : null;
-    }
-
-    public function shippingStreetWithNumber(): ?string
-    {
-        $a = $this->shipping_address;
-
-        return $a ? trim(($a['street'] ?? '').' '.($a['house_number'] ?? '')) : null;
-    }
 }

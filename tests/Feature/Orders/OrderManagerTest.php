@@ -8,6 +8,7 @@ use App\Mail\PaymentConfirmationMail;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Setting;
 use App\Support\Cart\Cart;
 use App\Support\Cart\CartAddress;
 use App\Support\Cart\CartItem;
@@ -15,7 +16,9 @@ use App\Support\Cart\PaymentOption;
 use App\Support\Cart\ShippingOption;
 use App\Support\Orders\OrderManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Mail\PendingMail;
 use Illuminate\Support\Facades\Mail;
+use Mockery;
 use RuntimeException;
 use Tests\TestCase;
 
@@ -177,5 +180,75 @@ class OrderManagerTest extends TestCase
             shippingAddress: CartAddress::fromArray(['first_name' => 'Erika', 'last_name' => 'Muster', 'city' => 'Berlin']),
             billingAddress: null,
         );
+    }
+
+    private function orderWithoutCustomer(): Order
+    {
+        $order = Order::factory()->create(['status' => 'pending']);
+        // Kunde gelöscht: Bestellungen bleiben als Snapshot erhalten.
+        $order->customer()->delete();
+
+        return $order->fresh();
+    }
+
+    public function test_mark_paid_without_customer_skips_mails_but_still_marks_paid(): void
+    {
+        Mail::fake();
+        $order = $this->orderWithoutCustomer();
+        $this->assertNull($order->customer_id);
+
+        $this->assertTrue(app(OrderManager::class)->markPaid($order));
+
+        $this->assertSame('paid', $order->fresh()->status);
+        Mail::assertNothingSent();
+    }
+
+    public function test_confirm_invoice_payment_without_customer_skips_mail_but_still_marks_paid(): void
+    {
+        Mail::fake();
+        $order = $this->orderWithoutCustomer();
+
+        $this->assertTrue(app(OrderManager::class)->confirmInvoicePayment($order));
+
+        $this->assertSame('paid', $order->fresh()->status);
+        Mail::assertNothingSent();
+    }
+
+    public function test_failing_customer_mail_still_notifies_the_shop_and_keeps_the_order_paid(): void
+    {
+        Setting::set('shop.email', 'shop@dormed.example');
+        $order = Order::factory()->create(['status' => 'pending']);
+        $customerEmail = $order->customer->email;
+        $sentToShop = [];
+
+        Mail::shouldReceive('to')->andReturnUsing(function (string $address) use ($customerEmail, &$sentToShop) {
+            $pending = Mockery::mock(PendingMail::class);
+            $pending->shouldReceive('send')->andReturnUsing(function ($mailable) use ($address, $customerEmail, &$sentToShop) {
+                if ($address === $customerEmail) {
+                    throw new RuntimeException('SMTP down');
+                }
+
+                $sentToShop[] = $mailable::class;
+
+                return null;
+            });
+
+            return $pending;
+        });
+
+        $this->assertTrue(app(OrderManager::class)->markPaid($order));
+
+        $this->assertSame('paid', $order->fresh()->status);
+        $this->assertSame([NewOrderMail::class], $sentToShop);
+    }
+
+    public function test_failing_payment_confirmation_mail_does_not_undo_the_payment(): void
+    {
+        Mail::shouldReceive('to')->andThrow(new RuntimeException('SMTP down'));
+        $order = Order::factory()->create(['status' => 'pending']);
+
+        $this->assertTrue(app(OrderManager::class)->confirmInvoicePayment($order));
+
+        $this->assertSame('paid', $order->fresh()->status);
     }
 }
