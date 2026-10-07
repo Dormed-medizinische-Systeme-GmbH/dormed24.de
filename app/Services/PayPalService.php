@@ -7,6 +7,7 @@ use App\Models\Payment;
 use App\Support\PaymentMode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Psr\Http\Message\StreamInterface;
 use Srmklive\PayPal\Services\PayPal;
 
 class PayPalService
@@ -40,7 +41,7 @@ class PayPalService
      */
     private function authenticate(): void
     {
-        $token = $this->client->getAccessToken();
+        $token = $this->asArray($this->client->getAccessToken());
 
         if (! isset($token['access_token'])) {
             throw new \RuntimeException('PayPal authentication failed: '.($token['error']['message'] ?? 'No access token returned'));
@@ -54,8 +55,8 @@ class PayPalService
      *
      * @param  float  $amount  Total amount in EUR (or configured currency)
      * @param  string  $currency  ISO 4217 currency code (default: EUR)
-     * @param  array|null  $address  Shipping address (from cart)
-     * @return array{id: string, status: string, links: array, ...}
+     * @param  array<string, string|null>|null  $address  Shipping address (from cart)
+     * @return array<string, mixed> PayPal-Order; bei Fehlern ohne "id", dafür mit "error"
      *
      * @throws \Throwable
      */
@@ -97,7 +98,7 @@ class PayPalService
             ],
         ];
 
-        $response = $this->client()->createOrder($data);
+        $response = $this->asArray($this->client()->createOrder($data));
 
         $this->logResponse('createOrder', $response);
 
@@ -114,7 +115,7 @@ class PayPalService
      */
     public function captureOrder(string $paypalOrderId): array
     {
-        $response = $this->client()->capturePaymentOrder($paypalOrderId);
+        $response = $this->asArray($this->client()->capturePaymentOrder($paypalOrderId));
 
         $this->logResponse('captureOrder', $response);
 
@@ -135,12 +136,12 @@ class PayPalService
     {
         $invoiceId = 'REFUND-'.str()->random(12);
 
-        $response = $this->client()->refundCapturedPayment(
+        $response = $this->asArray($this->client()->refundCapturedPayment(
             $captureId,
             $invoiceId,
             $amount,
             $note
-        );
+        ));
 
         $this->logResponse('refundOrder', $response);
 
@@ -203,19 +204,28 @@ class PayPalService
      */
     public function showOrderDetails(string $paypalOrderId): array
     {
-        return $this->client()->showOrderDetails($paypalOrderId);
+        return $this->asArray($this->client()->showOrderDetails($paypalOrderId));
     }
 
     /**
      * Extract the capture ID from a captured order response.
+     *
+     * Reiner Array-Zugriff wie im SDK-Helper, aber ohne den Umweg über
+     * client(): der hätte nur dafür ein Access-Token bei PayPal geholt.
+     *
+     * @param  array<string, mixed>  $orderResponse
      */
     public function getCaptureIdFromOrder(array $orderResponse): ?string
     {
-        return $this->client()->getCaptureIdFromOrder($orderResponse);
+        $captureId = $orderResponse['purchase_units'][0]['payments']['captures'][0]['id'] ?? null;
+
+        return is_string($captureId) ? $captureId : null;
     }
 
     /**
      * Persist a payment record from PayPal response data.
+     *
+     * @param  array<string, mixed>  $response
      */
     public function recordPayment(Order $order, array $response, string $status): Payment
     {
@@ -240,11 +250,32 @@ class PayPalService
 
     /**
      * Log API responses for debugging.
+     *
+     * @param  array<string, mixed>  $response
      */
     private function logResponse(string $method, array $response): void
     {
         Log::debug("PayPal API ({$method}) response", [
             'response' => $response,
         ]);
+    }
+
+    /**
+     * Das SDK deklariert seine Antworten als array|StreamInterface|string.
+     * Dekodiertes JSON ist praktisch immer ein Array, API-Fehler kommen als
+     * ['error' => …]. Bleibt ausnahmsweise ein String oder Stream übrig
+     * (Nicht-JSON-Antwort), wird er in dieselbe Fehlerform gebracht, statt
+     * später an einem array-Rückgabetyp zu scheitern.
+     *
+     * @param  array<string, mixed>|StreamInterface|string  $response
+     * @return array<string, mixed>
+     */
+    private function asArray(array|StreamInterface|string $response): array
+    {
+        if (is_array($response)) {
+            return $response;
+        }
+
+        return ['error' => (string) $response];
     }
 }

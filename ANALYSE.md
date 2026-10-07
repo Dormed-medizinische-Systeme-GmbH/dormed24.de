@@ -53,15 +53,14 @@ mobiles Datenvolumen.
 
 ## 🔵 Code und Doku
 
-### PayPal-Antworten untypisiert (aus V1 #18 / V4 Q-3 abgeleitet)
+### PHPStan-Baseline: Restbestand (aus V1 #18 / V4 Q-3)
 
-Die PHPStan-Baseline hat noch 59 Einträge (Juli: 98). Der größte Block sind
-13 in `PayPalService`. Ursache ist die PayPal-Bibliothek: Ihre Methoden liefern
-je nach Antwort ein Array, einen `StreamInterface` oder einen String. Dazu
-kommen 5 im `PayPalController`, meist untypisierte Webhook-Payloads. Abhilfe:
-ein kleiner Helfer, der jede Antwort in ein typisiertes Array normalisiert,
-plus Array-Shapes für die Webhook-Ressourcen. Der Warenkorb ist seit dem
-Cart-DTO (`App\Support\Cart\Cart`) erledigt.
+Die Baseline hat noch 41 Einträge (Juli: 98). Warenkorb (Cart-DTO) und
+PayPal (`asArray()`-Normalisierung, Array-Shapes) sind erledigt. Größter Block
+sind 10 in `InstallFeaturesCommand`, der Rest verteilt sich mit 1 bis 5
+Einträgen auf Form Requests, Controller, Models und Seeder. Die Einträge sind
+nicht einzeln geprüft. Im PayPal-Block steckte ein echter Fehler (Webhook-
+Prüfung, #18), deshalb lohnt ein Durchgang statt bloßem Ignorieren.
 
 ## 🚀 Betrieb / Launch
 

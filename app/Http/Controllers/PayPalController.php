@@ -368,6 +368,8 @@ class PayPalController extends Controller
 
     /**
      * Handle CHECKOUT.ORDER.APPROVED webhook.
+     *
+     * @param  array<string, mixed>  $resource
      */
     private function handleOrderApproved(array $resource): void
     {
@@ -385,6 +387,8 @@ class PayPalController extends Controller
 
     /**
      * Handle PAYMENT.CAPTURE.COMPLETED webhook.
+     *
+     * @param  array<string, mixed>  $resource
      */
     private function handleCaptureCompleted(array $resource): void
     {
@@ -466,6 +470,8 @@ class PayPalController extends Controller
     /**
      * Handle PAYMENT.CAPTURE.REFUNDED webhook (e.g. refund issued directly
      * in the PayPal dashboard).
+     *
+     * @param  array<string, mixed>  $resource
      */
     private function handleCaptureRefunded(array $resource): void
     {
@@ -496,6 +502,8 @@ class PayPalController extends Controller
 
     /**
      * Handle PAYMENT.CAPTURE.DENIED webhook.
+     *
+     * @param  array<string, mixed>  $resource
      */
     private function handleCaptureDenied(array $resource): void
     {
