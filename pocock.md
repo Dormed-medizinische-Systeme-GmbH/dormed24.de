@@ -38,7 +38,7 @@ In der ersten Fassung stand, `AddressRules`, `ProductFilters`, `ProductSort`, `S
 
 ## Offen: Lücken
 
-- **`PayPalService::verifyWebhook()`:** Der Pfad "keine Webhook-ID" ist getestet (Sandbox und Live). Der Erfolgspfad (`verification_status === 'SUCCESS'`), der Exception-Pfad und die Weitergabe der `PAYPAL-*`-Header sind es nicht. Grund: `client()` erzeugt das SDK intern und holt per Netzwerk ein Token. Ohne injizierbaren Client (Konstruktor oder Factory) lässt sich das nicht deterministisch testen. Das ist die einzige Authentifizierung des Webhooks und der wichtigste verbleibende Punkt.
+- ~~**`PayPalService::verifyWebhook()`**~~ **erledigt:** Die Prüfung war nicht nur ungetestet, sondern defekt: `verifyWebHook()` wurde mit falschen Argumenten aufgerufen, scheiterte immer, und jeder Webhook wurde abgelehnt. Sie läuft jetzt über `verifyWebHookLocally()`. Der SDK-Client kommt aus der injizierbaren `PayPalClientFactory`. `PayPalWebhookVerificationTest` prüft echte Signaturen (Testschlüssel unter `tests/Fixtures/paypal-webhook`): gültig, manipulierter Body, fremder Schlüssel, fremde Webhook-ID, Nicht-PayPal-Zertifikats-URL, fehlende Header.
 - **Mail-Rendering:** Je ein Test pro Mailable, der `render()` aufruft. Ein kaputtes Template oder View fällt sonst erst beim echten Versand auf.
 - **`PayPalController` (Restlücken):** `createOrder` mit leerem Warenkorb (Zeile 42) oder unvollständiger Adresse (46), PayPal-Antwort ohne `id` (67–71), 409 bei bereits abgeschlossener Zahlung (123), Exception-Pfad in `afterPayment` (242–250), Webhook-Fallbacks (361–365).
 - **`OrderManager`:** Fehlerpfade (Bestellung ohne Kunde, Mailversand wirft).

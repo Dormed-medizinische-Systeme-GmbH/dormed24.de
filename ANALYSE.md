@@ -55,8 +55,8 @@ mobiles Datenvolumen.
 
 ### PayPal-Antworten untypisiert (aus V1 #18 / V4 Q-3 abgeleitet)
 
-Die PHPStan-Baseline hat noch 63 Einträge (Juli: 98). Der größte Block sind
-17 in `PayPalService`. Ursache ist die PayPal-Bibliothek: Ihre Methoden liefern
+Die PHPStan-Baseline hat noch 59 Einträge (Juli: 98). Der größte Block sind
+13 in `PayPalService`. Ursache ist die PayPal-Bibliothek: Ihre Methoden liefern
 je nach Antwort ein Array, einen `StreamInterface` oder einen String. Dazu
 kommen 5 im `PayPalController`, meist untypisierte Webhook-Payloads. Abhilfe:
 ein kleiner Helfer, der jede Antwort in ein typisiertes Array normalisiert,
@@ -70,7 +70,9 @@ Cart-DTO (`App\Support\Cart\Cart`) erledigt.
    `storage/app/public`.
 2. **PayPal-Webhook-IDs** in der Env setzen (`PAYPAL_SANDBOX_WEBHOOK_ID` /
    `PAYPAL_LIVE_WEBHOOK_ID`). Ohne sie lehnt `verifyWebhook()` alle Webhooks
-   ab, sichtbar nur im Log.
+   ab, sichtbar nur im Log. Bis Oktober 2026 scheiterte die Prüfung auch mit
+   gesetzter ID (falscher SDK-Aufruf), Webhooks kamen also nie durch. Seit
+   der Umstellung auf `verifyWebHookLocally()` funktioniert sie.
 3. **Katalog-Erstimport** in Produktion nur bewusst über
    `SEED_PRODUCTS_FORCE=true php artisan db:seed --class=ProductSeeder`, danach
    das Flag wieder entfernen.
@@ -83,7 +85,9 @@ Cart-DTO (`App\Support\Cart\Cart`) erledigt.
 - **Manueller PayPal-Sandbox-Browsertest** (seit V2 offen, seit V4 Pflicht):
   CSRF ist in PHPUnit deaktiviert, der Button-Flow lässt sich serverseitig nicht
   testen, und der Fehlerpfad antwortet seit V4 mit 422 statt auf die
-  Erfolgsseite zu leiten.
+  Erfolgsseite zu leiten. Dabei auch einen echten Webhook prüfen, z. B. eine
+  Erstattung im PayPal-Dashboard: Die Bestellung muss danach auf `refunded`
+  stehen.
 - **End-to-End je Bezahlweg** (V1): Warenkorb → Bestellung → `paid` inklusive
   Mail-Assertions, je einmal für Rechnung und PayPal. Einzelschritte sind
   getestet (Checkout, Capture, Webhook, OrderManager), ein durchgehender Test

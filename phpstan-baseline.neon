@@ -265,18 +265,6 @@ parameters:
 			path: app/Services/PayPalService.php
 
 		-
-			message: '#^Cannot access offset ''verification_status'' on array\<string, mixed\>\|Psr\\Http\\Message\\StreamInterface\|string\.$#'
-			identifier: offsetAccess.nonOffsetAccessible
-			count: 1
-			path: app/Services/PayPalService.php
-
-		-
-			message: '#^Method App\\Services\\PayPalService\:\:buildConfig\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Services/PayPalService.php
-
-		-
 			message: '#^Method App\\Services\\PayPalService\:\:captureOrder\(\) should return array\<string, mixed\> but returns array\<string, mixed\>\|Psr\\Http\\Message\\StreamInterface\|string\.$#'
 			identifier: return.type
 			count: 1
@@ -327,18 +315,6 @@ parameters:
 		-
 			message: '#^Method App\\Services\\PayPalService\:\:showOrderDetails\(\) should return array\<string, mixed\> but returns array\<string, mixed\>\|Psr\\Http\\Message\\StreamInterface\|string\.$#'
 			identifier: return.type
-			count: 1
-			path: app/Services/PayPalService.php
-
-		-
-			message: '#^Method Srmklive\\PayPal\\Services\\PayPal\:\:verifyWebHook\(\) invoked with 3 parameters, 1 required\.$#'
-			identifier: arguments.count
-			count: 1
-			path: app/Services/PayPalService.php
-
-		-
-			message: '#^Parameter \#1 \$data of method Srmklive\\PayPal\\Services\\PayPal\:\:verifyWebHook\(\) expects array\<string, mixed\>, string given\.$#'
-			identifier: argument.type
 			count: 1
 			path: app/Services/PayPalService.php
 

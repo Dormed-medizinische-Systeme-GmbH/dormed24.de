@@ -13,46 +13,21 @@ class PayPalService
 {
     private ?PayPal $client = null;
 
+    public function __construct(
+        private readonly PayPalClientFactory $clientFactory,
+    ) {}
+
     /**
-     * Get or create the PayPal API client (lazy init).
+     * Get or create the authenticated PayPal API client (lazy init).
      */
     private function client(): PayPal
     {
         if ($this->client === null) {
-            $this->client = new PayPal($this->buildConfig());
+            $this->client = $this->clientFactory->make();
             $this->authenticate();
         }
 
         return $this->client;
-    }
-
-    private function buildConfig(): array
-    {
-        $mode = PaymentMode::current();
-
-        return [
-            'mode' => $mode,
-            'sandbox' => [
-                'client_id' => (string) config('paypal.sandbox.client_id', ''),
-                'client_secret' => (string) config('paypal.sandbox.client_secret', ''),
-                'app_id' => (string) config('paypal.sandbox.app_id', 'APP-80W284485P519543T'),
-                'merchant_id' => (string) config('paypal.sandbox.merchant_id', ''),
-            ],
-            'live' => [
-                'client_id' => (string) config('paypal.live.client_id', ''),
-                'client_secret' => (string) config('paypal.live.client_secret', ''),
-                'app_id' => (string) config('paypal.live.app_id', ''),
-                'merchant_id' => (string) config('paypal.live.merchant_id', ''),
-            ],
-            'payment_action' => config('paypal.payment_action', 'Sale'),
-            'currency' => config('paypal.currency', 'EUR'),
-            'notify_url' => config('paypal.notify_url', ''),
-            'locale' => config('paypal.locale', 'de_DE'),
-            'validate_ssl' => config('paypal.validate_ssl', true),
-            'timeout' => config('paypal.timeout', 30),
-            'connect_timeout' => config('paypal.connect_timeout', 10),
-            'max_retries' => config('paypal.max_retries', 2),
-        ];
     }
 
     /**
@@ -188,19 +163,28 @@ class PayPalService
             return false;
         }
 
-        $payload = $request->getContent();
         $headers = [
-            'PAYPAL-AUTH-ALGO' => $request->header('PAYPAL-AUTH-ALGO'),
-            'PAYPAL-CERT-URL' => $request->header('PAYPAL-CERT-URL'),
-            'PAYPAL-TRANSMISSION-ID' => $request->header('PAYPAL-TRANSMISSION-ID'),
-            'PAYPAL-TRANSMISSION-SIG' => $request->header('PAYPAL-TRANSMISSION-SIG'),
-            'PAYPAL-TRANSMISSION-TIME' => $request->header('PAYPAL-TRANSMISSION-TIME'),
+            'PAYPAL-AUTH-ALGO' => (string) $request->header('PAYPAL-AUTH-ALGO'),
+            'PAYPAL-CERT-URL' => (string) $request->header('PAYPAL-CERT-URL'),
+            'PAYPAL-TRANSMISSION-ID' => (string) $request->header('PAYPAL-TRANSMISSION-ID'),
+            'PAYPAL-TRANSMISSION-SIG' => (string) $request->header('PAYPAL-TRANSMISSION-SIG'),
+            'PAYPAL-TRANSMISSION-TIME' => (string) $request->header('PAYPAL-TRANSMISSION-TIME'),
         ];
 
+        // Lokale Prüfung mit PayPals Zertifikat: braucht weder Access-Token
+        // noch API-Aufruf und arbeitet auf dem unveränderten Body (CRC32).
+        // Das Zertifikat lädt das SDK nur von PayPal-Domains.
         try {
-            $result = $this->client()->verifyWebHook($payload, $headers, $webhookId);
+            $verified = $this->clientFactory->make()
+                ->verifyWebHookLocally($headers, (string) $webhookId, $request->getContent());
 
-            return ($result['verification_status'] ?? '') === 'SUCCESS';
+            if (! $verified) {
+                Log::warning('PayPal webhook signature invalid', [
+                    'transmission_id' => $headers['PAYPAL-TRANSMISSION-ID'],
+                ]);
+            }
+
+            return $verified;
         } catch (\Throwable $e) {
             Log::error('PayPal webhook verification failed', [
                 'error' => $e->getMessage(),
