@@ -70,6 +70,16 @@ Eine Versionierung kommt erst später. Bis dahin genügt `updated_at`.
 
 ## Phase 1: Editor, Vorschau, Testmail
 
+**Stand: umgesetzt (harter Schnitt: nur Editor und Testmail an `shop.email`).**
+
+Abweichungen vom Plan unten:
+- Kein Duplizieren und keine eigene Vorschau-Route. Die Vorschau ist die Desktop/Mobil-Ansicht im Editor.
+- Keine Platzhalter (`{{ first_name }}` usw.), sie kommen mit Phase 2.
+- `<mj-attributes>` geht im Editor nicht: grapesjs-mjml zeigt es als sichtbaren Block. Schrift und Farben stehen deshalb direkt an den Elementen der Startvorlage.
+- Ohne Drittanbieter: kein Font Awesome vom CDN (eigene SVG-Icons), GrapesJS-Telemetrie ist aus, kein Social-Block.
+- Links dürfen `http` und `https` sein, Bilder nur `https`.
+- Die Säuberung ist gegen die echte Editor-Ausgabe getestet (`tests/Fixtures/newsletter/`).
+
 ### Backend
 
 - **`app/Models/Newsletter.php`:** mit Factory, Status-Konstanten und `isEditable()` (nur `draft`).

@@ -2,6 +2,7 @@
     import { Link } from '@inertiajs/svelte';
     import Building2 from '@lucide/svelte/icons/building-2';
     import LayoutGrid from '@lucide/svelte/icons/layout-grid';
+    import Mail from '@lucide/svelte/icons/mail';
     import Package from '@lucide/svelte/icons/package';
     import Settings from '@lucide/svelte/icons/settings';
     import ShoppingCart from '@lucide/svelte/icons/shopping-cart';
@@ -39,6 +40,10 @@
         { title: 'Produkte', href: '/admin/products', icon: Package },
     ];
 
+    const marketingItems: NavItem[] = [
+        { title: 'Newsletter', href: '/admin/newsletters', icon: Mail },
+    ];
+
     const settingsItems: NavItem[] = [
         { title: 'Allgemein', href: '/admin/settings/general', icon: Settings },
         {
@@ -67,6 +72,7 @@
     <SidebarContent>
         <NavMain items={mainNavItems} />
         <NavMain title="Katalog" items={catalogItems} />
+        <NavMain title="Marketing" items={marketingItems} />
         <NavMain title="Einstellungen" items={settingsItems} />
     </SidebarContent>
 
