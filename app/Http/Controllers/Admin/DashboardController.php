@@ -41,8 +41,8 @@ class DashboardController extends Controller
 
                 return [
                     'date' => $date,
-                    'orders' => (int) ($row?->orders ?? 0),
-                    'revenue' => (float) ($row?->revenue ?? 0),
+                    'orders' => (int) ($row->orders ?? 0),
+                    'revenue' => (float) ($row->revenue ?? 0),
                 ];
             });
 
