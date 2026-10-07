@@ -1,619 +1,194 @@
-# Implementierungsplan: Newsletter-Editor mit GrapesJS + MJML
-
-## 1. Ziel
-
-Eigener Newsletter-Editor auf Basis von:
-
-- Laravel – Backend/API, Persistenz, Rendering, Versand
-- PostgreSQL – Persistenz
-- Svelte – Frontend
-- GrapesJS – visueller Drag-&-Drop-Editor
-- MJML – responsive, E-Mail-kompatible HTML-Generierung
-
-```text
-Svelte
-  │
-  ▼
-GrapesJS
-  │
-  ▼
-MJML-Struktur / Editor-State
-  │
-  ▼
-Laravel API
-  │
-  ├── PostgreSQL
-  ├── MJML → HTML
-  └── Versandpipeline
-          │
-          ▼
-      Mail Provider
-```
-
-## 2. Architektur
-
-### Source of Truth
-
-Nicht das gerenderte HTML als primäre Datenquelle verwenden.
-
-Speichern:
-
-1. GrapesJS-Design/State – editierbare Quelle
-2. MJML – generierte bzw. normalisierte E-Mail-Struktur
-3. gerendertes HTML – Cache für Preview und Versand
-
-```text
-GrapesJS State
-     │
-     ├── speichern
-     ▼
-    MJML
-     │
-     ▼
-  HTML rendern
-     │
-     ├── Preview
-     └── Versand
-```
-
-## 3. PostgreSQL-Datenmodell
-
-### `newsletters`
-
-```text
-newsletters
------------
-id
-name
-subject
-preheader
-status
-design_json
-mjml
-rendered_html
-created_by
-created_at
-updated_at
-```
-
-- `id` – UUID oder bigint
-- `name` – interner Name
-- `subject` – E-Mail-Betreff
-- `preheader` – Preview-Text
-- `status` – `draft`, `ready`, `scheduled`, `sending`, `sent`
-- `design_json` – PostgreSQL `jsonb`
-- `mjml` – TEXT
-- `rendered_html` – TEXT
-- `created_by` – User-ID
-
-### Versionierung
-
-Optional im MVP, langfristig empfohlen:
-
-```text
-newsletter_versions
--------------------
-id
-newsletter_id
-version
-design_json
-mjml
-rendered_html
-created_by
-created_at
-```
-
-## 4. Laravel Backend
-
-### API
-
-```text
-GET    /api/newsletters
-POST   /api/newsletters
-GET    /api/newsletters/{newsletter}
-PUT    /api/newsletters/{newsletter}
-DELETE /api/newsletters/{newsletter}
-
-POST   /api/newsletters/{newsletter}/render
-GET    /api/newsletters/{newsletter}/preview
-
-POST   /api/newsletters/{newsletter}/duplicate
-POST   /api/newsletters/{newsletter}/send-test
-```
-
-Später:
-
-```text
-POST   /api/newsletters/{newsletter}/schedule
-POST   /api/newsletters/{newsletter}/send
-```
-
-### Validation
-
-Validieren:
-
-- maximale JSON-Größe
-- Status
-- Betrefflänge
-- Preheaderlänge
-- erlaubte Eingabestrukturen
-
-MJML/HTML nicht blind als vertrauenswürdigen User-Input behandeln.
-
-## 5. MJML-Integration
-
-Serverseitiges Rendering:
-
-```text
-GrapesJS
-   ↓
-MJML
-   ↓
-MJML Compiler
-   ↓
-HTML
-```
-
-Nicht bei jedem Auto-Save rendern. Rendering bei Save/Preview oder über einen dedizierten Job.
-
-### Renderer Service
-
-```text
-app/Services/Newsletter/MjmlRenderer.php
-```
-
-Verantwortung:
-
-```text
-render(string $mjml): RenderResult
-```
-
-Der Service:
-
-1. erhält MJML
-2. ruft den MJML-Compiler auf
-3. verarbeitet Fehler/Warnungen
-4. gibt HTML zurück
-5. speichert selbst keine Daten
-
-## 6. GrapesJS + Svelte
-
-Empfohlene Struktur:
-
-```text
-src/
-└── lib/
-    └── newsletter-editor/
-        ├── NewsletterEditor.svelte
-        ├── grapes-config.ts
-        ├── blocks.ts
-        ├── commands.ts
-        ├── storage.ts
-        └── types.ts
-```
-
-Svelte übernimmt:
-
-- Toolbar
-- Seitenlayout
-- Save
-- Preview
-- Template-Auswahl
-- Newsletter-Metadaten
-
-GrapesJS übernimmt:
-
-- Canvas
-- Drag & Drop
-- Blocks
-- Komponenten
-- Style-Editing
-
-## 7. Newsletter Blocks
-
-MVP:
-
-```text
-Text
-Bild
-Button
-Divider
-Spacer
-1 Spalte
-2 Spalten
-3 Spalten
-Social Links
-Logo
-Footer
-```
-
-Später:
-
-```text
-Hero
-Product Card
-Article Card
-Image + Text
-CTA
-Dynamic Content
-```
-
-Jeder Block sollte kontrolliert auf gültiges MJML abgebildet werden.
-
-## 8. Design-System
-
-Zentral definieren:
-
-```text
-Brand Colors
-Typography
-Button Styles
-Container Width
-Border Radius
-Spacing
-```
-
-Nicht jeden Block separat hardcoden.
-
-```text
-Newsletter Theme
-      │
-      ├── colors
-      ├── fonts
-      ├── buttons
-      ├── spacing
-      └── layout
-```
-
-## 9. Personalisierung
-
-Definierte Variablen verwenden:
-
-```text
-{{ first_name }}
-{{ last_name }}
-{{ company_name }}
-{{ unsubscribe_url }}
-```
-
-Der Editor erhält eine Liste erlaubter Variablen.
-
-Laravel ersetzt sie erst beim Versand:
-
-```text
-Editor
-  ↓
-{{ first_name }}
-  ↓
-Versand
-  ↓
-Maria
-```
-
-## 10. Preview
-
-```text
-GET /api/newsletters/{newsletter}/preview
-```
-
-Ablauf:
-
-```text
-design_json
-    ↓
-MJML
-    ↓
-HTML
-    ↓
-Browser
-```
-
-Optional:
-
-- Desktop Preview
-- Mobile Preview
-- Dark-Mode-Test
-- Testdaten
-
-## 11. Test-E-Mail
-
-```text
-POST /api/newsletters/{newsletter}/send-test
-```
-
-Ablauf:
-
-```text
-Newsletter
-    ↓
-Render HTML
-    ↓
-Test recipient
-    ↓
-Mail Provider
-```
-
-Testversand und normaler Versand sollten dieselbe Rendering-Pipeline verwenden.
-
-## 12. Versandarchitektur
-
-Nicht im normalen HTTP-Request versenden.
-
-Laravel Queue:
-
-```text
-Campaign
-   ↓
-Dispatch Job
-   ↓
-Queue
-   ↓
-SendNewsletterJob
-   ↓
-Mail Provider
-```
-
-Bei größeren Empfängerlisten:
-
-```text
-Newsletter
-   ↓
-Recipients
-   ↓
-Batch Jobs
-   ↓
-Queue Workers
-```
-
-## 13. Versandstatus
-
-Newsletter:
-
-```text
-draft
-ready
-scheduled
-sending
-sent
-cancelled
-```
-
-Empfänger separat:
-
-```text
-pending
-sent
-failed
-bounced
-```
-
-## 14. Sicherheit
-
-Besonders beachten:
-
-- MJML validieren
-- HTML nicht ungeprüft vertrauen
-- keine beliebigen Script-Tags
-- externe Ressourcen kontrollieren
-- Links normalisieren
-- Personalisierung serverseitig ersetzen
-
-### Bilder
-
-```text
-Upload
-  ↓
-Laravel Storage
-  ↓
-S3-kompatibler Storage
-  ↓
-HTTPS URL
-```
-
-Keine lokalen Dateipfade in Newsletter-HTML verwenden.
-
-## 15. MVP-Reihenfolge
-
-### Phase 1 – Grundsystem
-
-- Laravel
-- PostgreSQL
-- Newsletter Model
-- Migration
-- CRUD API
-- Svelte Newsletter Route
-
-### Phase 2 – Editor
-
-- GrapesJS integrieren
-- Newsletter Canvas
-- Basis-Blocks
-- Save/Load
-- JSONB Speicherung
-
-### Phase 3 – MJML
-
-- MJML Renderer
-- GrapesJS → MJML
-- MJML → HTML
-- HTML speichern
-- Preview
-
-### Phase 4 – Assets
-
-- Image Upload
-- Asset Manager
-- Storage
-- HTTPS URLs
-
-### Phase 5 – Personalisierung
-
-- Variablen-System
-- Variable Picker
-- Preview-Daten
-- serverseitiges Replacement
-
-### Phase 6 – Versand
-
-- Test-E-Mail
-- Queue
-- Mail Provider
-- Versandstatus
-- Fehlerbehandlung
-
-### Phase 7 – Versionierung
-
-- Newsletter Versions
-- Restore
-- Autosave/Manual Save
-- Änderungsverlauf
-
-## 16. MVP-Scope
-
-```text
-✔ Newsletter CRUD
-✔ GrapesJS Editor
-✔ Text
-✔ Bild
-✔ Button
-✔ Divider
-✔ Spacer
-✔ 1/2/3 Spalten
-✔ MJML Rendering
-✔ HTML Preview
-✔ Image Upload
-✔ Save/Load
-✔ Test-Mail
-✔ einfache Variablen
-```
-
-Noch nicht:
-
-```text
-✘ komplexe Dynamic Content Regeln
-✘ A/B Testing
-✘ Analytics
-✘ Campaign Automation
-✘ umfangreiche Versionierung
-✘ Template Marketplace
-✘ eigener Mailserver
-```
-
-## 17. Projektstruktur
-
-```text
-Laravel
-├── app/
-│   ├── Models/
-│   │   ├── Newsletter.php
-│   │   └── NewsletterVersion.php
-│   │
-│   ├── Services/
-│   │   └── Newsletter/
-│   │       ├── MjmlRenderer.php
-│   │       ├── NewsletterRenderer.php
-│   │       └── PersonalizationService.php
-│   │
-│   ├── Jobs/
-│   │   └── SendNewsletterJob.php
-│   │
-│   └── Http/
-│       ├── Controllers/
-│       │   └── NewsletterController.php
-│       └── Requests/
-│
-└── database/
-    └── migrations/
-
-Svelte
-├── routes/
-│   └── newsletters/
-│       └── [id]/
-│           └── edit/
-│
-└── lib/
-    └── newsletter-editor/
-        ├── NewsletterEditor.svelte
-        ├── grapes-config.ts
-        ├── blocks.ts
-        ├── commands.ts
-        ├── storage.ts
-        └── types.ts
-```
-
-## 18. Zentrale technische Entscheidung
-
-GrapesJS und MJML nicht über eine HTML-Rückkonvertierung koppeln.
-
-Empfohlener Flow:
-
-```text
-GrapesJS
-    │
-    │ editor state
-    ▼
-Newsletter representation
-    │
-    ▼
-MJML
-    │
-    ▼
-MJML compiler
-    │
-    ▼
-HTML
-```
-
-Nicht:
-
-```text
-GrapesJS
-   ↓
-fertiges HTML
-   ↓
-HTML → MJML
-```
-
-Die Rückrichtung HTML → MJML sollte vermieden werden.
-
-## 19. Erster vertikaler Slice
-
-Nicht sofort den kompletten Editor bauen.
-
-Zuerst:
-
-```text
-Svelte
-  ↓
-GrapesJS
-  ↓
-ein Text-Block
-  ↓
-MJML
-  ↓
-Laravel
-  ↓
-PostgreSQL
-  ↓
-HTML Preview
-```
-
-Wenn dieser Pfad funktioniert, werden weitere Blocks und Features ergänzt.
-
-## 20. Definition of Done für MVP
-
-Ein Newsletter kann:
-
-1. erstellt werden
-2. im GrapesJS Editor bearbeitet werden
-3. gespeichert werden
-4. erneut geöffnet werden
-5. Bilder enthalten
-6. Desktop/Mobile previewed werden
-7. als MJML gerendert werden
-8. als HTML gerendert werden
-9. Personalisierungsvariablen enthalten
-10. als Test-Mail verschickt werden
-11. über eine Queue an Empfänger verschickt werden
-
-Der Editor und die Newsletter-Daten bleiben vollständig unter eigener Kontrolle.
+# Newsletter-Editor (GrapesJS + MJML) für dormed24
+
+Stand 07.10.2026. Ursprünglicher Allgemein-Plan, auf den Shop zugeschnitten.
+
+## Entscheidungen
+
+| Thema | Entscheidung |
+|---|---|
+| Empfänger | Nur Abonnenten mit **Double-Opt-in**: Anmeldung im Footer und per Checkbox im Kundenkonto, Bestätigungsmail, Abmeldelink in jeder Mail. |
+| Versand | **Eigenes SMTP** über die vorhandene Mail-Konfiguration (Sandbox/Live) und die **Laravel-Queue** (`database`). |
+| MJML → HTML | **Im Browser** (`mjml-browser` im Editor). Der Server speichert MJML und HTML und säubert das HTML. Zur Laufzeit läuft kein Node-Prozess auf dem Server. |
+| Umfang | **Phase 1:** Editor, Vorschau und Testmail an den Admin. **Phase 2:** Abonnenten, Versand und Abmeldung. |
+
+## Rahmen im Shop
+
+- **Stack:** Laravel 13, Inertia v3, Svelte 5, Wayfinder, Tailwind 4, PHPUnit, Vitest. Admin-Seiten liegen unter `resources/js/pages/Admin/…` und laufen über Inertia, nicht über eine separate `/api`.
+- **Datenbank:** SQLite (Staging und lokal). JSON-Spalten sind dort `TEXT`, ein `jsonb` gibt es nicht. Der Editor-Zustand wird als JSON-String gespeichert, mit Cast `array`.
+- **Admin:**
+  - Es gibt genau einen Admin aus der Env (`EnvAdmin`, Guard `admin`), keine Admin-Tabelle. Ein `created_by` entfällt.
+  - Routen kommen in die `ensure.admin`-Gruppe in `routes/admin.php`, mit dem Namen `admin.newsletters.*`.
+- **Mail:**
+  - `ModeMailConfiguration` wählt die SMTP-Zugangsdaten für Sandbox oder Live.
+  - Shop-Mails gehen bisher synchron raus (bewusste Entscheidung in ANALYSE.md). Der Newsletter ist die Ausnahme und läuft über die Queue.
+- **Queue-Betrieb:**
+  - Auf dem Server gibt es keinen Supervisor.
+  - Lösung: Ein Cron startet jede Minute `php artisan schedule:run`, der Scheduler startet `queue:work --stop-when-empty --max-time=50`. Den Cron muss der Betreiber einmalig anlegen.
+- **Bilder:** Sie liegen auf der Disk `public` unter `storage/app/public/newsletters/…`, mit absoluter HTTPS-URL über `APP_URL`, wie die Produktbilder.
+- **Neue Abhängigkeiten (Freigabe nötig):** `grapesjs`, `grapesjs-mjml` (bringt `mjml-browser` mit), beide nur als npm-Frontend-Pakete. Auf der PHP-Seite gibt es keine neuen Pakete.
+
+## Datenmodell
+
+### `newsletters` (Phase 1)
+
+| Spalte | Typ | Hinweis |
+|---|---|---|
+| `id` | bigint | |
+| `name` | string | intern |
+| `subject` | string(150) | |
+| `preheader` | string(200), nullable | Vorschautext |
+| `status` | string | `draft`, `sending`, `sent`, `cancelled` |
+| `design_json` | text, nullable | GrapesJS-Projektdaten, Cast `array`, **Quelle der Wahrheit** |
+| `mjml` | longText, nullable | aus dem Editor |
+| `html` | longText, nullable | im Browser kompiliert, serverseitig gesäubert |
+| `sent_at` | timestamp, nullable | |
+| timestamps | | |
+
+Eine Versionierung kommt erst später. Bis dahin genügt `updated_at`.
+
+### `newsletter_subscribers` (Phase 2)
+
+| Spalte | Typ | Hinweis |
+|---|---|---|
+| `id` | bigint | |
+| `email` | string, unique | normalisiert (lowercase) |
+| `customer_id` | FK nullable, `nullOnDelete` | bei Anmeldung aus dem Konto |
+| `token` | string, unique | für Bestätigung und Abmeldung |
+| `confirmed_at` | timestamp, nullable | Double-Opt-in |
+| `unsubscribed_at` | timestamp, nullable | |
+| `consent_ip`, `consent_at` | | Nachweis der Einwilligung |
+| timestamps | | |
+
+### `newsletter_deliveries` (Phase 2)
+
+| Spalte | Hinweis |
+|---|---|
+| `newsletter_id`, `subscriber_id` | unique zusammen, damit niemand doppelt beliefert wird |
+| `status` | `pending`, `sent`, `failed` |
+| `error` | nullable |
+| `sent_at` | nullable |
+
+## Phase 1: Editor, Vorschau, Testmail
+
+### Backend
+
+- **`app/Models/Newsletter.php`:** mit Factory, Status-Konstanten und `isEditable()` (nur `draft`).
+- **`Admin/NewsletterController`:**
+  - `index` und `create` als Inertia-Seiten
+  - `store` legt einen Entwurf an und leitet zum Editor weiter
+  - `edit` als Inertia-Seite
+  - `update` speichert `design_json`, `mjml` und `html`, plus `subject` und `preheader`; das läuft als JSON, damit Autosave ohne Seitenwechsel geht
+  - `duplicate` und `destroy`, letzteres nur für Entwürfe
+  - `preview` liefert das gespeicherte HTML mit Beispielwerten für die Variablen
+  - `sendTest` schickt eine Testmail an `shop.email` oder an eine angegebene Adresse
+- **`UpdateNewsletterRequest`:**
+  - Längen für Betreff und Preheader
+  - Maximalgröße für `design_json` und `html`, z. B. 1 MB
+  - nur Entwürfe dürfen bearbeitet werden
+- **`Support/Newsletter/HtmlSanitizer`:**
+  - DOM-basiert, ohne neue Abhängigkeit
+  - entfernt `<script>`, `<iframe>`, `<object>`, `on*`-Attribute und `javascript:`-Links
+  - lässt nur `https:`-, `mailto:`- und `tel:`-Links zu und nur Bilder von `APP_URL`
+  - Das HTML aus dem Browser wird **nie** ungeprüft übernommen.
+- **`Mail/NewsletterMail`:**
+  - Betreff und Preheader
+  - HTML mit ersetzten Variablen
+  - Klartext-Fallback über `strip_tags`
+- **Personalisierung (`Support/Newsletter/Personalizer`):**
+  - feste Platzhalter `{{ first_name }}`, `{{ shop_name }}`, `{{ unsubscribe_url }}`
+  - Ersetzung serverseitig erst beim Versand, Werte escaped
+  - in der Testmail mit Beispielwerten
+- **Bild-Upload:** `POST admin/newsletters/assets`.
+  - erlaubt: jpg, png und webp bis 2 MB
+  - Antwort im Format, das der GrapesJS-Asset-Manager erwartet
+- **Routen:** in `routes/admin.php`, Wayfinder erzeugt die TypeScript-Funktionen.
+
+### Frontend
+
+- **Seiten:** `pages/Admin/Newsletters/Index.svelte` (Liste), `Create.svelte` und `Edit.svelte` (Editor-Seite).
+- **`components/newsletter-editor/`:**
+  - `NewsletterEditor.svelte`: GrapesJS mounten und zerstören (Svelte-5-`$effect`), mit Ladezustand
+  - `grapes-config.ts`: Preset `grapesjs-mjml`, Asset-Manager mit Upload-Route, deutsche Labels
+  - `blocks.ts`: Blöcke für das MVP (siehe unten)
+  - `theme.ts`: Shop-Farben (`#1a3a5c`, `#1a6bbf`), Schrift, Button-Stil und Breite 600 px, einmal zentral als `mj-attributes`
+  - `storage.ts`: Autosave mit Debounce von 3 s über `fetchJson` und Wayfinder-Route. Außerdem Speichern per Button und per Strg+S.
+  - `variables.ts`: Auswahl der erlaubten Platzhalter
+- **Kompilieren:** Beim Speichern wird MJML zu HTML kompiliert (`mjml-browser`). Fehler und Warnungen des Compilers erscheinen im Editor, Speichern geht trotzdem, denn der Entwurf bleibt erhalten.
+- **Vorschau:** im iframe (`srcdoc`), umschaltbar zwischen Desktop (600 px) und Mobil (375 px).
+- **Navigation:** Admin-Menüpunkt „Newsletter“.
+
+### Blöcke im MVP
+
+Text, Bild, Button, Trenner, Abstand, 1-, 2- und 3-spaltig, Logo-Kopf, Footer mit Impressum-Angaben (aus den Settings) und Abmeldelink.
+
+Später: Produktkarte (Produkt aus dem Shop wählen, Bild, Preis und Link werden übernommen), Hero, Bild + Text.
+
+### Tests (Phase 1)
+
+- **Feature:**
+  - CRUD und Rechte (nur Admin, Kunde bekommt 403)
+  - nur Entwürfe sind bearbeitbar
+  - Validierung (Längen, Größe)
+  - Upload (Typ, Größe, öffentliche URL)
+  - Vorschau ersetzt die Variablen
+  - Testmail mit `Mail::fake` (Empfänger, Betreff, ersetzte Variablen)
+- **Unit:**
+  - `HtmlSanitizer`: Script, Event-Handler, `javascript:` und fremde Bilder werden entfernt; zulässiges MJML-HTML bleibt unverändert
+  - `Personalizer`: Escaping, unbekannte Platzhalter bleiben stehen
+- **Vitest:** `storage.ts` (Debounce, Fehleranzeige) und `variables.ts`. GrapesJS selbst wird nicht getestet, es wird gemockt.
+
+### Definition of Done (Phase 1)
+
+Ein Entwurf lässt sich anlegen, im Editor bauen, speichern und wieder öffnen, mit Bildern. Vorschau auf Desktop und Mobil und eine Testmail an den Admin funktionieren, die Variablen sind dabei ersetzt. CI ist grün.
+
+## Phase 2: Abonnenten, Versand, Abmeldung
+
+### Double-Opt-in
+
+- **Anmeldung:**
+  - Formular im Footer: E-Mail plus Hinweistext mit Link zur Datenschutzerklärung
+  - Checkbox im Kundenkonto
+  - Rate-Limit und Honeypot gegen Bots
+- **Bestätigung:**
+  - Die Mail enthält einen signierten Link (`URL::temporarySignedRoute`, 48 h).
+  - Erst nach dem Klick wird `confirmed_at` gesetzt und die Einwilligung (IP, Zeitpunkt) gespeichert.
+- **Abmeldung:**
+  - signierter Link in jeder Mail
+  - Header `List-Unsubscribe` und `List-Unsubscribe-Post: List-Unsubscribe=One-Click` (RFC 8058, verlangen Gmail und Yahoo)
+  - Abmelden geht ohne Login und mit einem Klick
+- **Datenschutz:**
+  - Die Datenschutzerklärung (`Unternehmen/Datenschutz`) bekommt einen Abschnitt zum Newsletter, der Text kommt vom Betreiber.
+  - Kein Tracking (keine Öffnungs- und Klickmessung) im MVP.
+
+### Versand
+
+- **Ablauf:**
+  - Admin klickt „Senden“ und bestätigt mit Empfängerzahl.
+  - Der Status wird `sending`.
+  - Ein Job `PrepareNewsletterDeliveries` legt für jeden bestätigten Abonnenten eine `newsletter_deliveries`-Zeile an.
+  - Je Zeile läuft ein `SendNewsletterJob`.
+- **Drosselung:** `RateLimited`-Middleware am Job, Rate konfigurierbar (z. B. 60 pro Minute, Limit des SMTP-Anbieters prüfen). Fehlschläge werden mit Backoff wiederholt, danach bekommt die Zeile den Status `failed`.
+- **Abschluss:** Sind alle Zeilen erledigt, wird der Newsletter `sent` mit `sent_at`. Der Admin sieht den Fortschritt (gesendet, offen, fehlgeschlagen).
+- **Sandbox:** Im Sandbox-Modus gehen Mails nur an die Testadresse, so wie `ModeMailConfiguration` es schon für den Shop regelt.
+- **Betrieb:** Den Cron für `schedule:run` einrichten. In `routes/console.php` kommt der Queue-Worker-Aufruf mit `withoutOverlapping()`. Das in der README dokumentieren.
+
+### Tests (Phase 2)
+
+- Anmelden, bestätigen und abmelden, auch mit abgelaufenem oder manipuliertem Link.
+- Doppelte Anmeldung legt keine Dublette an.
+- Nur bestätigte und nicht abgemeldete Abonnenten werden beliefert.
+- Jeder Abonnent bekommt eine Mail, auch wenn ein Job erneut läuft.
+- Die Abmelde-Header stimmen.
+- Rate-Limit greift.
+- Bei einem Fehlschlag wird die Zeile als `failed` markiert, die übrigen laufen weiter.
+
+## Bewusst nicht im Umfang
+
+A/B-Tests, Öffnungs- und Klick-Tracking, Segmente und Automationen, Vorlagen-Marktplatz, eigener Mailserver und Bounce-Verarbeitung. Bounces landen zunächst im Postfach des SMTP-Absenders.
+
+## Offene Punkte vor dem Start
+
+1. npm-Abhängigkeiten `grapesjs` und `grapesjs-mjml` freigeben.
+2. Limits des SMTP-Anbieters für Massenversand klären (Mails pro Stunde, ggf. eigene Absenderadresse `newsletter@…`).
+3. Datenschutztext zum Newsletter vom Betreiber.
+4. Cron auf dem Server anlegen (Phase 2).
