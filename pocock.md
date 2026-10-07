@@ -59,7 +59,8 @@ In der ersten Fassung stand, `AddressRules`, `ProductFilters`, `ProductSort`, `S
 
 ## Offen: Frontend
 
-Es gibt keine Frontend-Tests (weder vitest noch playwright). `package.json` enthält nur `svelte-check`, ESLint und Prettier. Der komplette Checkout läuft über Svelte/Inertia, inklusive PayPal-Buttons. Mindestens ein End-to-End-Test für Warenkorb → Checkout wäre sinnvoll. Das ist eine Abhängigkeitsentscheidung (neue Dev-Dependency) und braucht eine Freigabe. Die Backend-Abdeckung oben sagt darüber nichts.
+- **Komponenten- und Modultests: erledigt.** Vitest mit `@testing-library/svelte` und jsdom läuft per `npm run test` und in der CI (`tests.yml`, nach dem Build). Die Testdateien `*.test.ts` liegen neben dem Code: `lib/`-Module, `is-mobile`, Komponenten wie `ProductCard`, `AddressForm`, `FormErrorsAlert` und `PayPalButton` mit gemockter SDK. Die Tests stammen aus dem geschlossenen PR #4 und sind gegen den aktuellen Code geprüft.
+- **Offen: End-to-End im Browser.** Ein Test für Warenkorb → Checkout fehlt weiter. jsdom ersetzt keinen echten Browser und keine echte PayPal-Sandbox. Dafür wäre Playwright nötig, eine weitere Abhängigkeitsentscheidung.
 
 ## Nicht beurteilt
 

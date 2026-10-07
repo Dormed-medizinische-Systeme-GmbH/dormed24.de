@@ -172,6 +172,7 @@ php artisan test --compact            # Testsuite (PHPUnit)
 vendor/bin/pint --dirty               # PHP-Codestyle (Pflicht vor Commit)
 vendor/bin/phpstan analyse            # Level 7, Baseline — muss grün bleiben
 npm run lint && npm run types:check   # ESLint + svelte-check
+npm run test                          # Frontend-Tests (Vitest, jsdom; *.test.ts neben dem Code)
 php artisan wayfinder:generate        # Nach Routen-Änderungen (TS-Routen)
 npm run build                         # Produktions-Assets (Client)
 npm run build:ssr                     # Client + SSR-Bundle (bootstrap/ssr/app.js)
