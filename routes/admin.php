@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\ArticleController;
 use App\Http\Controllers\Admin\CustomerController as AdminCustomerController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\LoginController;
@@ -12,6 +13,7 @@ use App\Http\Controllers\Admin\ProductVariantController;
 use App\Http\Controllers\Admin\RatingController as AdminRatingController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\ShippingMethodController;
+use App\Http\Controllers\Admin\SocialPostController;
 use Illuminate\Routing\RedirectController;
 use Illuminate\Support\Facades\Route;
 
@@ -49,6 +51,18 @@ Route::middleware('ensure.admin')->prefix('admin')->name('admin.')->group(functi
     Route::put('/newsletters/{newsletter}', [NewsletterController::class, 'update'])->name('newsletters.update');
     Route::delete('/newsletters/{newsletter}', [NewsletterController::class, 'destroy'])->name('newsletters.destroy');
     Route::post('/newsletters/{newsletter}/test', [NewsletterController::class, 'sendTest'])->middleware('throttle:10,1')->name('newsletters.test');
+    Route::get('/articles', [ArticleController::class, 'index'])->name('articles.index');
+    Route::get('/articles/create', [ArticleController::class, 'create'])->name('articles.create');
+    Route::post('/articles', [ArticleController::class, 'store'])->name('articles.store');
+    Route::get('/articles/{article}/edit', [ArticleController::class, 'edit'])->name('articles.edit');
+    Route::put('/articles/{article}', [ArticleController::class, 'update'])->name('articles.update');
+    Route::delete('/articles/{article}', [ArticleController::class, 'destroy'])->name('articles.destroy');
+    Route::get('/social-posts', [SocialPostController::class, 'index'])->name('social-posts.index');
+    Route::get('/social-posts/create', [SocialPostController::class, 'create'])->name('social-posts.create');
+    Route::post('/social-posts', [SocialPostController::class, 'store'])->name('social-posts.store');
+    Route::get('/social-posts/{socialPost}/edit', [SocialPostController::class, 'edit'])->name('social-posts.edit');
+    Route::put('/social-posts/{socialPost}', [SocialPostController::class, 'update'])->name('social-posts.update');
+    Route::delete('/social-posts/{socialPost}', [SocialPostController::class, 'destroy'])->name('social-posts.destroy');
     Route::get('/manufacturers', [ManufacturerController::class, 'index'])->name('manufacturers.index');
     Route::get('/manufacturers/create', [ManufacturerController::class, 'create'])->name('manufacturers.create');
     Route::post('/manufacturers', [ManufacturerController::class, 'store'])->name('manufacturers.store');

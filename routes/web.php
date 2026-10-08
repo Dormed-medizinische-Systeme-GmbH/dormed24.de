@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\MagazineController;
 use App\Http\Controllers\SitemapController;
 use App\Models\Product;
 use Illuminate\Support\Facades\Route;
@@ -39,6 +40,10 @@ Route::prefix('informationen')->group(function () {
     Route::inertia('/faq', 'Informationen/FAQ')->name('faq');
     Route::inertia('/widerrufsbelehrung', 'Informationen/Widerrufsbelehrung')->name('widerrufsbelehrung');
 });
+
+// Magazin: bewusst noch nirgends verlinkt und nicht in der Sitemap.
+Route::get('/magazin', [MagazineController::class, 'index'])->name('magazine.index');
+Route::get('/magazin/{article:slug}', [MagazineController::class, 'show'])->name('magazine.show');
 
 Route::prefix('unternehmen')->group(function () {
     Route::inertia('/impressum', 'Unternehmen/Impressum')->name('impressum');
