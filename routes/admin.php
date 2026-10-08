@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\ArticleController;
 use App\Http\Controllers\Admin\CustomerController as AdminCustomerController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\LoginController;
@@ -50,6 +51,12 @@ Route::middleware('ensure.admin')->prefix('admin')->name('admin.')->group(functi
     Route::put('/newsletters/{newsletter}', [NewsletterController::class, 'update'])->name('newsletters.update');
     Route::delete('/newsletters/{newsletter}', [NewsletterController::class, 'destroy'])->name('newsletters.destroy');
     Route::post('/newsletters/{newsletter}/test', [NewsletterController::class, 'sendTest'])->middleware('throttle:10,1')->name('newsletters.test');
+    Route::get('/articles', [ArticleController::class, 'index'])->name('articles.index');
+    Route::get('/articles/create', [ArticleController::class, 'create'])->name('articles.create');
+    Route::post('/articles', [ArticleController::class, 'store'])->name('articles.store');
+    Route::get('/articles/{article}/edit', [ArticleController::class, 'edit'])->name('articles.edit');
+    Route::put('/articles/{article}', [ArticleController::class, 'update'])->name('articles.update');
+    Route::delete('/articles/{article}', [ArticleController::class, 'destroy'])->name('articles.destroy');
     Route::get('/social-posts', [SocialPostController::class, 'index'])->name('social-posts.index');
     Route::get('/social-posts/create', [SocialPostController::class, 'create'])->name('social-posts.create');
     Route::post('/social-posts', [SocialPostController::class, 'store'])->name('social-posts.store');

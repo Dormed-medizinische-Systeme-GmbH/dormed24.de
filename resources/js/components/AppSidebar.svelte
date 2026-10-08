@@ -3,6 +3,7 @@
     import Building2 from '@lucide/svelte/icons/building-2';
     import LayoutGrid from '@lucide/svelte/icons/layout-grid';
     import Mail from '@lucide/svelte/icons/mail';
+    import Newspaper from '@lucide/svelte/icons/newspaper';
     import Package from '@lucide/svelte/icons/package';
     import Settings from '@lucide/svelte/icons/settings';
     import Share2 from '@lucide/svelte/icons/share-2';
@@ -44,6 +45,7 @@
     const marketingItems: NavItem[] = [
         { title: 'Newsletter', href: '/admin/newsletters', icon: Mail },
         { title: 'Social-Media', href: '/admin/social-posts', icon: Share2 },
+        { title: 'Magazin', href: '/admin/articles', icon: Newspaper },
     ];
 
     const settingsItems: NavItem[] = [

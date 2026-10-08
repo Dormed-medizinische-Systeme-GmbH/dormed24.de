@@ -23,6 +23,7 @@ class AdminAccessTest extends TestCase
             'customers index' => ['admin.customers.index'],
             'manufacturers index' => ['admin.manufacturers.index'],
             'social posts index' => ['admin.social-posts.index'],
+            'articles index' => ['admin.articles.index'],
             'settings general' => ['admin.settings.general'],
         ];
     }
