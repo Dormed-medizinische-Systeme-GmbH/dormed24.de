@@ -12,11 +12,11 @@
     import { useForm, setLayoutProps } from '@inertiajs/svelte';
     import * as AdminManufacturerController from '@/actions/App/Http/Controllers/Admin/ManufacturerController';
     import AppHead from '@/components/AppHead.svelte';
+    import RowActions from '@/components/RowActions.svelte';
     import { Button } from '@/components/ui/button';
     import { Input } from '@/components/ui/input';
     import { Label } from '@/components/ui/label';
     import { guardUnsavedChanges } from '@/lib/unsavedChanges';
-    import ManufacturerActions from './ManufacturerActions.svelte';
 
     type Manufacturer = {
         id: number;
@@ -53,7 +53,10 @@
 </script>
 
 {#snippet headerActions()}
-    <ManufacturerActions {manufacturer} showEdit={false} />
+    <RowActions
+        destroyHref={AdminManufacturerController.destroy.url(manufacturer.id)}
+        confirmMessage={`Hersteller „${manufacturer.name}“ wirklich löschen?`}
+    />
     <Button onclick={save} disabled={form.processing}>
         {form.processing ? 'Speichert…' : 'Speichern'}
     </Button>

@@ -110,6 +110,9 @@ resources/js/
 │   ├── CartSheet.svelte            # Slide-in Warenkorb (rechts)
 │   ├── PayPalButton.svelte         # PayPal-JS-SDK-Integration (fetchJson)
 │   ├── AddressForm.svelte          # Wiederverwendetes Adressformular (prefix-basiert)
+│   ├── AdminDataTable.svelte       # Admin-Listen: Auswahl, Sortierung, Suche, Spalten, Leer-Zustand
+│   ├── RowActions.svelte           # Aktionsmenü „Bearbeiten/Löschen“ (+ eigene Einträge)
+│   ├── StatusBadge.svelte          # Status-Badge aus einer StatusMap (Label + Ton, `lib/status.ts`)
 │   └── ui/                         # shadcn-svelte Komponentenbibliothek
 ├── lib/
 │   ├── http.ts                     # fetchJson() — CSRF-sicherer Fetch für Nicht-Inertia-Endpoints
@@ -123,6 +126,8 @@ resources/js/
 ├── routes/                         # Wayfinder (Named Routes als TS-Funktionen)
 └── types/                          # auth.ts, cart.ts (CartItem inkl. line_key/variant_*), …
 ```
+
+**Admin-Listen:** Neue Index-Seiten beschreiben nur Spalten, Suchfelder und Texte und nutzen `AdminDataTable`, `RowActions` und `StatusBadge`. Keine eigene tanstack-Verdrahtung, keine kopierten Badges oder Aktionsmenüs pro Seite. Farben für Status gibt es nur als Ton (`neutral`, `info`, `success`, `warning`, `danger`) in `lib/status.ts`.
 
 **Wichtig — CSRF:** Inertias `router.*` sendet den XSRF-Token automatisch.
 Rohe `fetch()`-Aufrufe **müssen** über `fetchJson()` aus `@/lib/http` laufen

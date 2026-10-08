@@ -75,7 +75,7 @@ jobs:
         run: npm run test
 
       # Auf Pull Requests wird die Testabdeckung gemessen und in die Job-
-      # Zusammenfassung geschrieben (nur Ausgabe, noch kein Mindestwert). Als
+      # Zusammenfassung geschrieben. Unter 90 % schlägt der Lauf fehl. Als
       # Deploy-Gate auf main läuft weiter der schnelle Lauf ohne Messung.
       - name: Tests
         if: github.event_name != 'pull_request'
@@ -84,11 +84,13 @@ jobs:
       - name: Tests with coverage
         if: github.event_name == 'pull_request'
         run: |
-          set -o pipefail
-          php artisan test --coverage --no-ansi | tee coverage.txt
+          set +e -o pipefail
+          php artisan test --coverage --min=90 --no-ansi | tee coverage.txt
+          status=$?
           {
-            echo '### Testabdeckung'
+            echo '### Testabdeckung (Minimum 90 %)'
             echo '```'
             tail -n 60 coverage.txt
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+          exit $status

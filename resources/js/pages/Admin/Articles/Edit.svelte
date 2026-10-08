@@ -14,12 +14,13 @@
     import * as ArticleController from '@/actions/App/Http/Controllers/Admin/ArticleController';
     import { show as magazineShow } from '@/actions/App/Http/Controllers/MagazineController';
     import AppHead from '@/components/AppHead.svelte';
+    import RowActions from '@/components/RowActions.svelte';
+    import StatusBadge from '@/components/StatusBadge.svelte';
     import { Button, buttonVariants } from '@/components/ui/button';
     import { fromDateTimeLocal, toDateTimeLocal } from '@/lib/date';
+    import { ARTICLE_STATUSES } from '@/lib/status';
     import { guardUnsavedChanges } from '@/lib/unsavedChanges';
-    import ArticleActions from './ArticleActions.svelte';
     import ArticleFields from './ArticleFields.svelte';
-    import StatusBadge from './StatusBadge.svelte';
 
     type Article = {
         id: number;
@@ -71,7 +72,7 @@
 </script>
 
 {#snippet headerActions()}
-    <StatusBadge status={article.status} />
+    <StatusBadge status={article.status} statuses={ARTICLE_STATUSES} />
     {#if article.status === 'published'}
         <a
             href={magazineShow.url(article.slug)}
@@ -83,7 +84,10 @@
             Im Shop ansehen
         </a>
     {/if}
-    <ArticleActions {article} showEdit={false} />
+    <RowActions
+        destroyHref={ArticleController.destroy.url(article.id)}
+        confirmMessage={`Artikel „${article.title}“ wirklich löschen?`}
+    />
     <Button onclick={save} disabled={form.processing}>
         {form.processing ? 'Speichert…' : 'Speichern'}
     </Button>
