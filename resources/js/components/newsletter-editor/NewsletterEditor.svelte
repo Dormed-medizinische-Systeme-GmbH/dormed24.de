@@ -15,7 +15,13 @@
     import * as Tabs from '@/components/ui/tabs';
     import * as ToggleGroup from '@/components/ui/toggle-group';
     import BlockPalette from './BlockPalette.svelte';
-    import { starterTemplate } from './template';
+    import { illegalAttributes, removeIllegalAttributes } from './mjml-cleanup';
+    import type { MjmlError } from './mjml-cleanup';
+    import {
+        naturalImageSizes,
+        setOutlookImageHeights,
+    } from './outlook-images';
+    import { heroBlock, starterTemplate } from './template';
 
     export type EditorContent = {
         design_json: ProjectData;
@@ -204,6 +210,10 @@
                 const current = instance;
                 editor = current;
 
+                current.Blocks.get('mj-hero')?.set(
+                    'content',
+                    heroBlock(shopUrl),
+                );
                 refreshBlocks(current);
                 refreshHistory(current);
                 current.on('block:custom', () => refreshBlocks(current));
@@ -219,18 +229,29 @@
 
                 onReady({
                     getContent: () => {
-                        const mjml = current.runCommand('mjml-code') as string;
-                        const result = current.runCommand(
-                            'mjml-code-to-html',
-                        ) as {
-                            html: string;
-                            errors?: { formattedMessage?: string }[];
-                        };
+                        const compile = (mjml: string) =>
+                            current.runCommand('mjml-code-to-html', {
+                                mjml,
+                            }) as { html: string; errors?: MjmlError[] };
+
+                        let mjml = current.runCommand('mjml-code') as string;
+                        let result = compile(mjml);
+                        const illegal = illegalAttributes(result.errors ?? []);
+
+                        // Attribute, die MJML an einem Tag nicht kennt, raus
+                        // und neu übersetzen, damit keine Hinweise bleiben.
+                        if (illegal.size > 0) {
+                            mjml = removeIllegalAttributes(mjml, illegal);
+                            result = compile(mjml);
+                        }
 
                         return {
                             design_json: current.getProjectData(),
                             mjml,
-                            html: result.html,
+                            html: setOutlookImageHeights(
+                                result.html,
+                                naturalImageSizes(current.Canvas.getDocument()),
+                            ),
                             errors: (result.errors ?? []).map(
                                 (error) =>
                                     error.formattedMessage ?? String(error),
@@ -436,6 +457,51 @@
     /* Panels kommen nur noch vom Plugin (Import, Code), sie werden nicht gebraucht. */
     .newsletter-editor :global(.gjs-pn-panel) {
         display: none;
+    }
+
+    /* Das Bilder-Fenster bräuchte sonst den (transparenten) Panel-Hintergrund. */
+    .newsletter-editor :global(.gjs-mdl-dialog) {
+        max-width: 56rem;
+        border: 1px solid var(--border);
+        border-radius: 0.75rem;
+        background-color: var(--background);
+        color: var(--foreground);
+        box-shadow: 0 20px 40px rgb(0 0 0 / 0.2);
+        text-shadow: none;
+    }
+
+    .newsletter-editor :global(.gjs-mdl-header) {
+        border-color: var(--border);
+        padding: 1rem 1.25rem;
+    }
+
+    .newsletter-editor :global(.gjs-mdl-title) {
+        font-weight: 600;
+    }
+
+    .newsletter-editor :global(.gjs-mdl-content) {
+        padding: 1rem 1.25rem 1.25rem;
+    }
+
+    .newsletter-editor :global(.gjs-am-file-uploader > form) {
+        border-radius: 0.5rem;
+        border-color: var(--border);
+        background-color: var(--muted);
+        color: var(--muted-foreground);
+    }
+
+    .newsletter-editor :global(.gjs-am-assets-cont) {
+        border-radius: 0.5rem;
+        background-color: var(--muted);
+    }
+
+    .newsletter-editor :global(.gjs-am-add-asset .gjs-btn-prim) {
+        border-radius: 0.375rem;
+        background-color: #1a6bbf;
+        color: #ffffff;
+        padding: 0.375rem 0.75rem;
+        width: auto;
+        white-space: nowrap;
     }
 
     .newsletter-editor :global(.gjs-cv-canvas) {
