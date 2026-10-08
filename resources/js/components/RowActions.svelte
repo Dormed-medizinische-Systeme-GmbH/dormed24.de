@@ -3,7 +3,7 @@
     import Ellipsis from '@lucide/svelte/icons/ellipsis';
     import Pencil from '@lucide/svelte/icons/pencil';
     import Trash2 from '@lucide/svelte/icons/trash-2';
-    import * as AdminManufacturerController from '@/actions/App/Http/Controllers/Admin/ManufacturerController';
+    import type { Snippet } from 'svelte';
     import { Button } from '@/components/ui/button';
     import {
         DropdownMenu,
@@ -14,20 +14,25 @@
     } from '@/components/ui/dropdown-menu';
 
     let {
-        manufacturer,
-        showEdit = true,
+        editHref,
+        destroyHref,
+        confirmMessage,
+        items,
     }: {
-        manufacturer: { id: number; name: string };
-        /** Auf der Bearbeiten-Seite selbst ist „Bearbeiten" überflüssig. */
-        showEdit?: boolean;
+        /** Ohne Link kein „Bearbeiten“, z. B. auf der Bearbeiten-Seite selbst. */
+        editHref?: string;
+        destroyHref: string;
+        confirmMessage: string;
+        /** Weitere Einträge zwischen „Bearbeiten“ und „Löschen“. */
+        items?: Snippet;
     } = $props();
 
     function destroy() {
-        if (!confirm(`Hersteller „${manufacturer.name}" wirklich löschen?`)) {
+        if (!confirm(confirmMessage)) {
             return;
         }
 
-        router.delete(AdminManufacturerController.destroy.url(manufacturer.id));
+        router.delete(destroyHref);
     }
 </script>
 
@@ -46,14 +51,12 @@
         {/snippet}
     </DropdownMenuTrigger>
     <DropdownMenuContent align="end">
-        {#if showEdit}
+        {#if editHref}
             <DropdownMenuItem asChild>
                 {#snippet children(props)}
                     <a
                         class={props.class}
-                        href={AdminManufacturerController.edit.url(
-                            manufacturer.id,
-                        )}
+                        href={editHref}
                         onclick={props.onClick}
                     >
                         <Pencil class="mr-2 size-4" />
@@ -61,6 +64,9 @@
                     </a>
                 {/snippet}
             </DropdownMenuItem>
+        {/if}
+        {@render items?.()}
+        {#if editHref || items}
             <DropdownMenuSeparator />
         {/if}
         <DropdownMenuItem

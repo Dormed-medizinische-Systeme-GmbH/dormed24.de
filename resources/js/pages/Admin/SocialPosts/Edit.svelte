@@ -12,12 +12,13 @@
     import { setLayoutProps, useForm } from '@inertiajs/svelte';
     import * as SocialPostController from '@/actions/App/Http/Controllers/Admin/SocialPostController';
     import AppHead from '@/components/AppHead.svelte';
+    import RowActions from '@/components/RowActions.svelte';
+    import StatusBadge from '@/components/StatusBadge.svelte';
     import { Button } from '@/components/ui/button';
     import { fromDateTimeLocal, toDateTimeLocal } from '@/lib/date';
+    import { SOCIAL_POST_STATUSES } from '@/lib/status';
     import { guardUnsavedChanges } from '@/lib/unsavedChanges';
-    import SocialPostActions from './SocialPostActions.svelte';
     import SocialPostFields from './SocialPostFields.svelte';
-    import StatusBadge from './StatusBadge.svelte';
 
     type Post = {
         id: number;
@@ -69,8 +70,11 @@
 </script>
 
 {#snippet headerActions()}
-    <StatusBadge status={post.status} />
-    <SocialPostActions {post} showEdit={false} />
+    <StatusBadge status={post.status} statuses={SOCIAL_POST_STATUSES} />
+    <RowActions
+        destroyHref={SocialPostController.destroy.url(post.id)}
+        confirmMessage={`Beitrag „${post.title}“ wirklich löschen?`}
+    />
     <Button onclick={save} disabled={!post.editable || form.processing}>
         {form.processing ? 'Speichert…' : 'Speichern'}
     </Button>
