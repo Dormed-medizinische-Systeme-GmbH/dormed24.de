@@ -51,6 +51,10 @@ class NewsletterController extends Controller
         return to_route('admin.newsletters.edit', $newsletter);
     }
 
+    /**
+     * Eingabemaske des Newsletters: Betreff, Vorschautext, Vorschau des
+     * gespeicherten Inhalts und (ab Phase 2) Versand.
+     */
     public function edit(Newsletter $newsletter): Response
     {
         return Inertia::render('Admin/Newsletters/Edit', [
@@ -60,8 +64,26 @@ class NewsletterController extends Controller
                 'subject' => $newsletter->subject,
                 'preheader' => $newsletter->preheader,
                 'status' => $newsletter->status,
+                'html' => $newsletter->html,
+                'editable' => $newsletter->isEditable(),
+                'updated_at' => $newsletter->updated_at->format('d.m.Y H:i'),
+                'sent_at' => $newsletter->sent_at?->format('d.m.Y H:i'),
+            ],
+            'testRecipient' => Setting::get('shop.email'),
+        ]);
+    }
+
+    /**
+     * Inhalt im GrapesJS-/MJML-Editor gestalten.
+     */
+    public function content(Newsletter $newsletter): Response
+    {
+        return Inertia::render('Admin/Newsletters/Content', [
+            'newsletter' => [
+                'id' => $newsletter->id,
+                'name' => $newsletter->name,
+                'status' => $newsletter->status,
                 'design_json' => $newsletter->design_json,
-                'mjml' => $newsletter->mjml,
                 'editable' => $newsletter->isEditable(),
             ],
             'testRecipient' => Setting::get('shop.email'),
@@ -69,9 +91,10 @@ class NewsletterController extends Controller
     }
 
     /**
-     * Speichern aus dem Editor (auch Autosave), deshalb JSON statt Redirect.
+     * Speichert aus der Eingabemaske (Inertia-Formular, Redirect) und aus
+     * dem Editor (Autosave per fetch, JSON).
      */
-    public function update(UpdateNewsletterRequest $request, Newsletter $newsletter, HtmlSanitizer $sanitizer): JsonResponse
+    public function update(UpdateNewsletterRequest $request, Newsletter $newsletter, HtmlSanitizer $sanitizer): JsonResponse|RedirectResponse
     {
         $data = $request->validated();
 
@@ -80,6 +103,10 @@ class NewsletterController extends Controller
         }
 
         $newsletter->update($data);
+
+        if (! $request->wantsJson()) {
+            return back()->with('success', 'Newsletter gespeichert.');
+        }
 
         return response()->json([
             'message' => 'Gespeichert.',

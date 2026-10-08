@@ -8,23 +8,28 @@
 </script>
 
 <script lang="ts">
-    import { page, setLayoutProps } from '@inertiajs/svelte';
+    import { Link, setLayoutProps, useForm } from '@inertiajs/svelte';
+    import LayoutTemplate from '@lucide/svelte/icons/layout-template';
     import Save from '@lucide/svelte/icons/save';
     import Send from '@lucide/svelte/icons/send';
-    import type { ProjectData } from 'grapesjs';
-    import { onDestroy } from 'svelte';
     import { toast } from 'svelte-sonner';
     import * as NewsletterController from '@/actions/App/Http/Controllers/Admin/NewsletterController';
     import AppHead from '@/components/AppHead.svelte';
     import InputError from '@/components/InputError.svelte';
-    import { createAutosave } from '@/components/newsletter-editor/autosave';
-    import type { AutosaveState } from '@/components/newsletter-editor/autosave';
-    import NewsletterEditor from '@/components/newsletter-editor/NewsletterEditor.svelte';
-    import type { EditorApi } from '@/components/newsletter-editor/NewsletterEditor.svelte';
-    import { Button } from '@/components/ui/button';
+    import { Button, buttonVariants } from '@/components/ui/button';
+    import {
+        Card,
+        CardContent,
+        CardDescription,
+        CardHeader,
+        CardTitle,
+    } from '@/components/ui/card';
     import { Input } from '@/components/ui/input';
     import { Label } from '@/components/ui/label';
-    import { fetchJson, xsrfToken } from '@/lib/http';
+    import { fetchJson } from '@/lib/http';
+    import { guardUnsavedChanges } from '@/lib/unsavedChanges';
+    import NewsletterActions from './NewsletterActions.svelte';
+    import StatusBadge from './StatusBadge.svelte';
 
     type Newsletter = {
         id: number;
@@ -32,8 +37,10 @@
         subject: string;
         preheader: string | null;
         status: string;
-        design_json: ProjectData | null;
+        html: string | null;
         editable: boolean;
+        updated_at: string;
+        sent_at: string | null;
     };
 
     let {
@@ -41,100 +48,41 @@
         testRecipient,
     }: { newsletter: Newsletter; testRecipient: string | null } = $props();
 
-    // Formularwerte starten mit den Server-Werten und gehören danach der Seite.
     // svelte-ignore state_referenced_locally
-    let name = $state(newsletter.name);
-    // svelte-ignore state_referenced_locally
-    let subject = $state(newsletter.subject);
-    // svelte-ignore state_referenced_locally
-    let preheader = $state(newsletter.preheader ?? '');
-    let errors = $state<Record<string, string>>({});
-    let compileWarnings = $state<string[]>([]);
-    let saveState = $state<AutosaveState>('idle');
-    let lastSaved = $state<string | null>(null);
-    let sendingTest = $state(false);
-    let editorApi: EditorApi | null = null;
-
-    const shopUrl = $derived(
-        (page.props.appUrl as string | undefined) ??
-            (typeof window !== 'undefined' ? window.location.origin : ''),
-    );
-
-    async function save(): Promise<boolean> {
-        if (!editorApi) {
-            return false;
-        }
-
-        const content = editorApi.getContent();
-        compileWarnings = content.errors;
-
-        const { ok, status, data } = await fetchJson<{
-            updated_at?: string;
-            message?: string;
-            errors?: Record<string, string[]>;
-        }>(NewsletterController.update.url(newsletter.id), {
-            method: 'PUT',
-            body: {
-                name,
-                subject,
-                preheader: preheader || null,
-                design_json: content.design_json,
-                mjml: content.mjml,
-                html: content.html,
-            },
-        });
-
-        if (ok) {
-            errors = {};
-            lastSaved = data.updated_at ?? null;
-
-            return true;
-        }
-
-        errors =
-            status === 422 && data.errors
-                ? Object.fromEntries(
-                      Object.entries(data.errors).map(([field, messages]) => [
-                          field,
-                          messages[0],
-                      ]),
-                  )
-                : { newsletter: data.message ?? 'Speichern fehlgeschlagen.' };
-
-        return false;
-    }
-
-    const autosave = createAutosave(save, {
-        onStateChange: (state) => (saveState = state),
+    const form = useForm({
+        name: newsletter.name,
+        subject: newsletter.subject,
+        preheader: newsletter.preheader ?? '',
     });
 
-    onDestroy(() => autosave.cancel());
+    let sendingTest = $state(false);
 
-    // Speicherstatus, Testmail und Speichern rechts im Admin-Header, wie bei Produkten.
+    // Rückfrage beim Verlassen, solange Änderungen nicht gespeichert sind.
+    $effect(() => guardUnsavedChanges(() => form.isDirty));
+
+    // Testmail, Inhalt und Speichern rechts im Admin-Header, wie bei Produkten.
     $effect(() => {
         setLayoutProps({ actions: headerActions });
     });
 
-    async function saveNow() {
-        if (await autosave.flush()) {
-            toast.success('Gespeichert.');
-        } else {
-            toast.error('Speichern fehlgeschlagen. Bitte die Hinweise prüfen.');
-        }
+    function submit(event: SubmitEvent) {
+        event.preventDefault();
+        save();
+    }
+
+    function save() {
+        form.transform((data) => ({
+            ...data,
+            preheader: data.preheader || null,
+        })).put(NewsletterController.update.url(newsletter.id), {
+            preserveScroll: true,
+        });
     }
 
     async function sendTest() {
         sendingTest = true;
 
         try {
-            if (!(await autosave.flush())) {
-                toast.error(
-                    'Vor der Testmail muss gespeichert werden. Bitte die Hinweise prüfen.',
-                );
-
-                return;
-            }
-
             const { ok, data } = await fetchJson<{ message?: string }>(
                 NewsletterController.sendTest.url(newsletter.id),
                 { method: 'POST' },
@@ -153,145 +101,151 @@
         }
     }
 
-    async function upload(files: File[]): Promise<string[]> {
-        const form = new FormData();
-        files.forEach((file) => form.append('files[]', file));
-
-        const response = await fetch(NewsletterController.uploadAsset.url(), {
-            method: 'POST',
-            headers: {
-                Accept: 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-XSRF-TOKEN': xsrfToken(),
-            },
-            body: form,
-        });
-        const data = (await response.json().catch(() => ({}))) as {
-            data?: { src: string }[];
-            message?: string;
-        };
-
-        if (!response.ok || !data.data) {
-            toast.error(
-                data.message ??
-                    'Bild-Upload fehlgeschlagen (jpg, png, webp oder gif, max. 2 MB).',
-            );
-
-            return [];
-        }
-
-        return data.data.map((asset) => asset.src);
-    }
-
-    function onKeydown(event: KeyboardEvent) {
-        if ((event.ctrlKey || event.metaKey) && event.key === 's') {
-            event.preventDefault();
-            void saveNow();
-        }
-    }
-
-    const saveStateLabel = $derived(
-        {
-            idle: '',
-            dirty: 'Ungespeicherte Änderungen',
-            saving: 'Wird gespeichert …',
-            saved: lastSaved ? `Gespeichert um ${lastSaved}` : 'Gespeichert',
-            error: 'Speichern fehlgeschlagen',
-        }[saveState],
+    const testMailHint = $derived(
+        !testRecipient
+            ? 'In den Einstellungen ist keine Shop-E-Mail hinterlegt.'
+            : form.isDirty
+              ? 'Bitte zuerst speichern.'
+              : `Testmail an ${testRecipient}`,
     );
 </script>
 
 {#snippet headerActions()}
-    <span
-        class="hidden text-sm text-muted-foreground sm:inline"
-        aria-live="polite"
-    >
-        {saveStateLabel}
-    </span>
+    <NewsletterActions {newsletter} showEdit={false} />
     <Button
         variant="outline"
         onclick={sendTest}
-        disabled={sendingTest || !testRecipient}
-        title={testRecipient
-            ? `Testmail an ${testRecipient}`
-            : 'In den Einstellungen ist keine Shop-E-Mail hinterlegt.'}
+        disabled={sendingTest || !testRecipient || form.isDirty}
+        title={testMailHint}
     >
         <Send class="size-4" />
         {sendingTest ? 'Wird gesendet …' : 'Testmail an Admin'}
     </Button>
-    <Button
-        onclick={saveNow}
-        disabled={!newsletter.editable || saveState === 'saving'}
-    >
+    <Button onclick={save} disabled={!newsletter.editable || form.processing}>
         <Save class="size-4" />
-        {saveState === 'saving' ? 'Speichert…' : 'Speichern'}
+        {form.processing ? 'Speichert…' : 'Speichern'}
     </Button>
 {/snippet}
 
-<svelte:window onkeydown={onKeydown} />
-
 <AppHead title={`Newsletter: ${newsletter.name}`} />
 
-<div class="flex h-[calc(100svh-5rem)] flex-col gap-3 p-4">
-    <div class="flex flex-wrap items-end gap-3">
-        <div class="grid min-w-48 flex-1 gap-1">
-            <Label for="newsletter-name">Interner Name</Label>
-            <Input
-                id="newsletter-name"
-                bind:value={name}
-                oninput={() => autosave.touch()}
-            />
-            <InputError message={errors.name} />
-        </div>
-        <div class="grid min-w-64 flex-[2] gap-1">
-            <Label for="newsletter-subject">Betreff</Label>
-            <Input
-                id="newsletter-subject"
-                bind:value={subject}
-                maxlength={150}
-                oninput={() => autosave.touch()}
-            />
-            <InputError message={errors.subject} />
-        </div>
-        <div class="grid min-w-64 flex-[2] gap-1">
-            <Label for="newsletter-preheader">Vorschautext</Label>
-            <Input
-                id="newsletter-preheader"
-                bind:value={preheader}
-                maxlength={200}
-                placeholder="Erscheint im Postfach neben dem Betreff"
-                oninput={() => autosave.touch()}
-            />
-            <InputError message={errors.preheader} />
-        </div>
+<div class="grid flex-1 gap-6 p-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,40rem)]">
+    <h1 class="sr-only">Newsletter {newsletter.name}</h1>
+
+    <div class="flex flex-col gap-6">
+        <Card>
+            <CardHeader>
+                <CardTitle>Allgemein</CardTitle>
+                <CardDescription>
+                    Betreff und Vorschautext sehen Empfänger im Postfach, den
+                    internen Namen nur der Admin.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <form onsubmit={submit} class="flex flex-col gap-5">
+                    <fieldset class="contents" disabled={!newsletter.editable}>
+                        <div class="flex flex-col gap-2">
+                            <Label for="newsletter-name">Interner Name</Label>
+                            <Input
+                                id="newsletter-name"
+                                bind:value={form.name}
+                                maxlength={255}
+                            />
+                            <InputError message={form.errors.name} />
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <Label for="newsletter-subject">Betreff</Label>
+                            <Input
+                                id="newsletter-subject"
+                                bind:value={form.subject}
+                                maxlength={150}
+                            />
+                            <InputError message={form.errors.subject} />
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <Label for="newsletter-preheader">
+                                Vorschautext
+                            </Label>
+                            <Input
+                                id="newsletter-preheader"
+                                bind:value={form.preheader}
+                                maxlength={200}
+                                placeholder="Erscheint im Postfach neben dem Betreff"
+                            />
+                            <InputError message={form.errors.preheader} />
+                        </div>
+                    </fieldset>
+                    <InputError
+                        message={(form.errors as Record<string, string>)
+                            .newsletter}
+                    />
+                </form>
+            </CardContent>
+        </Card>
+
+        <Card>
+            <CardHeader>
+                <CardTitle>Versand</CardTitle>
+                <CardDescription>
+                    Der Versand an Abonnenten kommt mit Phase 2. Bis dahin geht
+                    nur die Testmail an die Shop-Adresse.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
+                    <dt class="text-muted-foreground">Status</dt>
+                    <dd><StatusBadge status={newsletter.status} /></dd>
+                    <dt class="text-muted-foreground">Zuletzt geändert</dt>
+                    <dd>{newsletter.updated_at}</dd>
+                    <dt class="text-muted-foreground">Verschickt</dt>
+                    <dd>{newsletter.sent_at ?? '–'}</dd>
+                    <dt class="text-muted-foreground">Testempfänger</dt>
+                    <dd>{testRecipient ?? 'keine Shop-E-Mail hinterlegt'}</dd>
+                </dl>
+            </CardContent>
+        </Card>
     </div>
 
-    <InputError
-        message={errors.newsletter ?? errors.html ?? errors.design_json}
-    />
-    {#if compileWarnings.length > 0}
-        <details
-            class="rounded-md border border-amber-300 bg-amber-50 p-2 text-sm"
+    <Card class="min-h-[32rem]">
+        <CardHeader
+            class="flex flex-row items-start justify-between gap-4 space-y-0"
         >
-            <summary class="cursor-pointer">
-                MJML meldet {compileWarnings.length} Hinweis(e)
-            </summary>
-            <ul class="mt-1 list-disc pl-5">
-                {#each compileWarnings as warning, index (index)}
-                    <li>{warning}</li>
-                {/each}
-            </ul>
-        </details>
-    {/if}
-
-    <div class="min-h-0 flex-1">
-        <NewsletterEditor
-            designJson={newsletter.design_json}
-            uploadUrl={NewsletterController.uploadAsset.url()}
-            {upload}
-            {shopUrl}
-            onReady={(api) => (editorApi = api)}
-            onChange={() => autosave.touch()}
-        />
-    </div>
+            <div class="flex flex-col gap-1.5">
+                <CardTitle>Inhalt</CardTitle>
+                <CardDescription>So sieht die Mail aktuell aus.</CardDescription
+                >
+            </div>
+            <Link
+                href={NewsletterController.content.url(newsletter.id)}
+                class={buttonVariants({ variant: 'outline' })}
+            >
+                <LayoutTemplate class="size-4" />
+                {newsletter.editable ? 'Inhalt bearbeiten' : 'Inhalt ansehen'}
+            </Link>
+        </CardHeader>
+        <CardContent class="flex flex-1 flex-col">
+            {#if newsletter.html}
+                <!-- Bereinigtes HTML, ohne Skripte und ohne Zugriff auf die Seite. -->
+                <iframe
+                    title="Vorschau des Newsletters"
+                    srcdoc={newsletter.html}
+                    sandbox=""
+                    class="min-h-[36rem] w-full flex-1 rounded-md border bg-white"
+                ></iframe>
+            {:else}
+                <div
+                    class="flex flex-1 flex-col items-center justify-center gap-3 rounded-md border border-dashed p-8 text-center text-sm text-muted-foreground"
+                >
+                    <LayoutTemplate class="size-6" />
+                    Noch kein Inhalt gespeichert.
+                    <Link
+                        href={NewsletterController.content.url(newsletter.id)}
+                        class="font-medium text-[#1a6bbf] hover:underline"
+                    >
+                        Inhalt gestalten
+                    </Link>
+                </div>
+            {/if}
+        </CardContent>
+    </Card>
 </div>
