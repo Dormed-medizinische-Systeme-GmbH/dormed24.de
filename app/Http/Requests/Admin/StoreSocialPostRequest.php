@@ -45,7 +45,7 @@ class StoreSocialPostRequest extends FormRequest
      */
     public function postData(): array
     {
-        /** @var array{title: string, content: string, platforms: list<string>, scheduled_at?: string|null} $data */
+        /** @var array{title: string, content: string, platforms: array<array-key, string>, scheduled_at?: string|null} $data */
         $data = $this->validated();
         $scheduledAt = $data['scheduled_at'] ?? null;
 
