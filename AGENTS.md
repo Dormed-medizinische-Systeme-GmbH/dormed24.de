@@ -111,7 +111,7 @@ resources/js/
 │   ├── PayPalButton.svelte         # PayPal-JS-SDK-Integration (fetchJson)
 │   ├── AddressForm.svelte          # Wiederverwendetes Adressformular (prefix-basiert)
 │   ├── AdminDataTable.svelte       # Admin-Listen: Auswahl, Sortierung, Suche, Spalten, Leer-Zustand
-│   ├── RowActions.svelte           # Aktionsmenü „Bearbeiten/Löschen“ (+ eigene Einträge)
+│   ├── RowActions.svelte           # Aktionsmenü: Bearbeiten, weitere Links, Löschen mit Rückfrage
 │   ├── StatusBadge.svelte          # Status-Badge aus einer StatusMap (Label + Ton, `lib/status.ts`)
 │   └── ui/                         # shadcn-svelte Komponentenbibliothek
 ├── lib/
@@ -128,6 +128,8 @@ resources/js/
 ```
 
 **Admin-Listen:** Neue Index-Seiten beschreiben nur Spalten, Suchfelder und Texte und nutzen `AdminDataTable`, `RowActions` und `StatusBadge`. Keine eigene tanstack-Verdrahtung, keine kopierten Badges oder Aktionsmenüs pro Seite. Farben für Status gibt es nur als Ton (`neutral`, `info`, `success`, `warning`, `danger`) in `lib/status.ts`.
+
+**Status-Labels kommen aus PHP:** Status-Enums nutzen den Trait `App\Support\HasStatusBadge` (`label()`, `tone()`) und gehen per `Enum::badges()` als Prop an die Seite (`statuses`); Bestellstatus liegen als geteilte Prop `orderStatuses` vor (`orderStatusLabel()`/`orderStatusBadgeClass()` aus `lib/status.ts`). Keine Label- oder Farblisten im Frontend pflegen.
 
 **Wichtig — CSRF:** Inertias `router.*` sendet den XSRF-Token automatisch.
 Rohe `fetch()`-Aufrufe **müssen** über `fetchJson()` aus `@/lib/http` laufen

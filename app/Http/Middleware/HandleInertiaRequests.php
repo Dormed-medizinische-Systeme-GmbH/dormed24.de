@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\Setting;
 use App\Support\Cart\CartService;
 use App\Support\Catalog\Categories;
+use App\Support\Orders\OrderStatus;
 use App\Support\PaymentMode;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -74,6 +75,8 @@ class HandleInertiaRequests extends Middleware
             // Feste Kategorien aus config/categories.php, in deren Reihenfolge.
             'navCategories' => Inertia::always(fn () => Categories::options()),
             'sandbox' => ! PaymentMode::isLive(),
+            // Label und Ton je Bestellstatus, für Badges in Admin und Kundenkonto.
+            'orderStatuses' => OrderStatus::badges(),
         ];
     }
 

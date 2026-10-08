@@ -17,7 +17,7 @@
     import { Button } from '@/components/ui/button';
     import { renderComponent } from '@/components/ui/data-table';
     import { formatDateTime } from '@/lib/date';
-    import { SOCIAL_POST_STATUSES } from '@/lib/status';
+    import type { StatusMap } from '@/lib/status';
     import PlatformBadges from './PlatformBadges.svelte';
 
     type Post = {
@@ -33,7 +33,12 @@
     let {
         posts,
         platforms,
-    }: { posts: Post[]; platforms: Record<string, string> } = $props();
+        statuses,
+    }: {
+        posts: Post[];
+        platforms: Record<string, string>;
+        statuses: StatusMap;
+    } = $props();
 
     const columns: ColumnDef<Post>[] = [
         {
@@ -70,7 +75,7 @@
             cell: ({ row }) =>
                 renderComponent(StatusBadge, {
                     status: row.original.status,
-                    statuses: SOCIAL_POST_STATUSES,
+                    statuses,
                 }),
         },
         {

@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin;
 
 use App\Models\SocialPost;
+use App\Support\Social\SocialPostStatus;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -41,7 +42,7 @@ class StoreSocialPostRequest extends FormRequest
     /**
      * Mit Termin ist der Beitrag geplant, ohne bleibt er Entwurf.
      *
-     * @return array{title: string, content: string, platforms: list<string>, scheduled_at: string|null, status: string}
+     * @return array{title: string, content: string, platforms: list<string>, scheduled_at: string|null, status: SocialPostStatus}
      */
     public function postData(): array
     {
@@ -54,7 +55,7 @@ class StoreSocialPostRequest extends FormRequest
             'content' => $data['content'],
             'platforms' => array_values($data['platforms']),
             'scheduled_at' => $scheduledAt,
-            'status' => $scheduledAt ? SocialPost::STATUS_SCHEDULED : SocialPost::STATUS_DRAFT,
+            'status' => $scheduledAt ? SocialPostStatus::Scheduled : SocialPostStatus::Draft,
         ];
     }
 }

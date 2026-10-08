@@ -6,6 +6,7 @@ use App\Mail\NewsletterMail;
 use App\Models\Customer;
 use App\Models\Newsletter;
 use App\Models\Setting;
+use App\Support\Newsletter\NewsletterStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
@@ -55,7 +56,7 @@ class NewsletterTest extends TestCase
 
         $newsletter = Newsletter::query()->sole();
         $response->assertRedirect(route('admin.newsletters.edit', $newsletter));
-        $this->assertSame('draft', $newsletter->status);
+        $this->assertSame(NewsletterStatus::Draft, $newsletter->status);
     }
 
     public function test_form_page_shows_the_settings_and_the_saved_html(): void

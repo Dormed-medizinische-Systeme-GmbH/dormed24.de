@@ -24,7 +24,7 @@
     import { Separator } from '@/components/ui/separator';
     import { formatPrice } from '@/lib/currency';
     import { fetchJson } from '@/lib/http';
-    import { orderStatusBadgeClass, orderStatusLabel } from '@/lib/orderStatus';
+    import { orderStatusBadgeClass, orderStatusLabel } from '@/lib/status';
     import {
         confirmPayment as confirmPaymentRoute,
         refund as refundRoute,

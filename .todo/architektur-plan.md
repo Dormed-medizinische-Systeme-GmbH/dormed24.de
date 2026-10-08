@@ -211,25 +211,28 @@ Die Begriffe stammen aus `.claude/skills/codebase-design`:
 - [x] Ein Svelte-Modul für Admin-Tabellen. Es kapselt:
   - Auswahl-Spalte, Sortierung, globale Suche, Spalten-Dropdown;
   - Leer-Zustand und Tabellen-Markup.
-- [ ] Ein Status-Badge, das aus einer Statustabelle (Label und Farbe je Wert) gespeist wird. Ersetzt die 3 kopierten `StatusBadge.svelte` (Articles, Newsletters, SocialPosts); Orders nutzt bereits `lib/orderStatus.ts`.
+- [x] Ein Status-Badge, das aus einer Statustabelle (Label und Farbe je Wert) gespeist wird. Ersetzt die 3 kopierten `StatusBadge.svelte` (Articles, Newsletters, SocialPosts); Orders nutzt bereits `lib/orderStatus.ts`.
 - [x] Ein Aktionsmenü mit „Bearbeiten“ und „Löschen“ plus optionalen Einträgen. Ersetzt die 5 `*Actions.svelte`.
-- [ ] Die 7 `Index.svelte` umstellen, die einfachsten zuerst (Manufacturers, Articles, SocialPosts).
-- [ ] Status-Labels und -Typen für das Frontend aus den PHP-Enums (aus Phase 1 verschoben). **Entschieden:** Jedes Enum liefert Label und Ton selbst, die Seiten bekommen die Zuordnung als Prop vom Server (eine Quelle in PHP, keine gepflegte TS-Kopie): ersetzt die Listen in `lib/orderStatus.ts` und `Admin/Orders/Show.svelte`.
+- [x] Die 7 `Index.svelte` umstellen, die einfachsten zuerst (Manufacturers, Articles, SocialPosts).
+- [x] Status-Labels und -Typen für das Frontend aus den PHP-Enums (aus Phase 1 verschoben). **Entschieden:** Jedes Enum liefert Label und Ton selbst, die Seiten bekommen die Zuordnung als Prop vom Server (eine Quelle in PHP, keine gepflegte TS-Kopie): ersetzt die Listen in `lib/orderStatus.ts` und `Admin/Orders/Show.svelte`.
 - [x] Vitest-Tests für das Modul: Suche, Sortierung, Spalten aus- und einblenden, Leer-Zustand, Aktionen.
 - [ ] Danach einmal bauen statt siebenmal: die Ideen aus TODO.md (Massenaktionen, Statusfilter).
 
 ### 3.1 Umsetzung (Stand)
 
-**PR 1 (dieser Stand):**
+**PR 1 (gemergt):**
 - `components/AdminDataTable.svelte`: Auswahl-Spalte, Sortierung per Klick auf die Spaltenüberschrift (neu, vorher war Sortieren verdrahtet, aber nicht bedienbar), globale Suche über `searchFields`, Spalten-Dropdown, Leer-Zustand mit getrenntem Text für „noch nichts angelegt“ und „Suche ohne Treffer“, optionaler `toolbar`-Snippet für weitere Filter.
 - `components/RowActions.svelte`: „Bearbeiten“ (nur mit `editHref`), eigene Einträge per `items`-Snippet, „Löschen“ mit Rückfrage.
 - `components/StatusBadge.svelte` mit `lib/status.ts` (`StatusMap`, Töne). Die Zuordnungen für Magazin und Social-Media stehen bis PR 2 noch in `lib/status.ts`.
 - Umgestellt: Hersteller, Magazin, Social-Media (Liste und Bearbeiten-Seite). Entfernt: 3 `*Actions.svelte`, 2 `StatusBadge.svelte`.
 - Index-Seiten: Hersteller 92, Magazin 122, Social-Media 132 Zeilen (vorher 245/287/295). Die Restlänge sind die Spaltendefinitionen.
 
-**PR 2:**
-- Kunden (serverseitige Suche), Produkte (Kategorie-Filter über `toolbar`, zusätzliche Aktionen), Bestellungen (Zeilenklick), Newsletter umstellen.
-- Status-Zuordnungen aus PHP (siehe oben) für Bestellungen, Magazin, Social-Media und Newsletter; danach fallen `lib/orderStatus.ts` und die Zuordnungen in `lib/status.ts` weg.
+**PR 2 (dieser Stand):**
+- Status aus PHP: Trait `App\Support\HasStatusBadge` (Label + `StatusTone` je Fall, `badges()` als Prop) auf `OrderStatus` und den neuen Enums `ArticleStatus` (`Support/Magazine`), `SocialPostStatus` (`Support/Social`), `NewsletterStatus` (`Support/Newsletter`). `SocialPost` und `Newsletter` casten `status` auf ihr Enum, `Article::status()` liefert `ArticleStatus`; die `STATUS_*`-Konstanten sind weg.
+- Bestellstatus als geteilte Prop `orderStatuses` (Admin und Kundenkonto); Magazin, Social-Media und Newsletter bekommen `statuses` je Seite. `lib/orderStatus.ts` und die TS-Zuordnungen sind entfernt.
+- `AdminDataTable` neu: `rowHref`/`rowLabel` (Zeile als Link, Bestellungen) und `serverSearch` (Suche auf dem Server, Kunden). `RowActions`: `links` statt Snippet (lässt sich per `renderComponent` übergeben), „Löschen“ nur mit `destroyHref` (verschickte Newsletter).
+- Umgestellt: Kunden, Produkte (Kategorie-Filter als `toolbar`), Bestellungen, Newsletter. Entfernt: `ProductActions`, `NewsletterActions`, die Status-Badges von Bestellungen und Newsletter.
+- Index-Seiten jetzt 92–148 Zeilen (vorher 245–295). Unter 100 liegen Hersteller, Kunden und Bestellungen; bei den anderen sind es die Spaltendefinitionen. Das Ziel „unter 100“ ist damit nicht ganz erreicht, eine weitere Kürzung würde nur Spalten in eigene Dateien verschieben.
 
 **Fertig, wenn:**
 - Jede Index-Seite hat unter 100 Zeilen.

@@ -1,4 +1,5 @@
 <script lang="ts" generics="TData">
+    import { router } from '@inertiajs/svelte';
     import ArrowDown from '@lucide/svelte/icons/arrow-down';
     import ArrowUp from '@lucide/svelte/icons/arrow-up';
     import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down';
@@ -39,12 +40,15 @@
         emptyText,
         noMatchText = 'Kein Eintrag passt zur Suche.',
         toolbar,
+        rowHref,
+        rowLabel,
+        serverSearch,
     }: {
         data: TData[];
         /** Fachliche Spalten; Auswahl-Spalte ergänzt die Tabelle selbst. */
         columns: ColumnDef<TData>[];
         /** Felder, in denen die Suche ohne Groß-/Kleinschreibung sucht. */
-        searchFields: (row: TData) => (string | null | undefined)[];
+        searchFields?: (row: TData) => (string | null | undefined)[];
         searchPlaceholder: string;
         /** Text, wenn es noch gar keine Einträge gibt. */
         emptyText: string;
@@ -52,6 +56,15 @@
         noMatchText?: string;
         /** Weitere Filter rechts neben der Suche. */
         toolbar?: Snippet;
+        /** Macht die ganze Zeile zum Link, z. B. auf die Detailseite. */
+        rowHref?: (row: TData) => string;
+        /** Vorleser-Text der Zeile, wenn sie ein Link ist. */
+        rowLabel?: (row: TData) => string;
+        /**
+         * Suche auf dem Server statt in den geladenen Zeilen: Die Eingabe
+         * wird erst mit Enter bzw. „Suchen“ abgeschickt.
+         */
+        serverSearch?: { value: string; submit: (value: string) => void };
     } = $props();
 
     const selectColumn: ColumnDef<TData> = {
@@ -95,7 +108,7 @@
         globalFilterFn: (row, _columnId, value: string) => {
             const needle = value.toLocaleLowerCase('de');
 
-            return searchFields(row.original).some((field) =>
+            return (searchFields?.(row.original) ?? []).some((field) =>
                 (field ?? '').toLocaleLowerCase('de').includes(needle),
             );
         },
@@ -130,19 +143,64 @@
 
     const selectedCount = $derived(Object.keys(rowSelection).length);
 
+    // Lokal editierbar, folgt aber dem Wert, den der Server zurückgibt.
+    let serverSearchText = $derived(serverSearch?.value ?? '');
+
+    /**
+     * Zeilenklick öffnet rowHref, außer der Klick galt einem eigenen
+     * Bedienelement in der Zeile (Checkbox, Link, Menü).
+     */
+    function openRow(event: MouseEvent | KeyboardEvent, row: TData): void {
+        const target = event.target as HTMLElement | null;
+
+        if (!rowHref || target?.closest('a, button, input, select, textarea')) {
+            return;
+        }
+
+        router.visit(rowHref(row));
+    }
+
     function columnLabel(header: unknown, id: string): string {
         return typeof header === 'string' && header !== '' ? header : id;
     }
 </script>
 
 <div class="flex items-center gap-2">
-    <Input
-        placeholder={searchPlaceholder}
-        aria-label="Suche"
-        value={globalFilter}
-        oninput={(e) => table.setGlobalFilter(e.currentTarget.value)}
-        class="min-w-0 flex-1"
-    />
+    {#if serverSearch}
+        <form
+            class="flex min-w-0 flex-1 items-center gap-2"
+            onsubmit={(event) => {
+                event.preventDefault();
+                serverSearch.submit(serverSearchText.trim());
+            }}
+        >
+            <Input
+                placeholder={searchPlaceholder}
+                aria-label="Suche"
+                bind:value={serverSearchText}
+                class="min-w-0 flex-1"
+            />
+            <Button type="submit" variant="outline">Suchen</Button>
+            {#if serverSearch.value !== ''}
+                <Button
+                    type="button"
+                    variant="ghost"
+                    onclick={() => {
+                        serverSearchText = '';
+                        serverSearch.submit('');
+                    }}>Zurücksetzen</Button
+                >
+            {/if}
+        </form>
+    {:else}
+        <Input
+            placeholder={searchPlaceholder}
+            aria-label="Suche"
+            value={globalFilter}
+            oninput={(e) => table.setGlobalFilter(e.currentTarget.value)}
+            class="min-w-0 flex-1"
+        />
+    {/if}
     {@render toolbar?.()}
     <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -216,7 +274,23 @@
         </Table.Header>
         <Table.Body>
             {#each table.getRowModel().rows as row (row.id)}
-                <Table.Row data-state={row.getIsSelected() && 'selected'}>
+                <Table.Row
+                    data-state={row.getIsSelected() && 'selected'}
+                    class={rowHref ? 'cursor-pointer' : undefined}
+                    tabindex={rowHref ? 0 : undefined}
+                    role={rowHref ? 'link' : undefined}
+                    aria-label={rowHref ? rowLabel?.(row.original) : undefined}
+                    onclick={(event) => openRow(event, row.original)}
+                    onkeydown={(event) => {
+                        if (
+                            rowHref &&
+                            (event.key === 'Enter' || event.key === ' ')
+                        ) {
+                            event.preventDefault();
+                            openRow(event, row.original);
+                        }
+                    }}
+                >
                     {#each row.getVisibleCells() as cell (cell.id)}
                         <Table.Cell class="has-[[role=checkbox]]:ps-3">
                             <FlexRender

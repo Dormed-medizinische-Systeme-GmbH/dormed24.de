@@ -4,7 +4,7 @@
     import Heading from '@/components/Heading.svelte';
     import * as Table from '@/components/ui/table';
     import { formatPrice } from '@/lib/currency';
-    import { orderStatusBadgeClass, orderStatusLabel } from '@/lib/orderStatus';
+    import { orderStatusBadgeClass, orderStatusLabel } from '@/lib/status';
 
     type Order = {
         id: number;

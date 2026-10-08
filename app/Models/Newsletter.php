@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Newsletter\NewsletterStatus;
 use Carbon\CarbonImmutable;
 use Database\Factories\NewsletterFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -13,7 +14,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $name
  * @property string $subject
  * @property string|null $preheader
- * @property string $status
+ * @property NewsletterStatus $status
  * @property array<string, mixed>|null $design_json
  * @property string|null $mjml
  * @property string|null $html
@@ -27,21 +28,18 @@ class Newsletter extends Model
     /** @use HasFactory<NewsletterFactory> */
     use HasFactory;
 
-    public const string STATUS_DRAFT = 'draft';
-
-    public const string STATUS_SENT = 'sent';
-
     protected function casts(): array
     {
         return [
             'design_json' => 'array',
+            'status' => NewsletterStatus::class,
             'sent_at' => 'datetime',
         ];
     }
 
     public function isEditable(): bool
     {
-        return $this->status === self::STATUS_DRAFT;
+        return $this->status === NewsletterStatus::Draft;
     }
 
     public function hasContent(): bool

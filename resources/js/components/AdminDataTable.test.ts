@@ -1,8 +1,12 @@
 import type { ColumnDef } from '@tanstack/table-core';
 import { fireEvent, render, screen, within } from '@testing-library/svelte';
 import { createRawSnippet, tick } from 'svelte';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import AdminDataTable from '@/components/AdminDataTable.svelte';
+
+const { visitMock } = vi.hoisted(() => ({ visitMock: vi.fn() }));
+
+vi.mock('@inertiajs/svelte', () => ({ router: { visit: visitMock } }));
 
 type Maker = { id: number; name: string; country: string | null };
 
@@ -136,5 +140,62 @@ describe('AdminDataTable', () => {
         expect(
             screen.getByRole('button', { name: 'Kategorie' }),
         ).toBeInTheDocument();
+    });
+
+    it('opens the row link on click and Enter, but not from a checkbox', async () => {
+        visitMock.mockReset();
+        render(AdminDataTable<Maker>, {
+            props: {
+                data: makers,
+                columns,
+                searchPlaceholder: 'Filtern…',
+                emptyText: '',
+                rowHref: (maker: Maker) => `/admin/makers/${maker.id}`,
+                rowLabel: (maker: Maker) => `${maker.name} öffnen`,
+            },
+        });
+
+        await fireEvent.click(
+            screen.getByRole('link', { name: 'Canon öffnen' }),
+        );
+        await fireEvent.keyDown(
+            screen.getByRole('link', { name: 'Esaote öffnen' }),
+            { key: 'Enter' },
+        );
+        await fireEvent.click(
+            screen.getAllByRole('checkbox', { name: 'Zeile auswählen' })[0],
+        );
+
+        expect(visitMock.mock.calls).toEqual([
+            ['/admin/makers/2'],
+            ['/admin/makers/3'],
+        ]);
+    });
+
+    it('submits a server search instead of filtering the loaded rows', async () => {
+        const submit = vi.fn();
+        render(AdminDataTable<Maker>, {
+            props: {
+                data: makers,
+                columns,
+                searchPlaceholder: 'Filtern…',
+                emptyText: '',
+                serverSearch: { value: 'alt', submit },
+            },
+        });
+
+        const input = screen.getByLabelText('Suche');
+        expect(input).toHaveValue('alt');
+
+        await fireEvent.input(input, { target: { value: ' canon ' } });
+        expect(names()).toHaveLength(3);
+
+        await fireEvent.click(screen.getByRole('button', { name: 'Suchen' }));
+        expect(submit).toHaveBeenCalledWith('canon');
+
+        await fireEvent.click(
+            screen.getByRole('button', { name: 'Zurücksetzen' }),
+        );
+        expect(submit).toHaveBeenLastCalledWith('');
     });
 });

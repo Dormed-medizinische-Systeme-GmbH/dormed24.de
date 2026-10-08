@@ -16,6 +16,8 @@
     import * as NewsletterController from '@/actions/App/Http/Controllers/Admin/NewsletterController';
     import AppHead from '@/components/AppHead.svelte';
     import InputError from '@/components/InputError.svelte';
+    import RowActions from '@/components/RowActions.svelte';
+    import StatusBadge from '@/components/StatusBadge.svelte';
     import { Button, buttonVariants } from '@/components/ui/button';
     import {
         Card,
@@ -27,9 +29,8 @@
     import { Input } from '@/components/ui/input';
     import { Label } from '@/components/ui/label';
     import { fetchJson } from '@/lib/http';
+    import type { StatusMap } from '@/lib/status';
     import { guardUnsavedChanges } from '@/lib/unsavedChanges';
-    import NewsletterActions from './NewsletterActions.svelte';
-    import StatusBadge from './StatusBadge.svelte';
 
     type Newsletter = {
         id: number;
@@ -46,7 +47,12 @@
     let {
         newsletter,
         testRecipient,
-    }: { newsletter: Newsletter; testRecipient: string | null } = $props();
+        statuses,
+    }: {
+        newsletter: Newsletter;
+        testRecipient: string | null;
+        statuses: StatusMap;
+    } = $props();
 
     // svelte-ignore state_referenced_locally
     const form = useForm({
@@ -111,7 +117,19 @@
 </script>
 
 {#snippet headerActions()}
-    <NewsletterActions {newsletter} showEdit={false} />
+    <RowActions
+        links={[
+            {
+                href: NewsletterController.content.url(newsletter.id),
+                label: 'Inhalt bearbeiten',
+                icon: LayoutTemplate,
+            },
+        ]}
+        destroyHref={newsletter.editable
+            ? NewsletterController.destroy.url(newsletter.id)
+            : undefined}
+        confirmMessage={`Newsletter „${newsletter.name}“ wirklich löschen?`}
+    />
     <Button
         variant="outline"
         onclick={sendTest}
@@ -194,7 +212,9 @@
             <CardContent>
                 <dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
                     <dt class="text-muted-foreground">Status</dt>
-                    <dd><StatusBadge status={newsletter.status} /></dd>
+                    <dd>
+                        <StatusBadge status={newsletter.status} {statuses} />
+                    </dd>
                     <dt class="text-muted-foreground">Zuletzt geändert</dt>
                     <dd>{newsletter.updated_at}</dd>
                     <dt class="text-muted-foreground">Verschickt</dt>

@@ -18,7 +18,7 @@
     import StatusBadge from '@/components/StatusBadge.svelte';
     import { Button, buttonVariants } from '@/components/ui/button';
     import { fromDateTimeLocal, toDateTimeLocal } from '@/lib/date';
-    import { ARTICLE_STATUSES } from '@/lib/status';
+    import type { StatusMap } from '@/lib/status';
     import { guardUnsavedChanges } from '@/lib/unsavedChanges';
     import ArticleFields from './ArticleFields.svelte';
 
@@ -36,7 +36,12 @@
     let {
         article,
         categories,
-    }: { article: Article; categories: Record<string, string> } = $props();
+        statuses,
+    }: {
+        article: Article;
+        categories: Record<string, string>;
+        statuses: StatusMap;
+    } = $props();
 
     // svelte-ignore state_referenced_locally
     const form = useForm({
@@ -72,7 +77,7 @@
 </script>
 
 {#snippet headerActions()}
-    <StatusBadge status={article.status} statuses={ARTICLE_STATUSES} />
+    <StatusBadge status={article.status} {statuses} />
     {#if article.status === 'published'}
         <a
             href={magazineShow.url(article.slug)}

@@ -8,6 +8,7 @@ use App\Mail\NewsletterMail;
 use App\Models\Newsletter;
 use App\Models\Setting;
 use App\Support\Newsletter\HtmlSanitizer;
+use App\Support\Newsletter\NewsletterStatus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -38,6 +39,7 @@ class NewsletterController extends Controller
                     'status' => $newsletter->status,
                     'updated_at' => $newsletter->updated_at->format('d.m.Y H:i'),
                 ]),
+            'statuses' => NewsletterStatus::badges(),
         ]);
     }
 
@@ -70,6 +72,7 @@ class NewsletterController extends Controller
                 'sent_at' => $newsletter->sent_at?->format('d.m.Y H:i'),
             ],
             'testRecipient' => Setting::get('shop.email'),
+            'statuses' => NewsletterStatus::badges(),
         ]);
     }
 

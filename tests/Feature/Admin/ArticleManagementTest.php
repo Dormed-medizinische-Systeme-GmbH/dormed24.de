@@ -4,6 +4,7 @@ namespace Tests\Feature\Admin;
 
 use App\Models\Article;
 use App\Models\Customer;
+use App\Support\Magazine\ArticleStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -38,12 +39,12 @@ class ArticleManagementTest extends TestCase
                 ->component('Admin/Articles/Index')
                 ->has('articles', 3)
                 ->where('articles.0.title', 'Online')
-                ->where('articles.0.status', Article::STATUS_PUBLISHED)
+                ->where('articles.0.status', ArticleStatus::Published->value)
                 ->where('categories', Article::CATEGORIES));
 
         $statuses = Article::query()->get()->mapWithKeys(fn (Article $article) => [$article->title => $article->status()]);
-        $this->assertSame(Article::STATUS_DRAFT, $statuses['Entwurf']);
-        $this->assertSame(Article::STATUS_SCHEDULED, $statuses['Geplant']);
+        $this->assertSame(ArticleStatus::Draft, $statuses['Entwurf']);
+        $this->assertSame(ArticleStatus::Scheduled, $statuses['Geplant']);
     }
 
     public function test_article_is_created_with_a_slug_from_the_title(): void
@@ -63,7 +64,7 @@ class ArticleManagementTest extends TestCase
 
         $article = Article::query()->latest('id')->firstOrFail();
         $this->assertSame('welches-ultraschallgerat-passt-2', $article->slug);
-        $this->assertSame(Article::STATUS_DRAFT, $article->status());
+        $this->assertSame(ArticleStatus::Draft, $article->status());
     }
 
     public function test_store_is_validated(): void
@@ -113,7 +114,7 @@ class ArticleManagementTest extends TestCase
         $this->assertSame('Neuer Titel', $article->title);
         $this->assertSame('alt', $article->slug);
         $this->assertSame('aktuelles', $article->category);
-        $this->assertSame(Article::STATUS_PUBLISHED, $article->status());
+        $this->assertSame(ArticleStatus::Published, $article->status());
     }
 
     public function test_edit_page_shows_the_article(): void
@@ -127,7 +128,7 @@ class ArticleManagementTest extends TestCase
                 ->component('Admin/Articles/Edit')
                 ->where('article.id', $article->id)
                 ->where('article.content', $article->content)
-                ->where('article.status', Article::STATUS_SCHEDULED));
+                ->where('article.status', ArticleStatus::Scheduled->value));
     }
 
     public function test_article_can_be_deleted(): void

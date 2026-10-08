@@ -3,7 +3,7 @@
     import Heading from '@/components/Heading.svelte';
     import RateProductButton from '@/components/RateProductButton.svelte';
     import { formatPrice } from '@/lib/currency';
-    import { orderStatusBadgeClass, orderStatusLabel } from '@/lib/orderStatus';
+    import { orderStatusBadgeClass, orderStatusLabel } from '@/lib/status';
 
     type OrderItem = {
         id: number;

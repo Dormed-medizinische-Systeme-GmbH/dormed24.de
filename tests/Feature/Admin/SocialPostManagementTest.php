@@ -4,6 +4,7 @@ namespace Tests\Feature\Admin;
 
 use App\Models\Customer;
 use App\Models\SocialPost;
+use App\Support\Social\SocialPostStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -37,7 +38,7 @@ class SocialPostManagementTest extends TestCase
                 ->component('Admin/SocialPosts/Index')
                 ->has('posts', 26)
                 ->where('posts.0.title', 'Messe Düsseldorf')
-                ->where('posts.0.status', SocialPost::STATUS_SCHEDULED)
+                ->where('posts.0.status', SocialPostStatus::Scheduled->value)
                 ->where('platforms', SocialPost::PLATFORMS));
     }
 
@@ -65,7 +66,7 @@ class SocialPostManagementTest extends TestCase
             ->assertSessionHas('success');
 
         $post = SocialPost::query()->sole();
-        $this->assertSame(SocialPost::STATUS_DRAFT, $post->status);
+        $this->assertSame(SocialPostStatus::Draft, $post->status);
         $this->assertSame(['linkedin', 'facebook'], $post->platforms);
         $this->assertNull($post->scheduled_at);
     }
@@ -82,7 +83,7 @@ class SocialPostManagementTest extends TestCase
             ->assertRedirect(route('admin.social-posts.index'));
 
         $post = SocialPost::query()->sole();
-        $this->assertSame(SocialPost::STATUS_SCHEDULED, $post->status);
+        $this->assertSame(SocialPostStatus::Scheduled, $post->status);
         $this->assertSame('2099-03-01 08:30:00', $post->scheduled_at?->format('Y-m-d H:i:s'));
     }
 
@@ -138,7 +139,7 @@ class SocialPostManagementTest extends TestCase
         $post->refresh();
         $this->assertSame('Geändert', $post->title);
         $this->assertSame(['facebook'], $post->platforms);
-        $this->assertSame(SocialPost::STATUS_DRAFT, $post->status);
+        $this->assertSame(SocialPostStatus::Draft, $post->status);
         $this->assertNull($post->scheduled_at);
     }
 
@@ -155,7 +156,7 @@ class SocialPostManagementTest extends TestCase
             ->assertSessionHas('error');
 
         $this->assertSame('Alt', $post->fresh()?->title);
-        $this->assertSame(SocialPost::STATUS_PUBLISHED, $post->fresh()?->status);
+        $this->assertSame(SocialPostStatus::Published, $post->fresh()?->status);
     }
 
     public function test_post_can_be_deleted(): void

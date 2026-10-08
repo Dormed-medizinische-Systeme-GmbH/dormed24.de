@@ -18,10 +18,13 @@
         Plus,
         Check,
     } from '@lucide/svelte';
+    import ExternalLink from '@lucide/svelte/icons/external-link';
     import * as AdminProductController from '@/actions/App/Http/Controllers/Admin/ProductController';
     import * as AdminProductVariantController from '@/actions/App/Http/Controllers/Admin/ProductVariantController';
     import * as AdminRatingController from '@/actions/App/Http/Controllers/Admin/RatingController';
+    import * as ProductController from '@/actions/App/Http/Controllers/ProductController';
     import AppHead from '@/components/AppHead.svelte';
+    import RowActions from '@/components/RowActions.svelte';
     import SpecialtyPicker from '@/components/SpecialtyPicker.svelte';
     import TechnicalSpecsEditor from '@/components/TechnicalSpecsEditor.svelte';
     import { Button } from '@/components/ui/button';
@@ -31,7 +34,6 @@
     import * as Tabs from '@/components/ui/tabs';
     import { guardUnsavedChanges } from '@/lib/unsavedChanges';
     import { cn } from '@/lib/utils';
-    import ProductActions from './ProductActions.svelte';
 
     type ProductImage = {
         id: number;
@@ -322,7 +324,18 @@
 </script>
 
 {#snippet headerActions()}
-    <ProductActions {product} showEdit={false} />
+    <RowActions
+        links={[
+            {
+                href: ProductController.show.url(product.id),
+                label: 'Im Shop ansehen',
+                icon: ExternalLink,
+                external: true,
+            },
+        ]}
+        destroyHref={AdminProductController.destroy.url(product.id)}
+        confirmMessage={`Produkt „${product.name}“ wirklich löschen?`}
+    />
     <Button onclick={save} disabled={form.processing}>
         {form.processing ? 'Speichert…' : 'Speichern'}
     </Button>
