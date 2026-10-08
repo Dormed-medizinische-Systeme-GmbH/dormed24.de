@@ -4,8 +4,10 @@ namespace App\Providers;
 
 use App\Auth\EnvAdminUserProvider;
 use App\Contracts\CartStore;
+use App\Services\PayPalGateway;
 use App\Support\Cart\SessionCartStore;
 use App\Support\ModeMailConfiguration;
+use App\Support\Orders\Gateway\PaymentGateway;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\Hashing\Hasher;
@@ -25,6 +27,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(CartStore::class, SessionCartStore::class);
+        $this->app->bind(PaymentGateway::class, PayPalGateway::class);
     }
 
     /**

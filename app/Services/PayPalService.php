@@ -2,15 +2,16 @@
 
 namespace App\Services;
 
-use App\Models\Order;
-use App\Models\Payment;
-use App\Support\Orders\PaymentStatus;
 use App\Support\PaymentMode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Psr\Http\Message\StreamInterface;
 use Srmklive\PayPal\Services\PayPal;
 
+/**
+ * Spricht mit der PayPal-REST-API über das SDK und gibt die Antworten roh
+ * zurück. Übersetzt werden sie in PayPalGateway.
+ */
 class PayPalService
 {
     private ?PayPal $client = null;
@@ -204,50 +205,6 @@ class PayPalService
 
             return false;
         }
-    }
-
-    /**
-     * Extract the capture ID from a captured order response.
-     *
-     * Reiner Array-Zugriff wie im SDK-Helper, aber ohne den Umweg über
-     * client(): der hätte nur dafür ein Access-Token bei PayPal geholt.
-     *
-     * @param  array<string, mixed>  $orderResponse
-     */
-    public function getCaptureIdFromOrder(array $orderResponse): ?string
-    {
-        $captureId = $orderResponse['purchase_units'][0]['payments']['captures'][0]['id'] ?? null;
-
-        return is_string($captureId) ? $captureId : null;
-    }
-
-    /**
-     * Persist a payment record from PayPal response data.
-     *
-     * @param  array<string, mixed>  $response
-     */
-    public function recordPayment(Order $order, array $response, PaymentStatus $status): Payment
-    {
-        $purchaseUnit = $response['purchase_units'][0] ?? [];
-        $capture = $purchaseUnit['payments']['captures'][0] ?? [];
-        $payer = $response['payer'] ?? [];
-
-        return Payment::query()->create([
-            'order_id' => $order->id,
-            'paypal_order_id' => $response['id'] ?? null,
-            'paypal_payer_id' => $payer['payer_id'] ?? null,
-            'paypal_capture_id' => $capture['id'] ?? null,
-            'status' => $status,
-            // Die createOrder-Antwort enthält nur id/status/links: dann gilt der
-            // angefragte Bestellbetrag, bis completeCapture() den eingezogenen
-            // Betrag einträgt.
-            'amount' => $capture['amount']['value'] ?? $purchaseUnit['amount']['value'] ?? $order->total_amount,
-            'currency' => $capture['amount']['currency_code'] ?? $purchaseUnit['amount']['currency_code'] ?? 'EUR',
-            'fee' => $capture['seller_receivable_breakdown']['paypal_fee']['value'] ?? null,
-            'payer_email' => $payer['email_address'] ?? null,
-            'payer_name' => ($payer['name']['given_name'] ?? '').' '.($payer['name']['surname'] ?? ''),
-            'response_data' => $response,
-        ]);
     }
 
     /**

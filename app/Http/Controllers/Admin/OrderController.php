@@ -5,15 +5,13 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Payment;
-use App\Services\PayPalService;
 use App\Support\Orders\OrderManager;
 use App\Support\Orders\OrderStatus;
 use App\Support\Orders\OrderSummary;
+use App\Support\Orders\PaymentReconciliation;
 use App\Support\Orders\PaymentStatus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -113,7 +111,7 @@ class OrderController extends Controller
     /**
      * Refund the captured PayPal payment of an order.
      */
-    public function refund(Order $order, PayPalService $payPalService, OrderManager $orderManager): JsonResponse
+    public function refund(Order $order, PaymentReconciliation $reconciliation): JsonResponse
     {
         /** @var Payment|null $payment */
         $payment = $order->payments()
@@ -128,50 +126,13 @@ class OrderController extends Controller
             return response()->json(['message' => 'Keine erstattbare PayPal-Zahlung gefunden.'], 422);
         }
 
-        try {
-            $response = $payPalService->refundOrder($payment->paypal_capture_id, $payment->capturedAmount(), $payment->currency ?: 'EUR');
-
-            // Das SDK meldet API-Fehler als Array statt als Exception: ohne
-            // Statusprüfung würde eine abgelehnte Erstattung als erfolgreich
-            // gebucht.
-            $refundStatus = $response['status'] ?? null;
-
-            if ($refundStatus === 'PENDING') {
-                Log::warning('PayPal refund pending', [
-                    'order_id' => $order->id,
-                    'capture_id' => $payment->paypal_capture_id,
-                ]);
-
-                return response()->json([
-                    'message' => 'Erstattung bei PayPal angestoßen, aber noch nicht abgeschlossen. Der Status wird automatisch aktualisiert.',
-                    'status' => 'pending',
-                ], 202);
-            }
-
-            if ($refundStatus !== 'COMPLETED') {
-                Log::error('PayPal refund not confirmed', [
-                    'order_id' => $order->id,
-                    'capture_id' => $payment->paypal_capture_id,
-                    'response' => $response,
-                ]);
-
-                return response()->json(['message' => 'Erstattung fehlgeschlagen. Bitte prüfen Sie das Log und den PayPal-Status.'], 422);
-            }
-
-            DB::transaction(function () use ($payment, $order, $orderManager): void {
-                $payment->update(['status' => PaymentStatus::Refunded]);
-                $orderManager->transitionTo($order, OrderStatus::Refunded);
-            });
-
-            return response()->json(['message' => 'Zahlung erstattet.', 'status' => OrderStatus::Refunded]);
-        } catch (\Throwable $e) {
-            Log::error('PayPal refund failed', [
-                'order_id' => $order->id,
-                'capture_id' => $payment->paypal_capture_id,
-                'error' => $e->getMessage(),
-            ]);
-
-            return response()->json(['message' => 'Erstattung fehlgeschlagen. Bitte prüfen Sie das Log und den PayPal-Status.'], 422);
-        }
+        return match ($reconciliation->refund($payment)) {
+            PaymentStatus::Refunded => response()->json(['message' => 'Zahlung erstattet.', 'status' => OrderStatus::Refunded]),
+            PaymentStatus::Pending => response()->json([
+                'message' => 'Erstattung bei PayPal angestoßen, aber noch nicht abgeschlossen. Der Status wird automatisch aktualisiert.',
+                'status' => 'pending',
+            ], 202),
+            default => response()->json(['message' => 'Erstattung fehlgeschlagen. Bitte prüfen Sie das Log und den PayPal-Status.'], 422),
+        };
     }
 }

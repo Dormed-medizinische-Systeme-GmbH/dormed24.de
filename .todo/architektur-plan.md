@@ -57,8 +57,8 @@ Die Begriffe stammen aus `.claude/skills/codebase-design`:
 | Phase | Inhalt | Kandidat im Review | Empfehlung | Abhängigkeit |
 |---|---|---|---|---|
 | 0 | Glossar und erste ADRs | – | vorab | – |
-| 1 | Ein Modul für den Bestell-Lebenszyklus | #1 | **stark** | 0 |
-| 2 | PayPal wird ein echter Adapter | #2 | **stark** | 1 |
+| 1 | Ein Modul für den Bestell-Lebenszyklus | #1 | **stark**, erledigt | 0 |
+| 2 | PayPal wird ein echter Adapter | #2 | **stark**, erledigt | 1 |
 | 3 | Admin-Tabellen als ein Modul | #3 | lohnt sich zu prüfen | 2 (sequenziell danach) |
 | 4 | Shop-Einstellungen mit festen Schlüsseln | #4 | lohnt sich zu prüfen | – |
 | 5 | Kanal-Seam, Queue und Jobs für Marketing | #5 | erst mit dem ersten echten Kanal | API-Freigaben, Newsletter Phase 2 |
@@ -163,28 +163,44 @@ Die Begriffe stammen aus `.claude/skills/codebase-design`:
 
 **Ziel:** PayPal liefert nur noch neutrale Ergebnisse. Die Entscheidungen fallen im Lebenszyklus aus Phase 1. Der Controller kümmert sich nur noch um HTTP.
 
-- [ ] **PayPal-Adapter** (aus `PayPalService`):
+- [x] **PayPal-Adapter** (aus `PayPalService`):
   - übernimmt Order anlegen, Capture, Erstattung und Webhook-Prüfung;
   - liefert neutrale Ergebnisse (Status, Betrag, Währung, Capture-ID, Rohdaten fürs Log);
   - schreibt keine Models mehr (`recordPayment` zieht um);
   - parst das PayPal-JSON an genau einer Stelle (heute im Controller :296, :501 und im Service :218, :230).
-- [ ] **Zahlungsabgleich** (neues Modul im Fachgebiet Orders/Payment):
+- [x] **Zahlungsabgleich** (neues Modul im Fachgebiet Orders/Payment):
   - nimmt Capture- und Webhook-Ergebnisse entgegen;
   - prüft Betrag und Währung (heute `captureMatchesOrder`);
   - löst Mismatch und Betreiber-Mail aus;
   - ruft die Übergänge aus Phase 1 auf;
   - Return-Pfad und Webhook-Pfad teilen sich diese Logik.
-- [ ] `PayPalController` behält nur noch Request annehmen, Signatur prüfen lassen, Abgleich aufrufen und Antwort bauen. Ziel: unter 200 Zeilen.
-- [ ] **Fake-Adapter für Tests:** Erst damit wird der Seam echt; er ist der zweite Adapter neben PayPal live.
-- [ ] Tests für den Abgleich direkt gegen den Fake: Capture ok, Mismatch, Pending, Denied, Refund, Reversed, doppelte Webhooks.
-- [ ] Die bestehenden PayPal-Feature-Tests mit den OpenAPI-Fixtures (`tests/Fixtures/paypal`) bleiben unverändert grün.
+- [x] `PayPalController` behält nur noch Request annehmen, Signatur prüfen lassen, Abgleich aufrufen und Antwort bauen. Ziel: unter 200 Zeilen.
+- [x] **Fake-Adapter für Tests:** Erst damit wird der Seam echt; er ist der zweite Adapter neben PayPal live.
+- [x] Tests für den Abgleich direkt gegen den Fake: Capture ok, Mismatch, Pending, Denied, Refund, Reversed, doppelte Webhooks.
+- [x] Die bestehenden PayPal-Feature-Tests mit den OpenAPI-Fixtures (`tests/Fixtures/paypal`) bleiben unverändert grün.
+
+### 2.1 Umsetzung (Stand)
+
+- **Seam:** `App\Support\Orders\Gateway\PaymentGateway` mit den neutralen Ergebnissen `CreatedPayment`, `CaptureResult`, `RefundResult` und `WebhookEvent` (`WebhookEventType`). Status kommen als `PaymentStatus`.
+- **PayPal-Adapter:** `PayPalService` bleibt der SDK-Client und liefert rohes JSON; `App\Services\PayPalGateway` übersetzt es. Das ist die einzige Stelle, die PayPal-JSON liest. `recordPayment` und `getCaptureIdFromOrder` sind aus `PayPalService` entfernt.
+- **Zahlungsabgleich:** `App\Support\Orders\PaymentReconciliation` mit `start`, `capture`, `refund` und `handleWebhook`. Betragsabgleich, Abweichung samt Betreiber-Mail, Wettlauf zwischen Capture und Webhook sowie Teilerstattungen liegen hier. Bestell-Übergänge laufen weiter nur über den `OrderManager`.
+- **Controller:** `PayPalController` hat 189 statt 724 Zeilen. `Admin/OrderController::refund` ruft den Abgleich auf.
+- **Tests:**
+  - `PaymentReconciliationTest` gegen `Tests\Support\FakePaymentGateway` (27 Fälle, inkl. Webhook-Route mit dem Fake).
+  - `PayPalGatewayTest` gegen die OpenAPI-Fixtures.
+  - In den bestehenden PayPal-Tests wurden nur die Stellen angepasst, die `recordPayment`/`getCaptureIdFromOrder` direkt aufriefen.
+- **Bewusste Verhaltensänderungen:**
+  - Die Return-URL markiert einen gescheiterten Capture jetzt wie der JS-Capture als fehlgeschlagen; vorher blieb die Bestellung offen. Ein späterer Capture-Webhook macht sie trotzdem bezahlt (ADR 0003).
+  - Scheitert das Anlegen bei PayPal mit einer Exception, lautet die Meldung jetzt einheitlich „PayPal-Order konnte nicht erstellt werden.“
+  - Der Webhook sucht eine Zahlung nicht mehr über einen JSON-Pfad in `response_data`, sondern über Capture-ID oder Order-Referenz. Der JSON-Pfad war seit dem Speichern der Capture-ID tot.
+- **Offen für ein drittes Gateway:** Die Spalten heißen noch `paypal_order_id`/`paypal_capture_id`. Ein zweiter Zahlungsdienst bräuchte eine Migration auf neutrale Namen; bis dahin bleibt das so.
 
 **Fertig, wenn:**
 - Kein PayPal-JSON-Pfad steht außerhalb des Adapters.
 - Kein Model wird im Adapter geschrieben.
 - Ein drittes Gateway bräuchte nur einen neuen Adapter.
 
-**Aufwand:** mittel bis groß, ein PR. **Voraussetzung:** Phase 1 ist gemergt.
+**Aufwand:** mittel bis groß, ein PR. **Voraussetzung:** Phase 1 ist gemergt. **Stand:** umgesetzt.
 
 ---
 

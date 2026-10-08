@@ -39,6 +39,14 @@ _Avoid_: Refund (im Text), Gutschrift
 Eine Rückzahlung, die PayPal selbst auslöst (z. B. nach einem Konflikt). Für den Shop wirkt sie wie eine Erstattung.
 _Avoid_: Reversal (im Text)
 
+**Zahlungsdienst**:
+Der externe Dienst, der eine Bezahlart abwickelt; heute nur PayPal. Im Code über den Seam `PaymentGateway` angebunden.
+_Avoid_: Payment-Provider (im Text)
+
+**Zahlungsabgleich**:
+Das Abgleichen dessen, was der Zahlungsdienst meldet (Capture, Erstattung, Webhook), mit der Bestellung: Betrag und Währung prüfen, Zahlungsstatus setzen, Bestellstatus weiterschalten.
+_Avoid_: Reconciliation (im Text), Payment-Handling
+
 **Zahlungseingang bestätigen**:
 Die einzige manuelle Statusänderung im Admin: Eine Rechnungsbestellung wird nach eingegangener Überweisung bezahlt.
 

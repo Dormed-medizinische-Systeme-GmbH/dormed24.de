@@ -38,7 +38,10 @@ Zentrale Klassen (die „Geschäftslogik-Ecke"):
 | `app/Support/Orders/OrderManager.php` | Cart → Order (transaktional), alle Statusübergänge (`transitionTo`, `markPaid()` idempotent), Bestätigungsmails |
 | `app/Support/Orders/OrderStatus.php` | Bestellstatus + erlaubte Übergänge (`PaymentStatus`, `PaymentMethod` daneben) |
 | `app/Support/Orders/OrderSummary.php` | Positionen und Summen einer Bestellung (MwSt. über `Money::netCents`) |
-| `app/Services/PayPalService.php` | PayPal-REST-Client (Zugangsdaten aus der Env, `config/paypal.php`), Webhook-Verifikation, Refunds |
+| `app/Support/Orders/PaymentReconciliation.php` | Zahlungsabgleich: Anlegen, Capture, Erstattung und Webhooks → Payment-Status, Betragsabgleich, Bestell-Übergänge über den `OrderManager` |
+| `app/Support/Orders/Gateway/PaymentGateway.php` | Seam zum Zahlungsdienst; neutrale Ergebnisse (`CaptureResult`, `RefundResult`, `WebhookEvent`, …) daneben |
+| `app/Services/PayPalGateway.php` | PayPal-Adapter: übersetzt die PayPal-Antworten, einzige Stelle, die PayPal-JSON liest |
+| `app/Services/PayPalService.php` | PayPal-REST-Client über das SDK (Zugangsdaten aus der Env, `config/paypal.php`), Webhook-Verifikation, Refunds; gibt rohes JSON zurück |
 | `app/Support/PaymentMode.php` | sandbox/live — live nur bei `APP_ENV=production` **und** `APP_DEBUG=false`; steuert PayPal-/SMTP-Zugangsdaten und Sandbox-Banner |
 | `config/categories.php` | Feste Produktkategorien (Reihenfolge = Navigation), Produkte speichern `category_slug` |
 | `config/specialties.php` | Feste Fachrichtungen, nur für Kategorien mit `has_specialties` (Ultraschallsysteme/-sonden); Produkte speichern die Slugs als JSON-Liste (`products.specialties`) |
