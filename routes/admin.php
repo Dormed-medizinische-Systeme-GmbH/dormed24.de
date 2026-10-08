@@ -11,7 +11,6 @@ use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\ProductImageController;
 use App\Http\Controllers\Admin\ProductVariantController;
 use App\Http\Controllers\Admin\RatingController as AdminRatingController;
-use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\ShippingMethodController;
 use App\Http\Controllers\Admin\SocialPostController;
 use Illuminate\Routing\RedirectController;
@@ -74,9 +73,7 @@ Route::middleware('ensure.admin')->prefix('admin')->name('admin.')->group(functi
     Route::patch('/orders/{order}/confirm-payment', [OrderController::class, 'confirmPayment'])->name('orders.confirm-payment');
     Route::post('/orders/{order}/refund', [OrderController::class, 'refund'])->name('orders.refund');
     // Nur GET/HEAD, siehe routes/settings.php.
-    Route::get('/settings', RedirectController::class)->defaults('destination', '/admin/settings/general')->defaults('status', 302)->name('settings.index');
-    Route::get('/settings/general', [SettingController::class, 'showGeneral'])->name('settings.general');
-    Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
+    Route::get('/settings', RedirectController::class)->defaults('destination', '/admin/settings/shipping')->defaults('status', 302)->name('settings.index');
     Route::get('/settings/shipping', [ShippingMethodController::class, 'index'])->name('settings.shipping');
     Route::post('/settings/shipping', [ShippingMethodController::class, 'store'])->name('settings.shipping.store');
     Route::put('/settings/shipping/{shippingMethod}', [ShippingMethodController::class, 'update'])->name('settings.shipping.update');

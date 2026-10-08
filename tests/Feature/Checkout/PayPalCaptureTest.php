@@ -7,7 +7,6 @@ use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Product;
-use App\Models\Setting;
 use App\Services\PayPalService;
 use App\Support\Orders\OrderStatus;
 use App\Support\Orders\PaymentReconciliation;
@@ -146,7 +145,7 @@ class PayPalCaptureTest extends TestCase
     public function test_capture_in_foreign_currency_is_rejected_like_an_amount_mismatch(): void
     {
         Mail::fake();
-        Setting::set('shop.email', 'shop@dormed.example');
+        config(['shop.contact.email' => 'shop@dormed.example']);
         $customer = Customer::factory()->create();
         $order = Order::factory()->for($customer)->create(['status' => 'pending', 'total_amount' => '100.00']);
         $payment = Payment::factory()->created()->for($order)->create(['currency' => 'EUR']);
@@ -168,7 +167,7 @@ class PayPalCaptureTest extends TestCase
     public function test_capture_amount_mismatch_alerts_the_operator(): void
     {
         Mail::fake();
-        Setting::set('shop.email', 'shop@dormed.example');
+        config(['shop.contact.email' => 'shop@dormed.example']);
 
         $customer = Customer::factory()->create();
         $order = Order::factory()->for($customer)->create(['status' => 'pending', 'total_amount' => '100.00']);
@@ -537,7 +536,7 @@ class PayPalCaptureTest extends TestCase
 
     public function test_amount_mismatch_alert_failure_is_logged_and_does_not_break_the_capture_response(): void
     {
-        Setting::set('shop.email', 'shop@dormed.example');
+        config(['shop.contact.email' => 'shop@dormed.example']);
         Mail::shouldReceive('to')->andThrow(new \RuntimeException('SMTP down'));
         Log::shouldReceive('channel')->with('mail')->andReturnSelf();
         Log::shouldReceive('error')->once()->with('Amount mismatch alert mail failed', \Mockery::type('array'));

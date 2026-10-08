@@ -59,7 +59,7 @@ Standalone-Seiten (Welcome, Products/*, Checkout/*, statische Seiten) binden `<S
 | `routes/public/rating.php` | `POST /products/{product}/ratings` (anonym — siehe TODO) |
 | `routes/checkout.php`      | Cart (`/cart/items/{product}/{variant?}`), Checkout (`confirm`/`address`/`submit` mit `auth`+`verified`), Success, Kundenbestellungen |
 | `routes/paypal.php`        | `order/create` + `order/capture` (`auth`+`verified`), `after-payment`, `webhook` (signaturverifiziert, ohne CSRF) |
-| `routes/admin.php`         | Admin-CRUD (Produkte inkl. Bilder/Varianten, Hersteller, Kunden), Bestell-Aktionen (`orders.confirm-payment`, `orders.refund`), Settings + Versandarten |
+| `routes/admin.php`         | Admin-CRUD (Produkte inkl. Bilder/Varianten, Hersteller, Kunden), Bestell-Aktionen (`orders.confirm-payment`, `orders.refund`), Versandarten |
 | `routes/settings.php`      | Profil, Adressen, Sicherheit (Kunde)      |
 
 ---
@@ -81,7 +81,6 @@ Standalone-Seiten (Welcome, Products/*, Checkout/*, statische Seiten) binden `<S
 | `Rating`         | `ratings`          | Anonym (Stand jetzt), FK `products` |
 | `Address`        | `addresses`        | Kunden-Stammadressen (shipping/billing, `is_default`) |
 | `ShippingMethod` | `shipping_methods` | Versandarten inkl. Preis          |
-| `Setting`        | `settings`         | Key-Value, sensible Keys verschlüsselt, pro Request memoisiert |
 
 ---
 
@@ -246,15 +245,16 @@ Regeln:
   - `confirmInvoicePayment()` — manuelle Zahlungseingangs-Bestätigung bei Rechnung (Admin-Button): **eigenes** `PaymentConfirmationMail`/`payment-confirmation.blade.php` (kein Bankdaten-Block, andere Formulierung), **nur an den Kunden**, nie an den Betreiber (der bestätigt es ja gerade selbst). Absichtlich kein `if/else` innerhalb eines gemeinsamen Templates — die beiden Zustände „bitte zahlen" und „danke, bezahlt" sind komplett getrennte Mailables/Views.
 - **Bestellen nur mit bestätigter E-Mail** (`verified`-Middleware, siehe Auth-Abschnitt).
 - **Angebotene Zahlarten sind fest verdrahtet**: Kauf auf Rechnung + PayPal (kein Admin-Setting, kein Provider-Umschalter). Labels/Reihenfolge in `config/shop.php`, Auswahl-UI: Radio auf `Checkout/Confirm`.
+- **Keine Konfiguration im Admin** (`.docs/adr/0004-…`): Kontakt und Bankverbindung in `config/shop.php`, gelesen nur über `App\Support\ShopContact`; Zugangsdaten in der Env; Shopname = `APP_NAME`. Keine Einstellungsseite und keine `settings`-Tabelle wieder einführen.
 - **Sandbox/Live** = `App\Support\PaymentMode`: live nur bei `APP_ENV=production` **und** `APP_DEBUG=false`, sonst sandbox. Kein Admin-Override, kein Setting.
-- **Zugangsdaten nur aus der Env:** PayPal (`PAYPAL_SANDBOX_*`/`PAYPAL_LIVE_*`, `config/paypal.php`) und SMTP (`MAIL_SANDBOX_*`/`MAIL_LIVE_*`, `config/mail.php` → `modes`, angewendet durch `ModeMailConfiguration`); der Modus wählt das Set. Nichts davon in `settings` oder im Admin-UI.
+- **Zugangsdaten nur aus der Env:** PayPal (`PAYPAL_SANDBOX_*`/`PAYPAL_LIVE_*`, `config/paypal.php`) und SMTP (`MAIL_SANDBOX_*`/`MAIL_LIVE_*`, `config/mail.php` → `modes`, angewendet durch `ModeMailConfiguration`); der Modus wählt das Set. Nichts davon im Admin-UI.
 - **PayPal als Adapter (Phase 2):** Der `PaymentGateway`-Seam trennt drei Schichten, und nur so:
   - `PayPalService` spricht über das SDK mit der API und gibt rohes JSON zurück.
   - `PayPalGateway` übersetzt es in neutrale Ergebnisse (`CreatedPayment`, `CaptureResult`, `RefundResult`, `WebhookEvent`). **Nur hier wird PayPal-JSON gelesen**, und hier wird kein Model geschrieben.
   - `PaymentReconciliation` (Zahlungsabgleich) entscheidet: Betrag/Währung prüfen, Abweichung + Betreiber-Mail, Payment-Status setzen, Bestell-Übergänge über den `OrderManager`. JS-Capture, Return-URL, Webhooks und Admin-Erstattung laufen alle hier durch.
   - Der `PayPalController` macht nur HTTP (Eigentum prüfen, Antwort bauen, Warenkorb leeren). Tests für Abgleich-Regeln gegen `Tests\Support\FakePaymentGateway`, Tests für PayPal-JSON gegen die Fixtures (`PayPalGatewayTest`).
 - **Webhooks** (`/paypal/webhook`): signaturverifiziert; `CAPTURE.COMPLETED` → `markPaid`; `CAPTURE.REFUNDED`/`DENIED`/`REVERSED` setzen Payment **und** Order (Achtung: beim Refund ist `resource.id` die Refund-ID, die Capture-ID steckt im `up`-Link; das löst `PayPalGateway`).
-- **Benachrichtigungs-Empfänger** = fest Setting `shop.email` (dieselbe Kontakt-Mail-Adresse wie im Shop-Frontend), kein separates Feld, kein Fallback. Beide Bestellmails laufen **synchron** im Request (kein Queue-Worker nötig; bei ~5 Mails/Tag ist der Overhead vernachlässigbar).
+- **Benachrichtigungs-Empfänger** = fest `config('shop.contact.email')` über `App\Support\ShopContact` (dieselbe Kontakt-Mail-Adresse wie im Shop-Frontend), kein separates Feld, kein Fallback. Beide Bestellmails laufen **synchron** im Request (kein Queue-Worker nötig; bei ~5 Mails/Tag ist der Overhead vernachlässigbar).
 - **Admin-Bestellaktionen** unter `Admin/Orders/Show`: `orders.confirm-payment` (einzige manuelle Status-Änderung, s.u.) + PayPal-Refund (`orders.refund`).
 
 ### Betriebsmodell — wo hört die Automatisierung auf?

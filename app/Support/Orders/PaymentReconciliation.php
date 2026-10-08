@@ -5,12 +5,12 @@ namespace App\Support\Orders;
 use App\Mail\PaymentAmountMismatchMail;
 use App\Models\Order;
 use App\Models\Payment;
-use App\Models\Setting;
 use App\Support\Cart\Money;
 use App\Support\Orders\Gateway\CaptureResult;
 use App\Support\Orders\Gateway\PaymentGateway;
 use App\Support\Orders\Gateway\WebhookEvent;
 use App\Support\Orders\Gateway\WebhookEventType;
+use App\Support\ShopContact;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -269,7 +269,7 @@ class PaymentReconciliation
 
     private function notifyMismatch(Payment $payment, string $capturedAmount): void
     {
-        $recipient = Setting::get('shop.email');
+        $recipient = app(ShopContact::class)->email();
 
         if (! $recipient) {
             return;

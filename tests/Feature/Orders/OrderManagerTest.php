@@ -8,7 +8,6 @@ use App\Mail\PaymentConfirmationMail;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\OrderItem;
-use App\Models\Setting;
 use App\Support\Cart\Cart;
 use App\Support\Cart\CartAddress;
 use App\Support\Cart\CartItem;
@@ -218,7 +217,7 @@ class OrderManagerTest extends TestCase
 
     public function test_failing_customer_mail_still_notifies_the_shop_and_keeps_the_order_paid(): void
     {
-        Setting::set('shop.email', 'shop@dormed.example');
+        config(['shop.contact.email' => 'shop@dormed.example']);
         $order = Order::factory()->create(['status' => 'pending']);
         $customerEmail = $order->customer->email;
         $sentToShop = [];

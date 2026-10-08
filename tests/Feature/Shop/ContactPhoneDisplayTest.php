@@ -2,56 +2,61 @@
 
 namespace Tests\Feature\Shop;
 
-use App\Models\Setting;
+use App\Support\PhoneNumber;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
- * Footer und Hero zeigen Telefon und Fax als "02301 / 188-600".
- * Der tel:-Link bleibt davon unberührt.
+ * Footer und Hero zeigen Telefon und Fax als "02301 / 188-600". Gepflegt
+ * werden Vorwahl und Rufnummer getrennt in config/shop.php.
  */
 class ContactPhoneDisplayTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_default_numbers_are_displayed_in_slash_dash_format(): void
+    public function test_shop_contact_is_shared_from_the_config(): void
     {
         $this->get(route('home'))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
+                ->where('contact.email', 'mail@dormed.de')
+                ->where('contact.phone', '02301188600')
                 ->where('contact.phone_display', '02301 / 188-600')
                 ->where('contact.fax_display', '02301 / 188-620')
                 ->where('contact.phone_href', 'tel:+492301188600')
                 ->where('contact.fax_href', 'tel:+492301188620'));
     }
 
+    public function test_changed_config_reaches_the_page(): void
+    {
+        config(['shop.contact.phone' => ['area_code' => '0231', 'number' => '9876543']]);
+
+        $this->get(route('home'))
+            ->assertInertia(fn ($page) => $page
+                ->where('contact.phone_display', '0231 / 9876-543')
+                ->where('contact.phone_href', 'tel:+492319876543'));
+    }
+
     /**
-     * @return array<string, array{0: string, 1: string}>
+     * @return array<string, array{string, string, string, string}>
      */
     public static function phoneNumbers(): array
     {
         return [
-            'Gedankenstrich' => ['02301 – 188600', '02301 / 188-600'],
-            'bereits formatiert' => ['02301 / 188-620', '02301 / 188-620'],
-            'Leerzeichen' => ['0231 9876543', '0231 / 9876-543'],
-            'international' => ['+49 2301 188600', '02301 / 188-600'],
-            'international mit (0)' => ['+49 (0)2301 188600', '02301 / 188-600'],
-            'mit 0049' => ['0049 2301 188600', '02301 / 188-600'],
-            'ohne Trenner bleibt' => ['02301188600', '02301188600'],
-            'zu kurz bleibt' => ['02301 12', '02301 12'],
+            'Shop' => ['02301', '188600', '02301 / 188-600', 'tel:+492301188600'],
+            'Großstadt' => ['030', '1234567', '030 / 1234-567', 'tel:+49301234567'],
+            'mit Leerzeichen gepflegt' => ['02301', '188 620', '02301 / 188-620', 'tel:+492301188620'],
+            'kurze Rufnummer' => ['02301', '123', '02301 / 123', 'tel:+492301123'],
         ];
     }
 
     #[DataProvider('phoneNumbers')]
-    public function test_shop_phone_setting_is_formatted_for_display(string $setting, string $expected): void
+    public function test_phone_number_formats(string $areaCode, string $number, string $display, string $href): void
     {
-        Setting::set('shop.phone', $setting);
+        $phone = new PhoneNumber($areaCode, $number);
 
-        $this->get(route('home'))
-            ->assertOk()
-            ->assertInertia(fn ($page) => $page
-                ->where('contact.phone', $setting)
-                ->where('contact.phone_display', $expected));
+        $this->assertSame($display, $phone->display());
+        $this->assertSame($href, $phone->href());
     }
 }

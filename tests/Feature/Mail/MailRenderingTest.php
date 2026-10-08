@@ -2,11 +2,13 @@
 
 namespace Tests\Feature\Mail;
 
+use App\Mail\OrderConfirmationMail;
 use App\Mail\PaymentAmountMismatchMail;
 use App\Mail\PaymentConfirmationMail;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Support\Orders\PaymentMethod;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -82,5 +84,36 @@ class MailRenderingTest extends TestCase
         $mail->assertSeeInHtml('1.000,00');
         $mail->assertSeeInHtml('1.195,90');
         $mail->assertSeeInHtml(route('admin.orders.show', $order), false);
+    }
+
+    public function test_mails_show_contact_and_bank_details_from_the_config(): void
+    {
+        config(['shop.bank.iban' => 'DE02 1234 5678 9012 3456 78', 'shop.bank.bic' => 'TESTDEFFXXX']);
+        $order = $this->paidOrder();
+        $order->update(['status' => 'pending', 'payment_method' => PaymentMethod::Invoice]);
+
+        $mail = new OrderConfirmationMail($order->fresh() ?? $order, $order->customer);
+
+        $mail->assertSeeInHtml('02301 / 188-600');
+        $mail->assertSeeInHtml('tel:+492301188600', false);
+        $mail->assertSeeInHtml('mail@dormed.de');
+        $mail->assertSeeInHtml('Dormed medizinische Systeme GmbH');
+        $mail->assertSeeInHtml('DE02 1234 5678 9012 3456 78');
+        $mail->assertSeeInHtml('TESTDEFFXXX');
+
+        $payment = new PaymentConfirmationMail($order, $order->customer);
+        $payment->assertSeeInHtml('02301 / 188-600');
+    }
+
+    public function test_missing_bank_details_are_not_shown_as_admin_hint(): void
+    {
+        config(['shop.bank.iban' => '']);
+        $order = $this->paidOrder();
+        $order->update(['status' => 'pending', 'payment_method' => PaymentMethod::Invoice]);
+
+        $mail = new OrderConfirmationMail($order, $order->customer);
+
+        $mail->assertSeeInHtml('auf Anfrage');
+        $mail->assertDontSeeInHtml('Einstellungen');
     }
 }

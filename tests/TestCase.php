@@ -3,7 +3,6 @@
 namespace Tests;
 
 use App\Auth\EnvAdmin;
-use App\Models\Setting;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Fortify\Features;
@@ -13,16 +12,6 @@ abstract class TestCase extends BaseTestCase
     protected const ADMIN_EMAIL = 'admin@dormed.test';
 
     protected const ADMIN_PASSWORD = 'admin-passwort-1234';
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        // Setting::get()/set() memoize per PHP process to save queries within
-        // a single real request; the test suite runs many simulated requests
-        // in one process, so the memo must be reset between tests.
-        Setting::flushMemo();
-    }
 
     /**
      * Setzt den Env-Admin (config auth.admin) für den Test, wie ihn

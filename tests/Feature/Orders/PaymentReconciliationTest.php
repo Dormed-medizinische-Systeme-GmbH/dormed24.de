@@ -7,7 +7,6 @@ use App\Mail\OrderConfirmationMail;
 use App\Mail\PaymentAmountMismatchMail;
 use App\Models\Order;
 use App\Models\Payment;
-use App\Models\Setting;
 use App\Support\Orders\Gateway\CaptureResult;
 use App\Support\Orders\Gateway\CreatedPayment;
 use App\Support\Orders\Gateway\PaymentGateway;
@@ -39,7 +38,7 @@ class PaymentReconciliationTest extends TestCase
         parent::setUp();
 
         Mail::fake();
-        Setting::set('shop.email', 'shop@dormed.example');
+        config(['shop.contact.email' => 'shop@dormed.example']);
 
         $this->gateway = new FakePaymentGateway;
         $this->app->instance(PaymentGateway::class, $this->gateway);
