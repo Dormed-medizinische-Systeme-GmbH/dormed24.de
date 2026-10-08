@@ -36,3 +36,16 @@ export function starterTemplate(shopUrl: string): string {
   </mj-body>
 </mjml>`;
 }
+
+/**
+ * Ersatz für den Titelbild-Block von grapesjs-mjml: der lädt ein
+ * Beispielbild von GitHub. Hier Shop-Farben ohne fremdes Bild; ein
+ * Hintergrundbild lässt sich im Stil-Tab setzen.
+ */
+export function heroBlock(shopUrl: string): string {
+    return `<mj-hero mode="fluid-height" background-color="${SHOP_COLORS.primary}" padding="60px 24px">
+  <mj-text font-family="${FONT_FAMILY}" align="center" color="#ffffff" font-size="32px" line-height="1.2" font-weight="700">Ihre Überschrift</mj-text>
+  <mj-text font-family="${FONT_FAMILY}" align="center" color="#ffffff" font-size="16px" line-height="1.6">Eine kurze Zeile zum Angebot.</mj-text>
+  <mj-button font-family="${FONT_FAMILY}" href="${shopUrl}" background-color="${SHOP_COLORS.accent}" color="#ffffff" border-radius="6px" font-weight="600">Zum Shop</mj-button>
+</mj-hero>`;
+}
