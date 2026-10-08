@@ -1,5 +1,5 @@
+import ExternalLink from '@lucide/svelte/icons/external-link';
 import { fireEvent, render, screen } from '@testing-library/svelte';
-import { createRawSnippet } from 'svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import RowActions from '@/components/RowActions.svelte';
 
@@ -57,24 +57,55 @@ describe('RowActions', () => {
         expect(deleteMock).not.toHaveBeenCalled();
     });
 
-    it('omits edit without a link and renders extra items', async () => {
+    it('renders extra links after edit and opens external ones in a new tab', async () => {
         render(RowActions, {
             props: {
-                destroyHref: '/admin/newsletters/2',
-                confirmMessage: 'Sicher?',
-                items: createRawSnippet(() => ({
-                    render: () => '<button type="button">Duplizieren</button>',
-                })),
+                editHref: '/admin/products/3/edit',
+                links: [
+                    {
+                        href: '/produkte/3',
+                        label: 'Anzeigen',
+                        icon: ExternalLink,
+                        external: true,
+                    },
+                ],
+                destroyHref: '/admin/products/3',
+            },
+        });
+
+        await openMenu();
+
+        const links = screen.getAllByRole('link');
+        expect(links.map((link) => link.textContent?.trim())).toEqual([
+            'Bearbeiten',
+            'Anzeigen',
+        ]);
+        expect(links[1]).toHaveAttribute('target', '_blank');
+    });
+
+    it('offers no delete without a destroy address', async () => {
+        render(RowActions, {
+            props: {
+                links: [
+                    {
+                        href: '/admin/newsletters/2/content',
+                        label: 'Inhalt bearbeiten',
+                        icon: ExternalLink,
+                    },
+                ],
             },
         });
 
         await openMenu();
 
         expect(
-            await screen.findByRole('button', { name: 'Duplizieren' }),
+            screen.getByRole('link', { name: 'Inhalt bearbeiten' }),
         ).toBeInTheDocument();
         expect(
             screen.queryByRole('link', { name: 'Bearbeiten' }),
+        ).not.toBeInTheDocument();
+        expect(
+            screen.queryByRole('button', { name: 'Löschen' }),
         ).not.toBeInTheDocument();
     });
 });

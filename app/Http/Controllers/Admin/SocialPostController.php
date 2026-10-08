@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreSocialPostRequest;
 use App\Models\SocialPost;
+use App\Support\Social\SocialPostStatus;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -31,6 +32,7 @@ class SocialPostController extends Controller
                     'updated_at' => $post->updated_at->toIso8601String(),
                 ]),
             'platforms' => SocialPost::PLATFORMS,
+            'statuses' => SocialPostStatus::badges(),
         ]);
     }
 
@@ -63,6 +65,7 @@ class SocialPostController extends Controller
             ],
             'platforms' => SocialPost::PLATFORMS,
             'maxContentLength' => SocialPost::MAX_CONTENT_LENGTH,
+            'statuses' => SocialPostStatus::badges(),
         ]);
     }
 

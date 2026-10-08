@@ -1,7 +1,10 @@
+import { page } from '@inertiajs/svelte';
+
 /**
- * Statusanzeige im Admin: Jeder Statuswert hat ein Label und einen Ton,
- * der Ton bestimmt die Farbe. Die Zuordnung Wert → Label/Ton liefert die
- * jeweilige Seite; die Farben gibt es nur hier.
+ * Statusanzeige: Jeder Statuswert hat ein Label und einen Ton, der Ton
+ * bestimmt die Farbe. Die Zuordnung Wert → Label/Ton kommt aus den
+ * PHP-Enums (HasStatusBadge) als Prop, Bestellstatus als geteilte Prop
+ * `orderStatuses`; die Farben gibt es nur hier.
  */
 export type StatusTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';
 
@@ -23,13 +26,13 @@ export function statusClass(statuses: StatusMap, status: string): string {
     return TONE_CLASSES[statuses[status]?.tone ?? 'neutral'];
 }
 
-export const ARTICLE_STATUSES: StatusMap = {
-    draft: { label: 'Entwurf', tone: 'neutral' },
-    scheduled: { label: 'Geplant', tone: 'info' },
-    published: { label: 'Veröffentlicht', tone: 'success' },
-};
+/**
+ * Bestellstatus aus der geteilten Prop `orderStatuses` (OrderStatus in PHP).
+ */
+export function orderStatusLabel(status: string): string {
+    return statusLabel(page.props.orderStatuses ?? {}, status);
+}
 
-export const SOCIAL_POST_STATUSES: StatusMap = {
-    ...ARTICLE_STATUSES,
-    failed: { label: 'Fehlgeschlagen', tone: 'danger' },
-};
+export function orderStatusBadgeClass(status: string): string {
+    return statusClass(page.props.orderStatuses ?? {}, status);
+}

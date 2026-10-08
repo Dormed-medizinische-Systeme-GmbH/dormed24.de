@@ -16,7 +16,7 @@
     import StatusBadge from '@/components/StatusBadge.svelte';
     import { Button } from '@/components/ui/button';
     import { fromDateTimeLocal, toDateTimeLocal } from '@/lib/date';
-    import { SOCIAL_POST_STATUSES } from '@/lib/status';
+    import type { StatusMap } from '@/lib/status';
     import { guardUnsavedChanges } from '@/lib/unsavedChanges';
     import SocialPostFields from './SocialPostFields.svelte';
 
@@ -34,10 +34,12 @@
         post,
         platforms,
         maxContentLength,
+        statuses,
     }: {
         post: Post;
         platforms: Record<string, string>;
         maxContentLength: number;
+        statuses: StatusMap;
     } = $props();
 
     // svelte-ignore state_referenced_locally
@@ -70,7 +72,7 @@
 </script>
 
 {#snippet headerActions()}
-    <StatusBadge status={post.status} statuses={SOCIAL_POST_STATUSES} />
+    <StatusBadge status={post.status} {statuses} />
     <RowActions
         destroyHref={SocialPostController.destroy.url(post.id)}
         confirmMessage={`Beitrag „${post.title}“ wirklich löschen?`}

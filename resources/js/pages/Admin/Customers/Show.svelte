@@ -25,7 +25,7 @@
         TableRow,
     } from '@/components/ui/table';
     import { formatPrice } from '@/lib/currency';
-    import { orderStatusBadgeClass, orderStatusLabel } from '@/lib/orderStatus';
+    import { orderStatusBadgeClass, orderStatusLabel } from '@/lib/status';
 
     type Address = {
         id: number;

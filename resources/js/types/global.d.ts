@@ -1,3 +1,4 @@
+import type { StatusMap } from '@/lib/status';
 import type { Auth } from '@/types/auth';
 import type { Cart } from '@/types/cart';
 
@@ -35,6 +36,7 @@ declare module '@inertiajs/core' {
             contact: ContactInfo;
             sidebarOpen: boolean;
             sandbox: boolean;
+            orderStatuses: StatusMap;
             [key: string]: unknown;
         };
     }

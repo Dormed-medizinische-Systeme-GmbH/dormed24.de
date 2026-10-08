@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Article;
+use App\Support\Magazine\ArticleStatus;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -39,7 +40,7 @@ class MagazineController extends Controller
 
     public function show(Article $article): Response
     {
-        abort_unless($article->status() === Article::STATUS_PUBLISHED, 404);
+        abort_unless($article->status() === ArticleStatus::Published, 404);
 
         return Inertia::render('Magazine/Show', [
             'article' => [

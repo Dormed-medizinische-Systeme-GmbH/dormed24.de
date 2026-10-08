@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Magazine\ArticleStatus;
 use Carbon\CarbonImmutable;
 use Database\Factories\ArticleFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -40,12 +41,6 @@ class Article extends Model
         'praxiswissen' => 'Praxiswissen',
     ];
 
-    public const string STATUS_DRAFT = 'draft';
-
-    public const string STATUS_SCHEDULED = 'scheduled';
-
-    public const string STATUS_PUBLISHED = 'published';
-
     protected function casts(): array
     {
         return [
@@ -64,13 +59,13 @@ class Article extends Model
         return $query->whereNotNull('published_at')->where('published_at', '<=', now());
     }
 
-    public function status(): string
+    public function status(): ArticleStatus
     {
         if ($this->published_at === null) {
-            return self::STATUS_DRAFT;
+            return ArticleStatus::Draft;
         }
 
-        return $this->published_at->isFuture() ? self::STATUS_SCHEDULED : self::STATUS_PUBLISHED;
+        return $this->published_at->isFuture() ? ArticleStatus::Scheduled : ArticleStatus::Published;
     }
 
     public function categoryLabel(): string

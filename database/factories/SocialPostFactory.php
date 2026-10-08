@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\SocialPost;
+use App\Support\Social\SocialPostStatus;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -16,14 +17,14 @@ class SocialPostFactory extends Factory
             'title' => 'Beitrag '.fake()->monthName(),
             'content' => fake()->paragraph(),
             'platforms' => ['linkedin'],
-            'status' => SocialPost::STATUS_DRAFT,
+            'status' => SocialPostStatus::Draft,
         ];
     }
 
     public function scheduled(): static
     {
         return $this->state(fn (array $attributes): array => [
-            'status' => SocialPost::STATUS_SCHEDULED,
+            'status' => SocialPostStatus::Scheduled,
             'scheduled_at' => now()->addDay(),
         ]);
     }
@@ -31,7 +32,7 @@ class SocialPostFactory extends Factory
     public function published(): static
     {
         return $this->state(fn (array $attributes): array => [
-            'status' => SocialPost::STATUS_PUBLISHED,
+            'status' => SocialPostStatus::Published,
             'scheduled_at' => now()->subDay(),
             'published_at' => now()->subDay(),
         ]);

@@ -2,6 +2,9 @@
 
 namespace App\Support\Orders;
 
+use App\Support\HasStatusBadge;
+use App\Support\StatusTone;
+
 /**
  * Bestellstatus. Es gibt bewusst keinen Versand- oder Bearbeitungsstatus
  * (.docs/adr/0002-kein-fulfillment-status.md).
@@ -11,6 +14,8 @@ namespace App\Support\Orders;
  */
 enum OrderStatus: string
 {
+    use HasStatusBadge;
+
     case Pending = 'pending';
     case Paid = 'paid';
     case Failed = 'failed';
@@ -49,5 +54,25 @@ enum OrderStatus: string
     public function isSettled(): bool
     {
         return $this === self::Paid || $this === self::Refunded;
+    }
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::Pending => 'Ausstehend',
+            self::Paid => 'Bezahlt',
+            self::Failed => 'Fehlgeschlagen',
+            self::Cancelled => 'Storniert',
+            self::Refunded => 'Erstattet',
+        };
+    }
+
+    public function tone(): StatusTone
+    {
+        return match ($this) {
+            self::Pending => StatusTone::Warning,
+            self::Paid => StatusTone::Success,
+            self::Failed, self::Cancelled, self::Refunded => StatusTone::Danger,
+        };
     }
 }

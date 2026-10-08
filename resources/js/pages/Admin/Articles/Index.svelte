@@ -17,7 +17,7 @@
     import { Button } from '@/components/ui/button';
     import { renderComponent } from '@/components/ui/data-table';
     import { formatDateTime } from '@/lib/date';
-    import { ARTICLE_STATUSES } from '@/lib/status';
+    import type { StatusMap } from '@/lib/status';
 
     type Article = {
         id: number;
@@ -33,7 +33,12 @@
     let {
         articles,
         categories,
-    }: { articles: Article[]; categories: Record<string, string> } = $props();
+        statuses,
+    }: {
+        articles: Article[];
+        categories: Record<string, string>;
+        statuses: StatusMap;
+    } = $props();
 
     const columns: ColumnDef<Article>[] = [
         {
@@ -62,7 +67,7 @@
             cell: ({ row }) =>
                 renderComponent(StatusBadge, {
                     status: row.original.status,
-                    statuses: ARTICLE_STATUSES,
+                    statuses,
                 }),
         },
         {

@@ -27,7 +27,7 @@
     import { Skeleton } from '@/components/ui/skeleton';
     import { formatPrice } from '@/lib/currency';
     import { fetchJson } from '@/lib/http';
-    import { orderStatusBadgeClass, orderStatusLabel } from '@/lib/orderStatus';
+    import { orderStatusBadgeClass, orderStatusLabel } from '@/lib/status';
     import { logout } from '@/routes';
     import {
         edit as addressesEdit,
