@@ -1,6 +1,7 @@
 <script lang="ts">
     import { router } from '@inertiajs/svelte';
     import Ellipsis from '@lucide/svelte/icons/ellipsis';
+    import LayoutTemplate from '@lucide/svelte/icons/layout-template';
     import Pencil from '@lucide/svelte/icons/pencil';
     import Trash2 from '@lucide/svelte/icons/trash-2';
     import * as NewsletterController from '@/actions/App/Http/Controllers/Admin/NewsletterController';
@@ -15,8 +16,11 @@
 
     let {
         newsletter,
+        showEdit = true,
     }: {
         newsletter: { id: number; name: string; status: string };
+        /** Auf der Bearbeiten-Seite selbst ist „Bearbeiten" überflüssig. */
+        showEdit?: boolean;
     } = $props();
 
     function destroy() {
@@ -43,15 +47,29 @@
         {/snippet}
     </DropdownMenuTrigger>
     <DropdownMenuContent align="end">
+        {#if showEdit}
+            <DropdownMenuItem asChild>
+                {#snippet children(props)}
+                    <a
+                        class={props.class}
+                        href={NewsletterController.edit.url(newsletter.id)}
+                        onclick={props.onClick}
+                    >
+                        <Pencil class="mr-2 size-4" />
+                        Bearbeiten
+                    </a>
+                {/snippet}
+            </DropdownMenuItem>
+        {/if}
         <DropdownMenuItem asChild>
             {#snippet children(props)}
                 <a
                     class={props.class}
-                    href={NewsletterController.edit.url(newsletter.id)}
+                    href={NewsletterController.content.url(newsletter.id)}
                     onclick={props.onClick}
                 >
-                    <Pencil class="mr-2 size-4" />
-                    Bearbeiten
+                    <LayoutTemplate class="mr-2 size-4" />
+                    Inhalt bearbeiten
                 </a>
             {/snippet}
         </DropdownMenuItem>

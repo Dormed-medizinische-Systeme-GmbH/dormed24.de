@@ -24,7 +24,7 @@ export function starterTemplate(shopUrl: string): string {
     <mj-section background-color="#ffffff" padding="24px">
       <mj-column>
         <mj-text font-family="${FONT_FAMILY}" font-size="20px" font-weight="700" color="${SHOP_COLORS.primary}">Überschrift</mj-text>
-        <mj-text font-family="${FONT_FAMILY}" font-size="15px" line-height="1.6" color="${SHOP_COLORS.text}">Hier steht Ihr Text. Klicken Sie auf einen Block, um ihn zu bearbeiten, oder ziehen Sie neue Blöcke aus der Leiste rechts hinein.</mj-text>
+        <mj-text font-family="${FONT_FAMILY}" font-size="15px" line-height="1.6" color="${SHOP_COLORS.text}">Hier steht Ihr Text. Klicken Sie auf einen Block, um ihn zu bearbeiten, oder ziehen Sie neue Blöcke aus der Leiste links hinein.</mj-text>
         <mj-button font-family="${FONT_FAMILY}" href="${shopUrl}" background-color="${SHOP_COLORS.accent}" color="#ffffff" border-radius="6px" font-weight="600">Zum Shop</mj-button>
       </mj-column>
     </mj-section>

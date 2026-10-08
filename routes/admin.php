@@ -45,6 +45,7 @@ Route::middleware('ensure.admin')->prefix('admin')->name('admin.')->group(functi
     Route::post('/newsletters', [NewsletterController::class, 'store'])->name('newsletters.store');
     Route::post('/newsletters/assets', [NewsletterController::class, 'uploadAsset'])->name('newsletters.assets.store');
     Route::get('/newsletters/{newsletter}/edit', [NewsletterController::class, 'edit'])->name('newsletters.edit');
+    Route::get('/newsletters/{newsletter}/content', [NewsletterController::class, 'content'])->name('newsletters.content');
     Route::put('/newsletters/{newsletter}', [NewsletterController::class, 'update'])->name('newsletters.update');
     Route::delete('/newsletters/{newsletter}', [NewsletterController::class, 'destroy'])->name('newsletters.destroy');
     Route::post('/newsletters/{newsletter}/test', [NewsletterController::class, 'sendTest'])->middleware('throttle:10,1')->name('newsletters.test');

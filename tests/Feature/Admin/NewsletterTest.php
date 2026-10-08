@@ -29,6 +29,9 @@ class NewsletterTest extends TestCase
             ->get(route('admin.newsletters.edit', $newsletter))
             ->assertRedirect(route('admin.login'));
         $this->actingAs(Customer::factory()->create())
+            ->get(route('admin.newsletters.content', $newsletter))
+            ->assertRedirect(route('admin.login'));
+        $this->actingAs(Customer::factory()->create())
             ->postJson(route('admin.newsletters.test', $newsletter))
             ->assertRedirect(route('admin.login'));
     }
@@ -46,13 +49,22 @@ class NewsletterTest extends TestCase
                 ->where('newsletters.0.status', 'draft'));
     }
 
-    public function test_creating_a_newsletter_opens_the_editor_with_a_draft(): void
+    public function test_creating_a_newsletter_opens_its_form_with_a_draft(): void
     {
         $response = $this->actingAsAdmin()->post(route('admin.newsletters.store'));
 
         $newsletter = Newsletter::query()->sole();
         $response->assertRedirect(route('admin.newsletters.edit', $newsletter));
         $this->assertSame('draft', $newsletter->status);
+    }
+
+    public function test_form_page_shows_the_settings_and_the_saved_html(): void
+    {
+        Setting::set('shop.email', 'shop@dormed.example');
+        $newsletter = Newsletter::factory()->withContent()->create([
+            'subject' => 'Herbstaktion',
+            'preheader' => 'Nur im Oktober',
+        ]);
 
         $this->actingAsAdmin()
             ->get(route('admin.newsletters.edit', $newsletter))
@@ -60,7 +72,60 @@ class NewsletterTest extends TestCase
             ->assertInertia(fn ($page) => $page
                 ->component('Admin/Newsletters/Edit')
                 ->where('newsletter.id', $newsletter->id)
-                ->where('newsletter.editable', true));
+                ->where('newsletter.subject', 'Herbstaktion')
+                ->where('newsletter.preheader', 'Nur im Oktober')
+                ->where('newsletter.html', $newsletter->html)
+                ->where('newsletter.editable', true)
+                ->where('newsletter.sent_at', null)
+                ->missing('newsletter.design_json')
+                ->where('testRecipient', 'shop@dormed.example'));
+    }
+
+    public function test_content_page_opens_the_editor_with_the_design(): void
+    {
+        $newsletter = Newsletter::factory()->withContent()->create();
+
+        $this->actingAsAdmin()
+            ->get(route('admin.newsletters.content', $newsletter))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Admin/Newsletters/Content')
+                ->where('newsletter.id', $newsletter->id)
+                ->where('newsletter.name', $newsletter->name)
+                ->where('newsletter.design_json', $newsletter->design_json)
+                ->where('newsletter.editable', true)
+                ->missing('newsletter.html'));
+    }
+
+    public function test_form_save_redirects_back_with_a_message(): void
+    {
+        $newsletter = Newsletter::factory()->create();
+
+        $this->actingAsAdmin()
+            ->from(route('admin.newsletters.edit', $newsletter))
+            ->put(route('admin.newsletters.update', $newsletter), [
+                'name' => 'Herbst intern',
+                'subject' => 'Neu im Herbst',
+                'preheader' => null,
+            ])
+            ->assertRedirect(route('admin.newsletters.edit', $newsletter))
+            ->assertSessionHas('success', 'Newsletter gespeichert.');
+
+        $newsletter->refresh();
+        $this->assertSame('Herbst intern', $newsletter->name);
+        $this->assertSame('Neu im Herbst', $newsletter->subject);
+        $this->assertNull($newsletter->preheader);
+    }
+
+    public function test_form_save_shows_validation_errors(): void
+    {
+        $newsletter = Newsletter::factory()->create();
+
+        $this->actingAsAdmin()
+            ->from(route('admin.newsletters.edit', $newsletter))
+            ->put(route('admin.newsletters.update', $newsletter), ['subject' => ''])
+            ->assertRedirect(route('admin.newsletters.edit', $newsletter))
+            ->assertSessionHasErrors('subject');
     }
 
     public function test_editor_content_is_saved_and_html_is_sanitized(): void
