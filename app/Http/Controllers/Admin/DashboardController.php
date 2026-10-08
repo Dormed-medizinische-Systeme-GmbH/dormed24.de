@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Support\Orders\OrderStatus;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -28,7 +29,7 @@ class DashboardController extends Controller
                 DB::raw('SUM(total_amount) as revenue'),
             )
             ->where('created_at', '>=', $from)
-            ->where('status', 'paid')
+            ->where('status', OrderStatus::Paid)
             ->groupBy('date')
             ->orderBy('date')
             ->get()
@@ -47,7 +48,7 @@ class DashboardController extends Controller
             });
 
         $totals = [
-            'revenue' => (float) Order::query()->where('status', 'paid')->sum('total_amount'),
+            'revenue' => (float) Order::query()->paid()->sum('total_amount'),
             'orders' => Order::query()->count(),
         ];
 

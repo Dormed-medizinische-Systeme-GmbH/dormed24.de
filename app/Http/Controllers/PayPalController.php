@@ -11,6 +11,9 @@ use App\Models\Setting;
 use App\Services\PayPalService;
 use App\Support\Cart\CartService;
 use App\Support\Orders\OrderManager;
+use App\Support\Orders\OrderStatus;
+use App\Support\Orders\PaymentMethod;
+use App\Support\Orders\PaymentStatus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -55,9 +58,9 @@ class PayPalController extends Controller
         // Each PayPal button click creates a fresh order; cancel earlier attempts
         // by this customer that were abandoned before approval, so a repeated
         // click (retry, closed popup, ...) doesn't pile up orphaned orders.
-        $this->cancelStalePendingPayPalOrders($request->user());
+        $this->orderManager->cancelAbandonedPayPalOrders($request->user());
 
-        $order = $this->orderManager->createFromCart($request->user(), $cart, 'paypal');
+        $order = $this->orderManager->createFromCart($request->user(), $cart, PaymentMethod::Paypal);
 
         try {
             $response = $this->payPalService->createOrder(
@@ -70,7 +73,7 @@ class PayPalController extends Controller
 
                 // Wie im Exception-Pfad: sonst bliebe die Bestellung ohne
                 // Zahlung als "offen" beim Kunden stehen.
-                $order->update(['status' => 'failed']);
+                $this->orderManager->transitionTo($order, OrderStatus::Failed);
 
                 return response()->json([
                     'error' => 'PayPal-Order konnte nicht erstellt werden.',
@@ -80,7 +83,7 @@ class PayPalController extends Controller
             // Save a payment record immediately with CREATED status. The cart is
             // intentionally NOT cleared here — only after a successful capture —
             // so an aborted PayPal approval leaves the cart intact.
-            $this->payPalService->recordPayment($order, $response, 'CREATED');
+            $this->payPalService->recordPayment($order, $response, PaymentStatus::Created);
 
             return response()->json([
                 'id' => $response['id'],
@@ -92,7 +95,7 @@ class PayPalController extends Controller
                 'order_id' => $order->id,
             ]);
 
-            $order->update(['status' => 'failed']);
+            $this->orderManager->transitionTo($order, OrderStatus::Failed);
 
             return response()->json([
                 'error' => 'PayPal-Zahlung konnte nicht initialisiert werden.',
@@ -125,7 +128,7 @@ class PayPalController extends Controller
             return response()->json(['error' => 'Zahlung nicht gefunden.'], 404);
         }
 
-        if ($payment->status === 'COMPLETED') {
+        if ($payment->status === PaymentStatus::Completed) {
             return response()->json(['error' => 'Zahlung bereits abgeschlossen.'], 409);
         }
 
@@ -241,7 +244,7 @@ class PayPalController extends Controller
             return to_route('checkout.index');
         }
 
-        if ($payment->status === 'COMPLETED') {
+        if ($payment->status === PaymentStatus::Completed) {
             return to_route('checkout.success', ['paypal_order_id' => $token]);
         }
 
@@ -314,9 +317,9 @@ class PayPalController extends Controller
         if ($captureStatus === 'PENDING') {
             Payment::query()
                 ->whereKey($payment->getKey())
-                ->whereIn('status', ['CREATED', 'APPROVED', 'FAILED'])
+                ->whereIn('status', [PaymentStatus::Created, PaymentStatus::Approved, PaymentStatus::Failed])
                 ->update([
-                    'status' => 'PENDING',
+                    'status' => PaymentStatus::Pending,
                     'paypal_capture_id' => $capture['id'] ?? null,
                     'response_data' => $response,
                 ]);
@@ -331,7 +334,7 @@ class PayPalController extends Controller
         $payerName = trim(($response['payer']['name']['given_name'] ?? '').' '.($response['payer']['name']['surname'] ?? ''));
 
         $payment->update([
-            'status' => 'COMPLETED',
+            'status' => PaymentStatus::Completed,
             'paypal_capture_id' => $this->payPalService->getCaptureIdFromOrder($response),
             // Eingezogener Betrag, Währung und Gebühr stehen erst in der
             // Capture-Antwort; die Admin-Erstattung erstattet genau diesen Betrag.
@@ -377,19 +380,16 @@ class PayPalController extends Controller
         DB::transaction(function () use ($payment, $captureId, $capture): void {
             Payment::query()
                 ->whereKey($payment->getKey())
-                ->whereNotIn('status', ['COMPLETED', 'REFUNDED'])
+                ->whereNotIn('status', [PaymentStatus::Completed, PaymentStatus::Refunded])
                 ->update([
-                    'status' => 'MISMATCH',
+                    'status' => PaymentStatus::Mismatch,
                     'paypal_capture_id' => $captureId !== '' ? $captureId : null,
                     'amount' => $capture['amount']['value'] ?? $payment->amount,
                     'currency' => $capture['amount']['currency_code'] ?? $payment->currency,
                     'fee' => $capture['seller_receivable_breakdown']['paypal_fee']['value'] ?? $payment->fee,
                 ]);
 
-            Order::query()
-                ->whereKey($payment->order_id)
-                ->whereNotIn('status', ['paid', 'refunded'])
-                ->update(['status' => 'failed']);
+            $this->orderManager->transitionTo($payment->order, OrderStatus::Failed);
         });
 
         $this->notifyAmountMismatch($payment, (string) ($capture['amount']['value'] ?? ''));
@@ -409,19 +409,16 @@ class PayPalController extends Controller
             /** @var Payment $current */
             $current = Payment::query()->whereKey($payment->getKey())->lockForUpdate()->firstOrFail();
 
-            if ($current->status === 'COMPLETED') {
+            if ($current->status === PaymentStatus::Completed) {
                 return true;
             }
 
             // Eingezogene Capture mit Abweichung bleibt erstattbar.
-            if ($current->status !== 'MISMATCH') {
-                $current->update(['status' => 'FAILED', 'response_data' => $responseData]);
+            if ($current->status !== PaymentStatus::Mismatch) {
+                $current->update(['status' => PaymentStatus::Failed, 'response_data' => $responseData]);
             }
 
-            Order::query()
-                ->whereKey($current->order_id)
-                ->whereNotIn('status', ['paid', 'refunded'])
-                ->update(['status' => 'failed']);
+            $this->orderManager->transitionTo($payment->order, OrderStatus::Failed);
 
             return false;
         });
@@ -429,7 +426,7 @@ class PayPalController extends Controller
 
     private function hasCompleted(Payment $payment): bool
     {
-        return Payment::query()->whereKey($payment->getKey())->value('status') === 'COMPLETED';
+        return Payment::query()->whereKey($payment->getKey())->value('status') === PaymentStatus::Completed;
     }
 
     private function alreadyCompletedResponse(string $paypalOrderId): JsonResponse
@@ -478,8 +475,8 @@ class PayPalController extends Controller
 
         Payment::query()
             ->where('paypal_order_id', $orderId)
-            ->where('status', 'CREATED')
-            ->update(['status' => 'APPROVED']);
+            ->where('status', PaymentStatus::Created)
+            ->update(['status' => PaymentStatus::Approved]);
     }
 
     /**
@@ -523,7 +520,7 @@ class PayPalController extends Controller
         // Ein Refund ist final: ein verspätet/erneut zugestelltes
         // CAPTURE.COMPLETED (PayPal liefert at-least-once, unsortiert) darf
         // Payment und Order nicht zurück auf COMPLETED/paid drehen (V4 S-1).
-        if ($payment->status === 'REFUNDED') {
+        if ($payment->status === PaymentStatus::Refunded) {
             Log::info('PayPal webhook: ignoring late capture for refunded payment', [
                 'capture_id' => $captureId,
                 'payment_id' => $payment->id,
@@ -546,7 +543,7 @@ class PayPalController extends Controller
                 'expected' => $payment->order->total_amount,
             ]);
 
-            if ($payment->status !== 'COMPLETED') {
+            if ($payment->status !== PaymentStatus::Completed) {
                 $this->recordMismatchedCapture($payment, (string) $captureId, $resource);
             } else {
                 $this->notifyAmountMismatch($payment, (string) $capturedAmount);
@@ -559,9 +556,9 @@ class PayPalController extends Controller
         // Webhook): response_data nicht mit der Capture-Resource überschreiben
         // (der volle Order-Response ist der bessere Audit-Trail), nur den
         // idempotenten markPaid-Pfad sicherstellen.
-        if ($payment->status !== 'COMPLETED') {
+        if ($payment->status !== PaymentStatus::Completed) {
             $payment->update([
-                'status' => 'COMPLETED',
+                'status' => PaymentStatus::Completed,
                 'paypal_capture_id' => $captureId,
                 'amount' => $resource['amount']['value'] ?? $payment->amount,
                 'currency' => $resource['amount']['currency_code'] ?? $payment->currency,
@@ -603,7 +600,7 @@ class PayPalController extends Controller
             return;
         }
 
-        $this->setStatusByCaptureId($captureId, 'REFUNDED', 'refunded');
+        $this->setStatusByCaptureId($captureId, PaymentStatus::Refunded, OrderStatus::Refunded);
     }
 
     /**
@@ -625,7 +622,7 @@ class PayPalController extends Controller
             ->whereHas('payments', fn ($q) => $q->where('paypal_capture_id', $captureId))
             ->first();
 
-        if ($order && in_array($order->status, ['paid', 'refunded'], true)) {
+        if ($order && $order->status->isSettled()) {
             Log::info('PayPal webhook: ignoring late denial for settled order', [
                 'capture_id' => $captureId,
                 'order_id' => $order->id,
@@ -634,7 +631,7 @@ class PayPalController extends Controller
             return;
         }
 
-        $this->setStatusByCaptureId($captureId, 'FAILED', 'failed');
+        $this->setStatusByCaptureId($captureId, PaymentStatus::Failed, OrderStatus::Failed);
     }
 
     /**
@@ -654,8 +651,8 @@ class PayPalController extends Controller
 
         Payment::query()
             ->where('paypal_order_id', $orderId)
-            ->whereIn('status', ['CREATED', 'APPROVED', 'FAILED'])
-            ->update(['status' => 'PENDING', 'paypal_capture_id' => $captureId]);
+            ->whereIn('status', [PaymentStatus::Created, PaymentStatus::Approved, PaymentStatus::Failed])
+            ->update(['status' => PaymentStatus::Pending, 'paypal_capture_id' => $captureId]);
     }
 
     /**
@@ -675,15 +672,15 @@ class PayPalController extends Controller
 
         Log::warning('PayPal webhook: capture reversed by PayPal', ['capture_id' => $captureId]);
 
-        $this->setStatusByCaptureId($captureId, 'REVERSED', 'refunded');
+        $this->setStatusByCaptureId($captureId, PaymentStatus::Reversed, OrderStatus::Refunded);
     }
 
     /**
      * Setzt den Status der Zahlung zur Capture und den ihrer Bestellung in
      * einem Schritt (Erstattung, Ablehnung, Rückbuchung per Webhook). Ob der
-     * Übergang erlaubt ist (Reihenfolge-Schutz), prüfen die Aufrufer.
+     * Bestell-Übergang erlaubt ist, entscheidet der OrderManager.
      */
-    private function setStatusByCaptureId(string $captureId, string $paymentStatus, string $orderStatus): void
+    private function setStatusByCaptureId(string $captureId, PaymentStatus $paymentStatus, OrderStatus $orderStatus): void
     {
         /** @var Payment|null $payment */
         $payment = Payment::query()
@@ -699,7 +696,10 @@ class PayPalController extends Controller
 
         DB::transaction(function () use ($payment, $paymentStatus, $orderStatus): void {
             $payment->update(['status' => $paymentStatus]);
-            $payment->order?->update(['status' => $orderStatus]);
+
+            if ($payment->order) {
+                $this->orderManager->transitionTo($payment->order, $orderStatus);
+            }
         });
     }
 
@@ -720,17 +720,5 @@ class PayPalController extends Controller
 
         // Defensive fallback in case PayPal ever sends the capture itself.
         return $resource['id'] ?? null;
-    }
-
-    private function cancelStalePendingPayPalOrders(Customer $customer): void
-    {
-        Order::query()
-            ->where('customer_id', $customer->id)
-            ->where('payment_method', 'paypal')
-            ->where('status', 'pending')
-            // Auch keine Bestellungen, deren Zahlung PayPal noch prüft oder bei
-            // denen Geld mit Abweichung eingegangen ist.
-            ->whereDoesntHave('payments', fn ($q) => $q->whereIn('status', ['COMPLETED', 'PENDING', 'MISMATCH']))
-            ->update(['status' => 'cancelled']);
     }
 }

@@ -9,6 +9,9 @@ use App\Models\Order;
 use App\Support\Address\AddressRules;
 use App\Support\Cart\CartService;
 use App\Support\Orders\OrderManager;
+use App\Support\Orders\OrderStatus;
+use App\Support\Orders\OrderSummary;
+use App\Support\Orders\PaymentMethod;
 use App\Support\PaymentMode;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -34,7 +37,7 @@ class CheckoutController extends Controller
 
         $paypalClientId = null;
 
-        if ($cart->selectedPaymentMethod()?->id === 'paypal') {
+        if ($cart->selectedPaymentMethod()?->id === PaymentMethod::Paypal->value) {
             $paypalClientId = config('paypal.'.PaymentMode::current().'.client_id') ?: null;
         }
 
@@ -108,11 +111,11 @@ class CheckoutController extends Controller
 
         // PayPal payments run through the PayPal JS SDK and PayPalController;
         // this endpoint only finalizes invoice ("Kauf auf Rechnung") orders.
-        if ($cart->selectedPaymentMethod()?->id !== 'invoice') {
+        if ($cart->selectedPaymentMethod()?->id !== PaymentMethod::Invoice->value) {
             return back()->withErrors(['payment_method' => 'Diese Zahlungsart wird über PayPal abgeschlossen.']);
         }
 
-        $order = $this->orderManager->createFromCart($request->user(), $cart, 'invoice');
+        $order = $this->orderManager->createFromCart($request->user(), $cart, PaymentMethod::Invoice);
 
         // Invoice stays "pending" until payment arrives by bank transfer, but the
         // customer still gets the confirmation (incl. bank details) and the admin
@@ -152,11 +155,11 @@ class CheckoutController extends Controller
         // Eine fehlgeschlagene/stornierte Zahlung darf nie als "Vielen Dank
         // für Ihre Bestellung" enden (V4 B1) - pending ist dagegen legitim
         // (Rechnung wartet auf Überweisung).
-        if (in_array($order->status, ['failed', 'cancelled'], true)) {
+        if (in_array($order->status, [OrderStatus::Failed, OrderStatus::Cancelled], true)) {
             return to_route('checkout.error');
         }
 
-        $summary = $this->orderManager->summaryFromOrder($order);
+        $summary = OrderSummary::fromOrder($order);
 
         return Inertia::render('Checkout/Success', [
             'order_id' => $order->id,

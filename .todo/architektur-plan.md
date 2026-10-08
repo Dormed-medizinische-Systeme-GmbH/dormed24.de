@@ -1,6 +1,6 @@
 # Plan: Architektur vertiefen, dann nach Fachgebieten ordnen
 
-> Status: **Entwurf, nicht umgesetzt.** Grundlage ist das Architektur-Review vom 08.10.2026 (Stand `main` nach PR #28 plus PR #29, Social-Media und Magazin).
+> Status: **Phase 0 und 1 in Umsetzung** (gleicher PR wie dieser Plan). Grundlage ist das Architektur-Review vom 08.10.2026 (Stand `main` nach PR #28 plus PR #29, Social-Media und Magazin).
 
 ## Ziel
 
@@ -70,17 +70,19 @@ Die Begriffe stammen aus `.claude/skills/codebase-design`:
 
 **Ziel:** Die Begriffe des Shops und die Grundsatzentscheidungen stehen an einer Stelle, damit spätere Reviews und Agents sie nicht neu verhandeln.
 
-- [ ] `GLOSSARY.md` im Repo-Root anlegen, mit diesen Fachbegriffen:
+- [x] `GLOSSARY.md` im Repo-Root anlegen, mit diesen Fachbegriffen:
   - Bestellung (Order), Zahlung (Payment), Bezahlart (`invoice`/`paypal`), Bestellstatus, Zahlungsstatus, Capture, Erstattung, Abgleich (Mismatch);
   - Warenkorb, Katalog, Kategorie, Fachrichtung;
   - Newsletter, Social-Beitrag, Magazin-Artikel, Kanal;
   - Sandbox/Live-Modus.
-- [ ] `docs/adr/0001-fachgebiets-namespaces-statt-modul-paket.md`: Entscheidung aus den Leitlinien.
-- [ ] `docs/adr/0002-kein-fulfillment-status.md`: heute nur in AGENTS.md; der neue Lebenszyklus darf den Status nicht wieder einführen.
+- [x] `.docs/adr/0001-fachgebiets-namespaces-statt-modul-paket.md`: Entscheidung aus den Leitlinien.
+- [x] `.docs/adr/0002-kein-fulfillment-status.md`: heute nur in AGENTS.md; der neue Lebenszyklus darf den Status nicht wieder einführen.
 
-> **Freigabe nötig:** `docs/adr/` ist ein neuer Basisordner (CLAUDE.md: „don't create new base folders without approval“).
+- [x] `.docs/adr/0003-verspaeteter-capture-macht-bestellung-bezahlt.md`: Entscheidung zu Frage 1 (siehe unten).
 
-**Fertig, wenn:** Beide Dateien sind gemergt, und AGENTS.md verweist darauf.
+> **Freigegeben:** ADRs liegen in `.docs/adr/` (Entscheidung vom 08.10.2026).
+
+**Fertig, wenn:** Glossar und ADRs sind gemergt, und AGENTS.md verweist darauf. ✅ (AGENTS.md, Abschnitt „Architektur-Entscheidungen und Begriffe“)
 
 ---
 
@@ -96,9 +98,9 @@ Die Begriffe stammen aus `.claude/skills/codebase-design`:
 | `PaymentStatus` | `CREATED`, `APPROVED`, `PENDING`, `COMPLETED`, `FAILED`, `MISMATCH`, `REFUNDED`, `REVERSED` | Strings in PayPalController, PayPalService, Admin/OrderController |
 | `PaymentMethod` | `invoice`, `paypal` | Strings in PayPalController, CheckoutController, Admin/OrderController, `config/shop.php` |
 
-- [ ] Enums anlegen, mit Label und Endzustand je Wert.
-- [ ] Als Casts auf `Order::status`, `Order::payment_method` und `Payment::status`.
-- [ ] TypeScript-Typen für das Frontend daraus ableiten: entweder als Prop (Labels vom Server) oder generiert. Ersetzt die Listen in `lib/orderStatus.ts` und `Admin/Orders/Show.svelte`.
+- [x] Enums anlegen, mit Label und Endzustand je Wert.
+- [x] Als Casts auf `Order::status`, `Order::payment_method` und `Payment::status`.
+- [ ] → **nach Phase 3 verschoben:** TypeScript-Typen für das Frontend daraus ableiten: entweder als Prop (Labels vom Server) oder generiert. Ersetzt die Listen in `lib/orderStatus.ts` und `Admin/Orders/Show.svelte`.
 
 ### 1.2 Erlaubte Übergänge (heutiges Verhalten, aus dem Code gelesen)
 
@@ -116,34 +118,44 @@ Die Begriffe stammen aus `.claude/skills/codebase-design`:
 
 ### 1.3 Das Modul
 
-- [ ] Ein Modul im Fachgebiet Orders bündelt:
+- [x] Ein Modul im Fachgebiet Orders bündelt:
   - das Anlegen aus dem Warenkorb;
   - alle Übergänge der Tabelle (bezahlt, fehlgeschlagen, storniert, erstattet);
   - die Prüfung, ob ein Übergang erlaubt ist (statt 4× `whereNotIn('status', ['paid', 'refunded'])`);
   - die Mails, die an Übergängen hängen. Die zwei Mail-Pfade aus AGENTS.md bleiben getrennt.
-- [ ] Idempotenz bleibt wie heute: atomarer Statuswechsel per `update … where`, keine doppelten Mails.
-- [ ] `OrderManager` wird zu diesem Modul ausgebaut oder darin aufgelöst; die genaue Form wird vor der Umsetzung entworfen.
-- [ ] `summaryFromOrder` (Darstellung für Mails und Seiten) zieht aus dem Lebenszyklus heraus, in ein eigenes kleines Modul oder ins Model.
-- [ ] Die MwSt.-Formel steht nur noch an einer Stelle (heute doppelt in `Cart.php:109` und `OrderManager.php:197`).
-- [ ] Die Umsatz-Definition („bezahlte Bestellungen“) kommt als Scope ins Model und wird von `DashboardController` und `Customer` genutzt.
+- [x] Idempotenz bleibt wie heute: atomarer Statuswechsel per `update … where`, keine doppelten Mails.
+- [x] `OrderManager` wird zu diesem Modul ausgebaut oder darin aufgelöst; die genaue Form wird vor der Umsetzung entworfen.
+- [x] `summaryFromOrder` (Darstellung für Mails und Seiten) zieht aus dem Lebenszyklus heraus, in ein eigenes kleines Modul oder ins Model.
+- [x] Die MwSt.-Formel steht nur noch an einer Stelle (heute doppelt in `Cart.php:109` und `OrderManager.php:197`).
+- [x] Die Umsatz-Definition („bezahlte Bestellungen“) kommt als Scope ins Model und wird von `DashboardController` und `Customer` genutzt.
 
 ### 1.4 Aufrufer umstellen
 
-- [ ] `PayPalController`: keine direkten `->update(['status' => …])` mehr.
-- [ ] `Admin/OrderController::refund` und `confirmPayment` nutzen das Modul. Die Prüfung „nur `invoice` und `pending`“ wandert hinein.
-- [ ] `CheckoutController`, `CustomerOrderController`, `Customer::paidOrderContaining` und `DashboardController` lesen über die Enums oder Scopes.
+- [x] `PayPalController`: keine direkten `->update(['status' => …])` mehr.
+- [x] `Admin/OrderController::refund` und `confirmPayment` nutzen das Modul. Die Prüfung „nur `invoice` und `pending`“ wandert hinein.
+- [x] `CheckoutController`, `CustomerOrderController`, `Customer::paidOrderContaining` und `DashboardController` lesen über die Enums oder Scopes.
 
 ### 1.5 Tests
 
-- [ ] Neuer Test direkt gegen das Modul: jede Zeile der Übergangstabelle, dazu jeder verbotene Übergang (z. B. `refunded` → `paid`) und die Mails pro Übergang (`Mail::fake`).
-- [ ] Bestehende Tests bleiben unverändert grün: `PayPalCaptureTest`, `PayPalWebhookTest`, `PayPalReturnFlowTest`, `PayPalPaymentLifecycleTest`, `OrderManagerTest`, `Admin/OrderManagementTest`.
-- [ ] PHPStan Level 7 ohne neue Baseline-Einträge.
+- [x] Neuer Test direkt gegen das Modul: jede Zeile der Übergangstabelle, dazu jeder verbotene Übergang (z. B. `refunded` → `paid`) und die Mails pro Übergang (`Mail::fake`).
+- [x] Bestehende Tests bleiben inhaltlich unverändert grün (nur Vergleichswerte auf Enums umgestellt; zwei `OrderManagerTest`-Fälle bekommen die Bezahlart „Rechnung“, weil Zahlungseingang nur noch für Rechnungsbestellungen geht): `PayPalCaptureTest`, `PayPalWebhookTest`, `PayPalReturnFlowTest`, `PayPalPaymentLifecycleTest`, `OrderManagerTest`, `Admin/OrderManagementTest`.
+- [ ] PHPStan Level 7 ohne neue Baseline-Einträge (prüft die CI).
 
 **Fertig, wenn:**
-- `grep -rn "'paid'\|'refunded'\|'failed'\|'cancelled'" app/` findet nur noch die Enum-Definition.
+- Bestellstatus werden nirgends mehr als String gesetzt oder verglichen. ✅ (Die verbleibenden Treffer für `'failed'` usw. sind `SocialPost`, das interne Capture-Ergebnis und PayPal-JSON im `PayPalController`; Letztere sind Phase 2.)
 - AGENTS.md (Abschnitt Zahlungen) beschreibt das Modul als einzige Stelle, und das stimmt wieder.
 
 **Aufwand:** mittel, ein PR. Das Risiko ist durch die bestehenden PayPal-Tests gedeckt.
+
+### 1.6 Umsetzung (Stand)
+
+- Enums liegen in `app/Support/Orders/` (`OrderStatus`, `PaymentStatus`, `PaymentMethod`), nicht in einem neuen `app/Enums`, siehe ADR 0001.
+- `OrderManager::transitionTo()` ist der eine Übergang; `markPaid`, `confirmInvoicePayment` (prüft jetzt selbst `canConfirmInvoicePayment`) und `cancelAbandonedPayPalOrders` bauen darauf auf. `transitionToPaid` entfällt.
+- `OrderSummary::fromOrder()` ersetzt `OrderManager::summaryFromOrder()`; MwSt. über `Money::netCents()`, auch im Warenkorb.
+- `Order::scopePaid()` für Umsatz (Dashboard) und Bewertungsrecht (`Customer`).
+- `OrderFactory` erzeugte noch Status aus der Zeit vor ADR 0002 (`processing`, `shipped`, `delivered`); jetzt immer `pending`.
+- Zahlungsstatus werden im `PayPalController` noch direkt gesetzt (jetzt als Enum). Das zieht in Phase 2 in den Zahlungsabgleich.
+- Die übrigen Strings im `PayPalController` sind PayPal-JSON und Antworten an das Frontend: Phase 2.
 
 ---
 
@@ -186,6 +198,7 @@ Die Begriffe stammen aus `.claude/skills/codebase-design`:
 - [ ] Ein Status-Badge, das aus einer Statustabelle (Label und Farbe je Wert) gespeist wird. Ersetzt die 3 kopierten `StatusBadge.svelte` (Articles, Newsletters, SocialPosts); Orders nutzt bereits `lib/orderStatus.ts`.
 - [ ] Ein Aktionsmenü mit „Bearbeiten“ und „Löschen“ plus optionalen Einträgen. Ersetzt die 5 `*Actions.svelte`.
 - [ ] Die 7 `Index.svelte` umstellen, die einfachsten zuerst (Manufacturers, Articles, SocialPosts).
+- [ ] Status-Labels und -Typen für das Frontend aus den PHP-Enums (aus Phase 1 verschoben): ersetzt die Listen in `lib/orderStatus.ts` und `Admin/Orders/Show.svelte`.
 - [ ] Vitest-Tests für das Modul: Suche, Sortierung, Spalten aus- und einblenden, Leer-Zustand, Aktionen.
 - [ ] Danach einmal bauen statt siebenmal: die Ideen aus TODO.md (Massenaktionen, Statusfilter).
 
@@ -253,8 +266,8 @@ app/Domain/
 
 ## Offene Fragen an dich
 
-1. **Verspäteter Capture nach `failed` oder `cancelled`:** Heute wird die Bestellung dann `paid` (Geld ist da). Bleibt das so? Mein Vorschlag: ja, und genau so in der Übergangstabelle festhalten.
-2. **Freigaben für die neuen Ordner** `docs/adr/` (Phase 0) und `app/Domain/` (Phase 6)?
+1. ~~Verspäteter Capture nach `failed` oder `cancelled`~~ **Entschieden:** bleibt `paid`, siehe `.docs/adr/0003-…`.
+2. **Freigabe für den neuen Ordner** `app/Domain/` (Phase 6)? (`.docs/adr/` ist freigegeben.)
 3. **Reihenfolge:** Phase 3 (Frontend) parallel zu Phase 1 oder danach?
 4. **Queue-Worker auf dem Server** (Phase 5): als Systemdienst oder per Cron (`queue:work --stop-when-empty`)?
 

@@ -15,6 +15,8 @@ use App\Support\Cart\CartItem;
 use App\Support\Cart\PaymentOption;
 use App\Support\Cart\ShippingOption;
 use App\Support\Orders\OrderManager;
+use App\Support\Orders\OrderStatus;
+use App\Support\Orders\PaymentMethod;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Mail\PendingMail;
 use Illuminate\Support\Facades\Mail;
@@ -35,7 +37,7 @@ class OrderManagerTest extends TestCase
         $result = app(OrderManager::class)->markPaid($order);
 
         $this->assertTrue($result);
-        $this->assertSame('paid', $order->fresh()->status);
+        $this->assertSame(OrderStatus::Paid, $order->fresh()->status);
         Mail::assertSent(OrderConfirmationMail::class);
         Mail::assertSent(NewOrderMail::class);
     }
@@ -65,7 +67,7 @@ class OrderManagerTest extends TestCase
         $result = app(OrderManager::class)->markPaid($order);
 
         $this->assertFalse($result);
-        $this->assertSame('refunded', $order->fresh()->status);
+        $this->assertSame(OrderStatus::Refunded, $order->fresh()->status);
         Mail::assertNothingSent();
     }
 
@@ -78,7 +80,7 @@ class OrderManagerTest extends TestCase
         $result = app(OrderManager::class)->markPaid($order);
 
         $this->assertTrue($result);
-        $this->assertSame('paid', $order->fresh()->status);
+        $this->assertSame(OrderStatus::Paid, $order->fresh()->status);
     }
 
     public function test_confirm_invoice_payment_transitions_order_and_notifies_customer_only(): void
@@ -90,7 +92,7 @@ class OrderManagerTest extends TestCase
         $result = app(OrderManager::class)->confirmInvoicePayment($order);
 
         $this->assertTrue($result);
-        $this->assertSame('paid', $order->fresh()->status);
+        $this->assertSame(OrderStatus::Paid, $order->fresh()->status);
         Mail::assertSent(PaymentConfirmationMail::class);
         Mail::assertNotSent(OrderConfirmationMail::class);
         Mail::assertNotSent(NewOrderMail::class);
@@ -120,7 +122,7 @@ class OrderManagerTest extends TestCase
         OrderItem::creating(fn () => throw new RuntimeException('Item-Insert fehlgeschlagen'));
 
         try {
-            app(OrderManager::class)->createFromCart($customer, $this->cartWithOneItem(), 'invoice');
+            app(OrderManager::class)->createFromCart($customer, $this->cartWithOneItem(), PaymentMethod::Invoice);
             $this->fail('Expected the item insert to fail.');
         } catch (RuntimeException) {
             // expected
@@ -134,10 +136,10 @@ class OrderManagerTest extends TestCase
     {
         $customer = Customer::factory()->create();
 
-        $order = app(OrderManager::class)->createFromCart($customer, $this->cartWithOneItem(), 'invoice');
+        $order = app(OrderManager::class)->createFromCart($customer, $this->cartWithOneItem(), PaymentMethod::Invoice);
 
-        $this->assertSame('pending', $order->status);
-        $this->assertSame('invoice', $order->payment_method);
+        $this->assertSame(OrderStatus::Pending, $order->status);
+        $this->assertSame(PaymentMethod::Invoice, $order->payment_method);
         $this->assertSame('44.88', $order->total_amount);
         $this->assertSame('4.90', $order->shipping_amount);
         $this->assertSame('Berlin', $order->shipping_address['city']);
@@ -184,7 +186,7 @@ class OrderManagerTest extends TestCase
 
     private function orderWithoutCustomer(): Order
     {
-        $order = Order::factory()->create(['status' => 'pending']);
+        $order = Order::factory()->create(['status' => 'pending', 'payment_method' => 'invoice']);
         // Kunde gelöscht: Bestellungen bleiben als Snapshot erhalten.
         $order->customer()->delete();
 
@@ -199,7 +201,7 @@ class OrderManagerTest extends TestCase
 
         $this->assertTrue(app(OrderManager::class)->markPaid($order));
 
-        $this->assertSame('paid', $order->fresh()->status);
+        $this->assertSame(OrderStatus::Paid, $order->fresh()->status);
         Mail::assertNothingSent();
     }
 
@@ -210,7 +212,7 @@ class OrderManagerTest extends TestCase
 
         $this->assertTrue(app(OrderManager::class)->confirmInvoicePayment($order));
 
-        $this->assertSame('paid', $order->fresh()->status);
+        $this->assertSame(OrderStatus::Paid, $order->fresh()->status);
         Mail::assertNothingSent();
     }
 
@@ -238,17 +240,17 @@ class OrderManagerTest extends TestCase
 
         $this->assertTrue(app(OrderManager::class)->markPaid($order));
 
-        $this->assertSame('paid', $order->fresh()->status);
+        $this->assertSame(OrderStatus::Paid, $order->fresh()->status);
         $this->assertSame([NewOrderMail::class], $sentToShop);
     }
 
     public function test_failing_payment_confirmation_mail_does_not_undo_the_payment(): void
     {
         Mail::shouldReceive('to')->andThrow(new RuntimeException('SMTP down'));
-        $order = Order::factory()->create(['status' => 'pending']);
+        $order = Order::factory()->create(['status' => 'pending', 'payment_method' => 'invoice']);
 
         $this->assertTrue(app(OrderManager::class)->confirmInvoicePayment($order));
 
-        $this->assertSame('paid', $order->fresh()->status);
+        $this->assertSame(OrderStatus::Paid, $order->fresh()->status);
     }
 }

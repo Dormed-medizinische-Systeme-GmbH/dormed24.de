@@ -25,4 +25,12 @@ final class Money
     {
         return number_format($cents / 100, 2, '.', '');
     }
+
+    /**
+     * Nettobetrag zu einem Bruttobetrag (Preise sind brutto inkl. MwSt.).
+     */
+    public static function netCents(int $grossCents, int $vatRate): int
+    {
+        return (int) round($grossCents / (1 + ($vatRate / 100)));
+    }
 }

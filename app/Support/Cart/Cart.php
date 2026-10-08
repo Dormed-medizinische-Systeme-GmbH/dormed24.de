@@ -106,7 +106,7 @@ final readonly class Cart implements Arrayable
 
     public function netTotalCents(): int
     {
-        return (int) round($this->totalCents() / (1 + ($this->vatRate / 100)));
+        return Money::netCents($this->totalCents(), $this->vatRate);
     }
 
     public function vatAmountCents(): int

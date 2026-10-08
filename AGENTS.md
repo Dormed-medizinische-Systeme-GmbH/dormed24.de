@@ -218,6 +218,11 @@ wurde 07/2026 entfernt.)
 
 ---
 
+## Architektur-Entscheidungen und Begriffe
+
+- Fachbegriffe: `GLOSSARY.md` (Repo-Root). Entscheidungen (ADRs): `.docs/adr/`. Plan für den Umbau: `.todo/architektur-plan.md`.
+- Neue Geschäftslogik nach Fachgebiet unter `app/Support/<Fachgebiet>` (`.docs/adr/0001-…`), kein Modul-Paket.
+
 ## Zahlungen (Payments)
 
 Zwei Bezahlarten — mehr gibt es nicht —, ein gemeinsamer Order-/Mail-Pfad über **`App\Support\Orders\OrderManager`**.
@@ -229,7 +234,7 @@ Zwei Bezahlarten — mehr gibt es nicht —, ein gemeinsamer Order-/Mail-Pfad ü
 
 Regeln:
 
-- **`OrderManager` ist die einzige Stelle**, die aus dem Cart eine Order baut (`createFromCart`, in DB-Transaktion) und „bezahlt"-Übergänge idempotent macht (atomarer Statuswechsel → keine Doppel-Mails). Neue Gateways hier andocken, nicht in den Controllern duplizieren. **Zwei getrennte Mail-Pfade, nicht austauschbar:**
+- **`OrderManager` ist die einzige Stelle**, die aus dem Cart eine Order baut (`createFromCart`, in DB-Transaktion) und den **Bestellstatus ändert** (`transitionTo`, atomar → keine Doppel-Mails; `markPaid`, `confirmInvoicePayment`, `cancelAbandonedPayPalOrders`). Welche Übergänge erlaubt sind, steht in `App\Support\Orders\OrderStatus::reachableFrom()` (Tabelle in `.todo/architektur-plan.md`, Phase 1.2). Status, Zahlungsstatus und Bezahlart sind Enums (`OrderStatus`, `PaymentStatus`, `PaymentMethod`), keine Strings. Neue Gateways hier andocken, nicht in den Controllern duplizieren. Kein `$order->update(['status' => …])` außerhalb des OrderManagers. **Zwei getrennte Mail-Pfade, nicht austauschbar:**
   - `sendConfirmations()` / `markPaid()` — „Bestellung ist eingegangen und bezahlt": `OrderConfirmationMail` (Kunde, inkl. Bankdaten-Block falls noch unbezahlt) **+** `NewOrderMail` (Betreiber). Für Rechnung bei `submit()` direkt (Bank-Hinweis), für PayPal einmalig bei `markPaid()` nach Capture/Webhook (einziger Zeitpunkt, an dem der Betreiber informiert wird).
   - `confirmInvoicePayment()` — manuelle Zahlungseingangs-Bestätigung bei Rechnung (Admin-Button): **eigenes** `PaymentConfirmationMail`/`payment-confirmation.blade.php` (kein Bankdaten-Block, andere Formulierung), **nur an den Kunden**, nie an den Betreiber (der bestätigt es ja gerade selbst). Absichtlich kein `if/else` innerhalb eines gemeinsamen Templates — die beiden Zustände „bitte zahlen" und „danke, bezahlt" sind komplett getrennte Mailables/Views.
 - **Bestellen nur mit bestätigter E-Mail** (`verified`-Middleware, siehe Auth-Abschnitt).
@@ -244,7 +249,7 @@ Regeln:
 
 Der Shop deckt **ausschließlich** Bestellannahme + Zahlungsabwicklungsschicht ab. Alles danach (Rechnungsstellung, DPD-Versand, Buchhaltung) läuft **außerhalb** des Systems, manuell im Rechnungswesen — das ist bewusst so und keine offene Baustelle:
 
-- **PayPal-Bestellungen sind vollautomatisch und darf der Admin nicht manuell anfassen.** Status (`pending`/`paid`/`failed`/`refunded`/`cancelled`) wird ausschließlich vom Capture-Flow bzw. Webhook gesetzt (`PayPalController`). Es gibt **kein** Status-Dropdown im Admin.
+- **PayPal-Bestellungen sind vollautomatisch und darf der Admin nicht manuell anfassen.** Status (`pending`/`paid`/`failed`/`refunded`/`cancelled`) wird ausschließlich vom Capture-Flow bzw. Webhook ausgelöst (`PayPalController` → `OrderManager`). Ein verspäteter Capture macht eine `failed`/`cancelled`-Bestellung bezahlt, `refunded` ist endgültig (`.docs/adr/0003-…`). Es gibt **kein** Status-Dropdown im Admin.
 - **Rechnungsbestellungen (`invoice`)**: einzige manuelle Aktion ist „Zahlungseingang bestätigen" (`OrderController::confirmPayment`, Route `orders.confirm-payment`) — setzt `pending` → `paid`, wenn eine Überweisung/Lastschrift eingegangen ist. Nur möglich, wenn `payment_method === 'invoice'` **und** Status `pending` ist; sonst 422. Kein anderer Statuswert ist über die UI erreichbar.
 - **Es gibt keinen Fulfillment-Status im System** (kein „in Bearbeitung"/„versendet"/„abgeschlossen" — bewusst entfernt, siehe Git-Historie). `paid` ist der finale Erfolgszustand; Versand/Rechnung/DPD-Tracking passiert in der externen Rechnungssoftware.
 - Storno (`cancelled`) über den Admin ist aktuell **nicht** vorgesehen — nur PayPal selbst (Abbruch/Timeout) oder eine zukünftige bilaterale PayPal-Storno-Anbindung dürfen das setzen.

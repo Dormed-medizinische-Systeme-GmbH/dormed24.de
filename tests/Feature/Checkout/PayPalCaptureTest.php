@@ -9,6 +9,8 @@ use App\Models\Payment;
 use App\Models\Product;
 use App\Models\Setting;
 use App\Services\PayPalService;
+use App\Support\Orders\OrderStatus;
+use App\Support\Orders\PaymentStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -42,7 +44,7 @@ class PayPalCaptureTest extends TestCase
             ])
             ->assertNotFound();
 
-        $this->assertSame('CREATED', $payment->fresh()->status);
+        $this->assertSame(PaymentStatus::Created, $payment->fresh()->status);
     }
 
     public function test_capture_succeeds_for_own_payment(): void
@@ -68,9 +70,9 @@ class PayPalCaptureTest extends TestCase
             ->assertOk()
             ->assertJson(['status' => 'COMPLETED']);
 
-        $this->assertSame('COMPLETED', $payment->fresh()->status);
+        $this->assertSame(PaymentStatus::Completed, $payment->fresh()->status);
         $this->assertSame('CAPTURE123456789', $payment->fresh()->paypal_capture_id);
-        $this->assertSame('paid', $order->fresh()->status);
+        $this->assertSame(OrderStatus::Paid, $order->fresh()->status);
     }
 
     /**
@@ -94,7 +96,7 @@ class PayPalCaptureTest extends TestCase
             ->assertOk();
 
         $payment->refresh();
-        $this->assertSame('COMPLETED', $payment->status);
+        $this->assertSame(PaymentStatus::Completed, $payment->status);
         $this->assertEquals(4390.00, (float) $payment->amount);
         $this->assertSame('EUR', $payment->currency);
         $this->assertEquals(153.99, (float) $payment->fee);
@@ -104,7 +106,7 @@ class PayPalCaptureTest extends TestCase
     {
         $order = Order::factory()->create(['total_amount' => '4390.00']);
 
-        $payment = app(PayPalService::class)->recordPayment($order, PayPalFixtures::sdkResponse('orders/create'), 'CREATED');
+        $payment = app(PayPalService::class)->recordPayment($order, PayPalFixtures::sdkResponse('orders/create'), PaymentStatus::Created);
 
         $this->assertEquals(4390.00, (float) $payment->amount);
     }
@@ -130,10 +132,10 @@ class PayPalCaptureTest extends TestCase
             ->assertJson(['status' => 'FAILED']);
 
         // Geld ist eingezogen: Capture bleibt mit Betrag gespeichert und erstattbar.
-        $this->assertSame('MISMATCH', $payment->fresh()->status);
+        $this->assertSame(PaymentStatus::Mismatch, $payment->fresh()->status);
         $this->assertSame('5XV36579Y29910400', $payment->fresh()->paypal_capture_id);
         $this->assertEquals(1.00, (float) $payment->fresh()->amount);
-        $this->assertSame('failed', $order->fresh()->status);
+        $this->assertSame(OrderStatus::Failed, $order->fresh()->status);
     }
 
     public function test_capture_in_foreign_currency_is_rejected_like_an_amount_mismatch(): void
@@ -152,9 +154,9 @@ class PayPalCaptureTest extends TestCase
             ->postJson(route('paypal.order.capture'), ['paypal_order_id' => $payment->paypal_order_id])
             ->assertUnprocessable();
 
-        $this->assertSame('MISMATCH', $payment->fresh()->status);
+        $this->assertSame(PaymentStatus::Mismatch, $payment->fresh()->status);
         $this->assertSame('USD', $payment->fresh()->currency);
-        $this->assertSame('failed', $order->fresh()->status);
+        $this->assertSame(OrderStatus::Failed, $order->fresh()->status);
         Mail::assertSent(PaymentAmountMismatchMail::class);
     }
 
@@ -206,8 +208,8 @@ class PayPalCaptureTest extends TestCase
 
         // In Prüfung ist nicht fehlgeschlagen: die Bestellung bleibt offen,
         // der Webhook COMPLETED oder DENIED entscheidet.
-        $this->assertSame('PENDING', $payment->fresh()->status);
-        $this->assertSame('pending', $order->fresh()->status);
+        $this->assertSame(PaymentStatus::Pending, $payment->fresh()->status);
+        $this->assertSame(OrderStatus::Pending, $order->fresh()->status);
     }
 
     public function test_new_paypal_attempt_does_not_cancel_an_order_whose_payment_is_in_review(): void
@@ -229,8 +231,8 @@ class PayPalCaptureTest extends TestCase
             ->postJson(route('paypal.order.create'), ['agreed_to_terms' => true])
             ->assertOk();
 
-        $this->assertSame('pending', $inReview->fresh()->status);
-        $this->assertSame('cancelled', $abandoned->fresh()->status);
+        $this->assertSame(OrderStatus::Pending, $inReview->fresh()->status);
+        $this->assertSame(OrderStatus::Cancelled, $abandoned->fresh()->status);
     }
 
     public function test_declined_capture_in_completed_order_is_not_booked_as_paid(): void
@@ -249,8 +251,8 @@ class PayPalCaptureTest extends TestCase
             ->postJson(route('paypal.order.capture'), ['paypal_order_id' => $payment->paypal_order_id])
             ->assertStatus(422);
 
-        $this->assertSame('FAILED', $payment->fresh()->status);
-        $this->assertNotSame('paid', $order->fresh()->status);
+        $this->assertSame(PaymentStatus::Failed, $payment->fresh()->status);
+        $this->assertNotSame(OrderStatus::Paid, $order->fresh()->status);
     }
 
     public function test_create_order_rejects_cart_with_unavailable_product(): void
@@ -337,8 +339,8 @@ class PayPalCaptureTest extends TestCase
             ->postJson(route('paypal.order.create'), ['agreed_to_terms' => true])
             ->assertOk();
 
-        $this->assertSame('cancelled', $staleOrder->fresh()->status);
-        $this->assertSame('pending', $paidOrder->fresh()->status);
+        $this->assertSame(OrderStatus::Cancelled, $staleOrder->fresh()->status);
+        $this->assertSame(OrderStatus::Pending, $paidOrder->fresh()->status);
     }
 
     public function test_create_order_error_response_does_not_leak_internals(): void
@@ -410,9 +412,9 @@ class PayPalCaptureTest extends TestCase
             ->assertOk()
             ->assertJson(['status' => 'COMPLETED']);
 
-        $this->assertSame('COMPLETED', $payment->fresh()->status);
+        $this->assertSame(PaymentStatus::Completed, $payment->fresh()->status);
         $this->assertSame('CAPTURE-WON-THE-RACE', $payment->fresh()->paypal_capture_id);
-        $this->assertSame('paid', $order->fresh()->status);
+        $this->assertSame(OrderStatus::Paid, $order->fresh()->status);
     }
 
     public function test_capture_exception_does_not_downgrade_a_payment_completed_in_the_meantime(): void
@@ -434,8 +436,8 @@ class PayPalCaptureTest extends TestCase
             ->assertOk()
             ->assertJson(['status' => 'COMPLETED']);
 
-        $this->assertSame('COMPLETED', $payment->fresh()->status);
-        $this->assertSame('paid', $order->fresh()->status);
+        $this->assertSame(PaymentStatus::Completed, $payment->fresh()->status);
+        $this->assertSame(OrderStatus::Paid, $order->fresh()->status);
     }
 
     public function test_capture_exception_still_fails_an_order_that_is_not_paid(): void
@@ -452,8 +454,8 @@ class PayPalCaptureTest extends TestCase
             ->postJson(route('paypal.order.capture'), ['paypal_order_id' => $payment->paypal_order_id])
             ->assertStatus(500);
 
-        $this->assertSame('FAILED', $payment->fresh()->status);
-        $this->assertSame('failed', $order->fresh()->status);
+        $this->assertSame(PaymentStatus::Failed, $payment->fresh()->status);
+        $this->assertSame(OrderStatus::Failed, $order->fresh()->status);
     }
 
     /**
@@ -515,7 +517,7 @@ class PayPalCaptureTest extends TestCase
             ->assertStatus(500)
             ->assertJson(['error' => 'PayPal-Order konnte nicht erstellt werden.']);
 
-        $this->assertSame('failed', Order::query()->sole()->status);
+        $this->assertSame(OrderStatus::Failed, Order::query()->sole()->status);
         $this->assertSame(0, Payment::query()->count());
     }
 

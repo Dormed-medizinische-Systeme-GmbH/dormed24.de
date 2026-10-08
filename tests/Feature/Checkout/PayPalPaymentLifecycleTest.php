@@ -10,6 +10,8 @@ use App\Models\Payment;
 use App\Models\Product;
 use App\Models\Setting;
 use App\Services\PayPalClientFactory;
+use App\Support\Orders\OrderStatus;
+use App\Support\Orders\PaymentStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Srmklive\PayPal\Services\PayPal;
@@ -127,7 +129,7 @@ class PayPalPaymentLifecycleTest extends TestCase
         /** @var Payment $payment */
         $payment = $order->payments()->sole();
         $this->assertSame('4390.00', $order->total_amount);
-        $this->assertSame('CREATED', $payment->status);
+        $this->assertSame(PaymentStatus::Created, $payment->status);
         $this->assertEquals(4390.00, (float) $payment->amount, 'createOrder liefert keinen Betrag: der Bestellbetrag muss gelten.');
 
         $sent = self::$createOrderData;
@@ -142,11 +144,11 @@ class PayPalPaymentLifecycleTest extends TestCase
             ->assertJson(['status' => 'COMPLETED']);
 
         $payment->refresh();
-        $this->assertSame('COMPLETED', $payment->status);
+        $this->assertSame(PaymentStatus::Completed, $payment->status);
         $this->assertSame('5XV36579Y29910400', $payment->paypal_capture_id);
         $this->assertEquals(4390.00, (float) $payment->amount);
         $this->assertEquals(153.99, (float) $payment->fee);
-        $this->assertSame('paid', $order->fresh()->status);
+        $this->assertSame(OrderStatus::Paid, $order->fresh()->status);
         Mail::assertSent(OrderConfirmationMail::class, fn ($mail): bool => $mail->hasTo($customer->email));
         Mail::assertSent(NewOrderMail::class, fn ($mail): bool => $mail->hasTo('shop@dormed.example'));
 
@@ -157,8 +159,8 @@ class PayPalPaymentLifecycleTest extends TestCase
 
         $this->assertSame(4390.0, self::$refundedAmount);
         $this->assertSame('refund-5XV36579Y29910400-4390.00', self::$refundRequestId, 'Gleiche Erstattung, gleicher Idempotenz-Schlüssel.');
-        $this->assertSame('REFUNDED', $payment->fresh()->status);
-        $this->assertSame('refunded', $order->fresh()->status);
+        $this->assertSame(PaymentStatus::Refunded, $payment->fresh()->status);
+        $this->assertSame(OrderStatus::Refunded, $order->fresh()->status);
         // Bestätigungen gehen genau einmal raus, auch über Capture und Erstattung hinweg.
         Mail::assertSent(OrderConfirmationMail::class, 1);
         Mail::assertSent(NewOrderMail::class, 1);

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Orders\PaymentStatus;
 use Database\Factories\PaymentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -27,7 +28,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $paypal_order_id
  * @property string|null $paypal_payer_id
  * @property string|null $paypal_capture_id
- * @property string $status
+ * @property PaymentStatus $status
  * @property string $amount
  * @property string $currency
  * @property string|null $fee
@@ -43,6 +44,7 @@ class Payment extends Model
     protected function casts(): array
     {
         return [
+            'status' => PaymentStatus::class,
             'amount' => 'decimal:2',
             'fee' => 'decimal:2',
             'response_data' => 'array',
