@@ -10,10 +10,21 @@ if [ -z "$APP_KEY" ]; then
     exit 1
 fi
 
-# Nur `migrate`, niemals `migrate:fresh` (das ist in Produktion ohnehin gesperrt).
-touch database/database.sqlite
-chown -R www-data:www-data storage bootstrap/cache database
+chown -R www-data:www-data storage bootstrap/cache
 
+# Postgres kann beim gemeinsamen Start des Stacks noch hochfahren: bis zu
+# 60 Sekunden auf die Datenbank warten, dann erst migrieren.
+attempts=0
+until php artisan db:show >/dev/null 2>&1; do
+    attempts=$((attempts + 1))
+    if [ "$attempts" -ge 30 ]; then
+        echo "Datenbank nicht erreichbar — Start abgebrochen." >&2
+        exit 1
+    fi
+    sleep 2
+done
+
+# Nur `migrate`, niemals `migrate:fresh` (das ist in Produktion ohnehin gesperrt).
 php artisan migrate --force
 php artisan storage:link --force || true
 php artisan config:cache

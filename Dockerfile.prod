@@ -43,12 +43,16 @@ RUN mkdir -p database && touch database/database.sqlite \
 # ---- Production Stage ----
 FROM php:8.4-fpm-bookworm AS production
 
-# Runtime: Nginx + Supervisor + dieselben PHP-Extensions wie im Build
+# Runtime: Nginx + Supervisor, PHP mit Postgres (pdo_pgsql) und Redis
+# (phpredis für Queue, Cache und Sessions). pdo_sqlite bleibt nur für den
+# einmaligen Datenumzug (docker/migrate-sqlite-to-postgres.sh).
 RUN apt-get update && apt-get install -y --no-install-recommends \
     nginx supervisor curl \
-    libzip-dev libonig-dev libxml2-dev libicu-dev \
-    && docker-php-ext-install -j$(nproc) pdo pdo_sqlite mbstring zip xml bcmath intl \
-    && rm -rf /var/lib/apt/lists/*
+    libzip-dev libonig-dev libxml2-dev libicu-dev libpq-dev \
+    && docker-php-ext-install -j$(nproc) pdo pdo_pgsql pdo_sqlite mbstring zip xml bcmath intl \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
+    && rm -rf /var/lib/apt/lists/* /tmp/pear
 
 COPY docker/nginx.conf         /etc/nginx/nginx.conf
 COPY docker/supervisord.conf   /etc/supervisor/conf.d/dormed24.conf
@@ -60,13 +64,17 @@ COPY --from=build /build /app
 
 WORKDIR /app
 
-# Laufzeit-Defaults — Coolify/Plattform überschreibt APP_KEY und Co.
+# Laufzeit-Defaults — compose.yaml/.env überschreibt APP_KEY, Zugangsdaten und Co.
+# Datenbank ist Postgres, Queue, Cache und Sessions laufen über Redis.
 ENV APP_ENV=production \
     APP_DEBUG=false \
     LOG_LEVEL=warning \
     APP_KEY="" \
-    DB_CONNECTION=sqlite \
-    DB_DATABASE=/app/database/database.sqlite
+    DB_CONNECTION=pgsql \
+    QUEUE_CONNECTION=redis \
+    CACHE_STORE=redis \
+    SESSION_DRIVER=redis \
+    REDIS_CLIENT=phpredis
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:80/ || exit 1

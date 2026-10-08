@@ -62,6 +62,16 @@ class ProductBrowsingTest extends TestCase
             ->assertInertia(fn ($page) => $page->where('total', 1));
     }
 
+    public function test_search_ignores_case(): void
+    {
+        Product::factory()->create(['name' => 'Beatmungsgerät Pro']);
+        Product::factory()->create(['name' => 'Infusionspumpe']);
+
+        $this->getJson(route('search', ['q' => 'beatmung']))
+            ->assertOk()
+            ->assertJson(['total' => 1]);
+    }
+
     public function test_search_treats_like_wildcards_literally(): void
     {
         Product::factory()->create(['name' => 'Beatmungsgerät Pro']);

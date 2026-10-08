@@ -1,7 +1,7 @@
 # dormed24-Shop
 
 Onlineshop für Medizintechnik (dormed 24) — Ablösung für Shopware.
-**Stack:** Laravel 13 · Inertia v3 · Svelte 5 · Tailwind 4 · PHPUnit 12 · SQLite (Default, `DB_CONNECTION`) · PayPal (srmklive/paypal) · `npm run dev` (dev)
+**Stack:** Laravel 13 · Inertia v3 · Svelte 5 · Tailwind 4 · PHPUnit 12 · Postgres + Redis (Queue, Cache, Sessions; lokal per `compose.dev.yaml`) · PayPal (srmklive/paypal) · `npm run dev` (dev)
 
 Dieses README ist die übergreifende Landkarte: Was der Shop tut, wie die
 Kern-Flows laufen und wo was liegt. **Konvention: Wer einen Flow ändert,
@@ -194,6 +194,20 @@ npm run build:ssr                     # Client + SSR-Bundle (bootstrap/ssr/app.j
 
 ---
 
+## Docker-Stack: Postgres und Redis
+
+Entscheidung: `.docs/adr/0005-postgres-und-redis-im-docker-stack.md`.
+
+- **Lokal:** `docker compose -f compose.dev.yaml up -d` startet Postgres und Redis auf `127.0.0.1`; die Werte in `.env.example` passen dazu. Die App läuft weiter mit `npm run dev`. PHP braucht lokal die Erweiterungen `pdo_pgsql` und `redis` (z. B. `php8.4-pgsql`, `php8.4-redis`).
+- **Server:** `compose.yaml` startet App (Nginx, PHP-FPM, Queue-Worker), Postgres und Redis. Daten liegen in benannten Volumes (`postgres`, `redis`, `storage`). Start: `.env` neben `compose.yaml` anlegen (mindestens `APP_KEY`, `DB_PASSWORD`, Zugangsdaten), dann `docker compose up -d --build`. Die App hört nur auf `127.0.0.1:APP_PORT` (Standard 8080); TLS und Domain bleiben beim Nginx auf dem Host, der per `proxy_pass` dorthin weiterleitet.
+- **Umzug der SQLite-Daten (einmalig):**
+  1. Stack starten; der App-Start legt das leere Postgres-Schema per `migrate` an.
+  2. Alte App stoppen (keine neuen Bestellungen mehr in SQLite).
+  3. `docker compose run --rm -v /pfad/zur/database.sqlite:/import.sqlite:ro app php artisan db:import-sqlite /import.sqlite` kopiert alle Daten, setzt die Sequenzen und vergleicht die Zeilenzahlen. Er bricht ab, wenn Postgres schon Daten enthält; bei einem Fehler bleibt Postgres leer.
+  4. Produktbilder aus `storage/app/public` in das Volume `storage` kopieren (z. B. `docker compose cp storage/app/public/. app:/app/storage/app/public/`).
+  5. Proxy/Webserver auf den Container umstellen, danach `deploy.yml` auf den Docker-Stack umstellen.
+- **Offen beim Umstieg:** SSR läuft im Image noch nicht (es fehlen Node und `node_modules` zur Laufzeit), die Seiten rendern dort clientseitig. Bis das nachgezogen ist, bleibt `INERTIA_SSR_ENABLED=false`.
+
 ## Betrieb / Launch-Checkliste
 
 1. `php artisan storage:link` — Produktbilder liegen auf dem public-Disk.
@@ -202,7 +216,7 @@ npm run build:ssr                     # Client + SSR-Bundle (bootstrap/ssr/app.j
 4. In `config/shop.php` Kontakt (`contact.email` ist auch die Bestell-Benachrichtigungsadresse) und Bankverbindung (`bank.iban`, `bank.bic`) prüfen; Änderungen per Commit und Deploy. Seeder mit Default-Passwörtern laufen nur außerhalb von Produktion.
 5. DB-Backup-Strategie klären (siehe `ANALYSE.md`).
 6. Scheduler-Cron aktuell **nicht nötig** (keine Scheduled Tasks).
-7. Kein Queue-Worker nötig — Mails laufen synchron (siehe Abschnitt „Mails" oben).
+7. Queue-Worker läuft im Docker-Stack als Supervisor-Dienst im App-Container (`docker/supervisord.conf`). Mails laufen bisher trotzdem synchron (siehe Abschnitt „Mails" oben).
 8. **SSR (Server-Side Rendering)** für Crawler/Link-Vorschauen (WhatsApp,
    Slack, LinkedIn …):
    - `npm run build:ssr` baut Client- **und** SSR-Bundle

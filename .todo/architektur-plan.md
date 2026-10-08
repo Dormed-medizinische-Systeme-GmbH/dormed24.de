@@ -262,7 +262,7 @@ Die Begriffe stammen aus `.claude/skills/codebase-design`:
 
 **Auslöser:** erst, wenn die LinkedIn- und Meta-Freigaben da sind oder Newsletter Phase 2 (Abonnenten, Versand) startet. Vorher wäre der Seam nur hypothetisch.
 
-- [ ] Queue einrichten: Treiber `database` existiert schon. Der Worker (`queue:work`) läuft als **Systemdienst im Docker-Container** (entschieden). Das Deployment wird auf Docker umgestellt; der Worker-Dienst gehört in dieses Container-Setup, nicht in einen Cron auf dem Host.
+- [x] Queue einrichten: **Redis** als Queue (plus Cache und Sessions), Postgres als Datenbank (`.docs/adr/0005-…`). Der Worker (`queue:work`) läuft als Supervisor-Dienst im App-Container von `compose.yaml`. Offen ist nur noch der Umstieg des Servers auf den Stack (Ablauf im README, Abschnitt „Docker-Stack“).
 - [ ] **Social:**
   - ein Interface „Beitrag veröffentlichen“ mit zwei Adaptern, LinkedIn und Facebook;
   - Status über ein Enum wie in Phase 1;
