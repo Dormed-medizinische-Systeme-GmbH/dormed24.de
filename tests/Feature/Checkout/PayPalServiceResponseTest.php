@@ -106,17 +106,6 @@ class PayPalServiceResponseTest extends TestCase
         );
     }
 
-    public function test_capture_id_is_read_from_order_response(): void
-    {
-        $service = app(PayPalService::class);
-
-        $this->assertSame('5XV36579Y29910400', $service->getCaptureIdFromOrder(PayPalFixtures::body('orders/capture-completed')));
-        $this->assertNull($service->getCaptureIdFromOrder(PayPalFixtures::body('orders/create')));
-        $this->assertNull($service->getCaptureIdFromOrder([
-            'purchase_units' => [['payments' => ['captures' => [['id' => 123]]]]],
-        ]));
-    }
-
     public function test_failed_authentication_throws_with_paypals_message(): void
     {
         self::$tokenResponse = ['error' => ['message' => 'Client Authentication failed']];

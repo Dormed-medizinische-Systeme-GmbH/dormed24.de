@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\Setting;
 use App\Services\PayPalService;
 use App\Support\Orders\OrderStatus;
+use App\Support\Orders\PaymentReconciliation;
 use App\Support\Orders\PaymentStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
@@ -106,8 +107,12 @@ class PayPalCaptureTest extends TestCase
     {
         $order = Order::factory()->create(['total_amount' => '4390.00']);
 
-        $payment = app(PayPalService::class)->recordPayment($order, PayPalFixtures::sdkResponse('orders/create'), PaymentStatus::Created);
+        $this->mock(PayPalService::class, fn ($mock) => $mock->shouldReceive('createOrder')->once()->andReturn(PayPalFixtures::sdkResponse('orders/create')));
 
+        $payment = app(PaymentReconciliation::class)->start($order);
+
+        $this->assertNotNull($payment);
+        $this->assertSame(PaymentStatus::Created, $payment->status);
         $this->assertEquals(4390.00, (float) $payment->amount);
     }
 
@@ -223,7 +228,6 @@ class PayPalCaptureTest extends TestCase
 
         $this->mock(PayPalService::class, function ($mock): void {
             $mock->shouldReceive('createOrder')->once()->andReturn(PayPalFixtures::sdkResponse('orders/create'));
-            $mock->shouldReceive('recordPayment')->once();
         });
 
         $this->actingAs($customer)
@@ -311,7 +315,6 @@ class PayPalCaptureTest extends TestCase
 
         $this->mock(PayPalService::class, function ($mock): void {
             $mock->shouldReceive('createOrder')->once()->andReturn(PayPalFixtures::sdkResponse('orders/create'));
-            $mock->shouldReceive('recordPayment')->once()->andReturn(new Payment);
         });
 
         $this->actingAs($customer)
@@ -508,7 +511,6 @@ class PayPalCaptureTest extends TestCase
         $product = Product::factory()->create(['price' => '10.00']);
         $this->mock(PayPalService::class, function ($mock): void {
             $mock->shouldReceive('createOrder')->once()->andReturn(PayPalFixtures::sdkResponse('orders/create-unprocessable'));
-            $mock->shouldNotReceive('recordPayment');
         });
 
         $this->actingAs(Customer::factory()->create())
