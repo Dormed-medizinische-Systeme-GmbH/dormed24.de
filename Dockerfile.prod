@@ -1,0 +1,76 @@
+# ============================================
+# Production Dockerfile — dormed24 Shop
+# Multi-stage: Build → FPM + Nginx + Supervisor Runtime
+# Kein Node im Runtime-Image: SSR ist standardmäßig aus (INERTIA_SSR_ENABLED=false).
+# ============================================
+
+# ---- Build Stage ----
+FROM php:8.4-cli-bookworm AS build
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libzip-dev libpng-dev libonig-dev libxml2-dev libicu-dev libcurl4-openssl-dev \
+    unzip ca-certificates curl git \
+    && docker-php-ext-install -j$(nproc) pdo pdo_sqlite mbstring zip xml bcmath intl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Node.js 22 (nur Build)
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+WORKDIR /build
+
+# Layer 1: PHP-Abhängigkeiten
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction --no-progress
+
+# Layer 2: Frontend-Abhängigkeiten
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund
+
+# Layer 3: App-Quellcode
+COPY . .
+
+# Laravel bootstrappen und Assets bauen (ohne Seeding, ohne Migrationen)
+RUN mkdir -p database && touch database/database.sqlite \
+    && php artisan package:discover --ansi \
+    && php artisan wayfinder:generate --with-form \
+    && npm run build \
+    && rm -rf node_modules
+
+# ---- Production Stage ----
+FROM php:8.4-fpm-bookworm AS production
+
+# Runtime: Nginx + Supervisor + dieselben PHP-Extensions wie im Build
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    nginx supervisor curl \
+    libzip-dev libonig-dev libxml2-dev libicu-dev \
+    && docker-php-ext-install -j$(nproc) pdo pdo_sqlite mbstring zip xml bcmath intl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY docker/nginx.conf         /etc/nginx/nginx.conf
+COPY docker/supervisord.conf   /etc/supervisor/conf.d/dormed24.conf
+COPY docker/start.sh           /usr/local/bin/start.sh
+RUN chmod +x /usr/local/bin/start.sh
+
+# Build-Artefakte ohne node_modules, .git und Dev-Abhängigkeiten
+COPY --from=build /build /app
+
+WORKDIR /app
+
+# Laufzeit-Defaults — Coolify/Plattform überschreibt APP_KEY und Co.
+ENV APP_ENV=production \
+    APP_DEBUG=false \
+    LOG_LEVEL=warning \
+    APP_KEY="" \
+    DB_CONNECTION=sqlite \
+    DB_DATABASE=/app/database/database.sqlite
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:80/ || exit 1
+
+EXPOSE 80
+
+CMD ["/usr/local/bin/start.sh"]
