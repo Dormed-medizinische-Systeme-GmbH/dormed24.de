@@ -59,10 +59,10 @@ Die Begriffe stammen aus `.claude/skills/codebase-design`:
 | 0 | Glossar und erste ADRs | – | vorab | – |
 | 1 | Ein Modul für den Bestell-Lebenszyklus | #1 | **stark** | 0 |
 | 2 | PayPal wird ein echter Adapter | #2 | **stark** | 1 |
-| 3 | Admin-Tabellen als ein Modul | #3 | lohnt sich zu prüfen | – (parallel möglich) |
+| 3 | Admin-Tabellen als ein Modul | #3 | lohnt sich zu prüfen | 2 (sequenziell danach) |
 | 4 | Shop-Einstellungen mit festen Schlüsseln | #4 | lohnt sich zu prüfen | – |
 | 5 | Kanal-Seam, Queue und Jobs für Marketing | #5 | erst mit dem ersten echten Kanal | API-Freigaben, Newsletter Phase 2 |
-| 6 | Namespaces nach Fachgebiet | Modul-Frage | optional | 1, 2 |
+| 6 | Namespaces nach Fachgebiet unter `app/Support` | Modul-Frage | optional | 1, 2 |
 
 ---
 
@@ -206,7 +206,7 @@ Die Begriffe stammen aus `.claude/skills/codebase-design`:
 - Jede Index-Seite hat unter 100 Zeilen.
 - Es gibt keine kopierten Badges oder Aktionsmenüs mehr.
 
-**Aufwand:** mittel, gut in zwei PRs teilbar. Unabhängig von Phase 1 und 2, kann also parallel laufen.
+**Aufwand:** mittel, gut in zwei PRs teilbar. Technisch unabhängig von Phase 1 und 2, läuft aber **sequenziell nach Phase 2** (entschieden).
 
 ---
 
@@ -228,7 +228,7 @@ Die Begriffe stammen aus `.claude/skills/codebase-design`:
 
 **Auslöser:** erst, wenn die LinkedIn- und Meta-Freigaben da sind oder Newsletter Phase 2 (Abonnenten, Versand) startet. Vorher wäre der Seam nur hypothetisch.
 
-- [ ] Queue einrichten: Treiber `database` existiert schon, dazu der Worker im Deploy. Das ist eine Entscheidung zum Betrieb (siehe offene Fragen).
+- [ ] Queue einrichten: Treiber `database` existiert schon. Der Worker (`queue:work`) läuft als **Systemdienst im Docker-Container** (entschieden). Das Deployment wird auf Docker umgestellt; der Worker-Dienst gehört in dieses Container-Setup, nicht in einen Cron auf dem Host.
 - [ ] **Social:**
   - ein Interface „Beitrag veröffentlichen“ mit zwei Adaptern, LinkedIn und Facebook;
   - Status über ein Enum wie in Phase 1;
@@ -247,8 +247,10 @@ Die Begriffe stammen aus `.claude/skills/codebase-design`:
 
 **Erst nach Phase 1 und 2**, wenn es tiefe Module gibt, die man sinnvoll ordnen kann.
 
+Entschieden: **vorerst kein `app/Domain`**, die Fachgebiete bleiben unter `app/Support/<Fachgebiet>` (wie `app/Support/Orders` und `app/Support/Cart` heute, passend zu ADR 0001).
+
 ```
-app/Domain/
+app/Support/
   Core/        Money, Shop-Einstellungen, PaymentMode
   Shop/        Cart (heute Support/Cart), Catalog, Products
   Orders/      Lebenszyklus, Zahlungsabgleich, PayPal-Adapter
@@ -260,16 +262,16 @@ app/Domain/
 - [ ] Abhängigkeitsrichtung: Marketing → Core; Orders → Shop → Core. Marketing greift nie auf Orders zu, sondern reagiert auf Events.
 - [ ] Optional ein Architekturtest (z. B. per PHPStan-Regel oder einfachem Test), der diese Richtung prüft.
 
-> **Freigabe nötig:** `app/Domain` ist ein neuer Basisordner.
+> Ein eigener Basisordner `app/Domain` wäre eine neue Freigabe und ist vorerst nicht vorgesehen.
 
 ---
 
 ## Offene Fragen an dich
 
 1. ~~Verspäteter Capture nach `failed` oder `cancelled`~~ **Entschieden:** bleibt `paid`, siehe `.docs/adr/0003-…`.
-2. **Freigabe für den neuen Ordner** `app/Domain/` (Phase 6)? (`.docs/adr/` ist freigegeben.)
-3. **Reihenfolge:** Phase 3 (Frontend) parallel zu Phase 1 oder danach?
-4. **Queue-Worker auf dem Server** (Phase 5): als Systemdienst oder per Cron (`queue:work --stop-when-empty`)?
+2. ~~Freigabe für `app/Domain/`~~ **Entschieden:** vorerst unter `app/Support/<Fachgebiet>`, kein neuer Basisordner.
+3. ~~Reihenfolge Phase 3~~ **Entschieden:** sequenziell, nach Phase 2.
+4. ~~Queue-Worker auf dem Server~~ **Entschieden:** als Systemdienst im Docker-Container; das Deployment wird auf Docker umgestellt.
 
 ## Nicht-Ziele
 
