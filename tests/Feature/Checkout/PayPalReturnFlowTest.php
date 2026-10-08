@@ -6,6 +6,8 @@ use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Services\PayPalService;
+use App\Support\Orders\OrderStatus;
+use App\Support\Orders\PaymentStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Tests\Support\PayPalFixtures;
@@ -61,7 +63,7 @@ class PayPalReturnFlowTest extends TestCase
             ->get(route('paypal.after-payment', ['token' => $payment->paypal_order_id]))
             ->assertRedirect(route('checkout.index'));
 
-        $this->assertSame('CREATED', $payment->fresh()->status);
+        $this->assertSame(PaymentStatus::Created, $payment->fresh()->status);
     }
 
     public function test_after_payment_captures_pending_payment_and_redirects_to_success(): void
@@ -85,9 +87,9 @@ class PayPalReturnFlowTest extends TestCase
             ->get(route('paypal.after-payment', ['token' => $payment->paypal_order_id]))
             ->assertRedirect(route('checkout.success', ['paypal_order_id' => $payment->paypal_order_id]));
 
-        $this->assertSame('COMPLETED', $payment->fresh()->status);
+        $this->assertSame(PaymentStatus::Completed, $payment->fresh()->status);
         $this->assertSame('CAPTURE123456789', $payment->fresh()->paypal_capture_id);
-        $this->assertSame('paid', $order->fresh()->status);
+        $this->assertSame(OrderStatus::Paid, $order->fresh()->status);
     }
 
     public function test_after_payment_with_failed_capture_redirects_to_error(): void
@@ -164,7 +166,7 @@ class PayPalReturnFlowTest extends TestCase
             ->get(route('paypal.after-payment', ['token' => $payment->paypal_order_id]))
             ->assertRedirect(route('checkout.success', ['paypal_order_id' => $payment->paypal_order_id]));
 
-        $this->assertSame('paid', $order->fresh()->status);
+        $this->assertSame(OrderStatus::Paid, $order->fresh()->status);
     }
 
     public function test_after_payment_capture_exception_redirects_to_error(): void

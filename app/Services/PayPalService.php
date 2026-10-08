@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Order;
 use App\Models\Payment;
+use App\Support\Orders\PaymentStatus;
 use App\Support\PaymentMode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -225,7 +226,7 @@ class PayPalService
      *
      * @param  array<string, mixed>  $response
      */
-    public function recordPayment(Order $order, array $response, string $status): Payment
+    public function recordPayment(Order $order, array $response, PaymentStatus $status): Payment
     {
         $purchaseUnit = $response['purchase_units'][0] ?? [];
         $capture = $purchaseUnit['payments']['captures'][0] ?? [];

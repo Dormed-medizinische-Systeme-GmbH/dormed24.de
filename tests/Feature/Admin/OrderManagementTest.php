@@ -8,6 +8,8 @@ use App\Mail\PaymentConfirmationMail;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Services\PayPalService;
+use App\Support\Orders\OrderStatus;
+use App\Support\Orders\PaymentStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -69,7 +71,7 @@ class OrderManagementTest extends TestCase
             ->patchJson(route('admin.orders.confirm-payment', $order))
             ->assertStatus(422);
 
-        $this->assertSame('pending', $order->fresh()->status);
+        $this->assertSame(OrderStatus::Pending, $order->fresh()->status);
         Mail::assertNothingSent();
     }
 
@@ -94,7 +96,7 @@ class OrderManagementTest extends TestCase
             ->patchJson(route('admin.orders.confirm-payment', $order), ['notify' => true])
             ->assertOk();
 
-        $this->assertSame('paid', $order->fresh()->status);
+        $this->assertSame(OrderStatus::Paid, $order->fresh()->status);
         // Dedicated payment-confirmation mail to the customer - not the
         // generic order-confirmation (which still asks to transfer money),
         // and never the operator notification (they're the one confirming).
@@ -112,7 +114,7 @@ class OrderManagementTest extends TestCase
             ->patchJson(route('admin.orders.confirm-payment', $order), ['notify' => false])
             ->assertOk();
 
-        $this->assertSame('paid', $order->fresh()->status);
+        $this->assertSame(OrderStatus::Paid, $order->fresh()->status);
         Mail::assertNothingSent();
     }
 
@@ -157,8 +159,8 @@ class OrderManagementTest extends TestCase
             ->assertOk()
             ->assertJson(['status' => 'refunded']);
 
-        $this->assertSame('REFUNDED', $payment->fresh()->status);
-        $this->assertSame('refunded', $payment->order->fresh()->status);
+        $this->assertSame(PaymentStatus::Refunded, $payment->fresh()->status);
+        $this->assertSame(OrderStatus::Refunded, $payment->order->fresh()->status);
     }
 
     /**
@@ -215,8 +217,8 @@ class OrderManagementTest extends TestCase
             ->postJson(route('admin.orders.refund', $payment->order))
             ->assertStatus(422);
 
-        $this->assertSame('COMPLETED', $payment->fresh()->status);
-        $this->assertSame('paid', $payment->order->fresh()->status);
+        $this->assertSame(PaymentStatus::Completed, $payment->fresh()->status);
+        $this->assertSame(OrderStatus::Paid, $payment->order->fresh()->status);
     }
 
     public function test_pending_refund_is_acknowledged_but_not_booked_as_refunded(): void
@@ -233,8 +235,8 @@ class OrderManagementTest extends TestCase
             ->assertJson(['status' => 'pending']);
 
         // Den Abschluss meldet PayPal per CAPTURE.REFUNDED-Webhook.
-        $this->assertSame('COMPLETED', $payment->fresh()->status);
-        $this->assertSame('paid', $payment->order->fresh()->status);
+        $this->assertSame(PaymentStatus::Completed, $payment->fresh()->status);
+        $this->assertSame(OrderStatus::Paid, $payment->order->fresh()->status);
     }
 
     public function test_refund_exception_leaves_payment_and_order_untouched(): void
@@ -249,8 +251,8 @@ class OrderManagementTest extends TestCase
             ->postJson(route('admin.orders.refund', $payment->order))
             ->assertStatus(422);
 
-        $this->assertSame('COMPLETED', $payment->fresh()->status);
-        $this->assertSame('paid', $payment->order->fresh()->status);
+        $this->assertSame(PaymentStatus::Completed, $payment->fresh()->status);
+        $this->assertSame(OrderStatus::Paid, $payment->order->fresh()->status);
     }
 
     public function test_refund_requires_admin(): void
@@ -263,7 +265,7 @@ class OrderManagementTest extends TestCase
 
         $this->postJson(route('admin.orders.refund', $payment->order))->assertRedirect(route('admin.login'));
 
-        $this->assertSame('COMPLETED', $payment->fresh()->status);
+        $this->assertSame(PaymentStatus::Completed, $payment->fresh()->status);
     }
 
     public function test_captured_payment_with_mismatched_amount_can_be_refunded(): void
@@ -287,7 +289,7 @@ class OrderManagementTest extends TestCase
             ->postJson(route('admin.orders.refund', $order))
             ->assertOk();
 
-        $this->assertSame('REFUNDED', $payment->fresh()->status);
-        $this->assertSame('refunded', $order->fresh()->status);
+        $this->assertSame(PaymentStatus::Refunded, $payment->fresh()->status);
+        $this->assertSame(OrderStatus::Refunded, $order->fresh()->status);
     }
 }

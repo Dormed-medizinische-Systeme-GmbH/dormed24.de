@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\Customer;
 use App\Models\Order;
+use App\Support\Orders\OrderStatus;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -15,7 +16,7 @@ class OrderFactory extends Factory
     {
         return [
             'customer_id' => Customer::factory(),
-            'status' => fake()->randomElement(['pending', 'processing', 'shipped', 'delivered', 'cancelled']),
+            'status' => OrderStatus::Pending,
             'total_amount' => fake()->randomFloat(2, 10, 1000),
         ];
     }

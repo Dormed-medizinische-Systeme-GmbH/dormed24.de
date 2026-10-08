@@ -7,6 +7,9 @@ use App\Models\Order;
 use App\Models\Payment;
 use App\Services\PayPalService;
 use App\Support\Orders\OrderManager;
+use App\Support\Orders\OrderStatus;
+use App\Support\Orders\OrderSummary;
+use App\Support\Orders\PaymentStatus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +26,7 @@ class OrderController extends Controller
         ]);
     }
 
-    public function show(Order $order, OrderManager $orderManager): Response
+    public function show(Order $order): Response
     {
         $order->load([
             'customer',
@@ -68,7 +71,7 @@ class OrderController extends Controller
                     'payer_name' => $payment->payer_name,
                     'created_at' => $payment->created_at,
                 ])->values(),
-                'summary' => $orderManager->summaryFromOrder($order),
+                'summary' => OrderSummary::fromOrder($order),
             ],
         ]);
     }
@@ -82,7 +85,7 @@ class OrderController extends Controller
      */
     public function confirmPayment(Request $request, Order $order, OrderManager $orderManager): JsonResponse
     {
-        if ($order->payment_method !== 'invoice' || $order->status !== 'pending') {
+        if (! $orderManager->canConfirmInvoicePayment($order)) {
             return response()->json([
                 'message' => 'Zahlungseingang kann nur für offene Rechnungsbestellungen bestätigt werden.',
             ], 422);
@@ -98,7 +101,7 @@ class OrderController extends Controller
             // generic order-confirmation, which still asks to transfer money).
             $orderManager->confirmInvoicePayment($order);
         } else {
-            $orderManager->transitionToPaid($order);
+            $orderManager->transitionTo($order, OrderStatus::Paid);
         }
 
         return response()->json([
@@ -110,13 +113,13 @@ class OrderController extends Controller
     /**
      * Refund the captured PayPal payment of an order.
      */
-    public function refund(Order $order, PayPalService $payPalService): JsonResponse
+    public function refund(Order $order, PayPalService $payPalService, OrderManager $orderManager): JsonResponse
     {
         /** @var Payment|null $payment */
         $payment = $order->payments()
             // MISMATCH: eingezogen, aber Betrag/Währung weichen ab - das Geld
             // muss zurück, die Bestellung wird nicht erfüllt.
-            ->whereIn('status', ['COMPLETED', 'MISMATCH'])
+            ->whereIn('status', [PaymentStatus::Completed, PaymentStatus::Mismatch])
             ->whereNotNull('paypal_capture_id')
             ->latest()
             ->first();
@@ -155,12 +158,12 @@ class OrderController extends Controller
                 return response()->json(['message' => 'Erstattung fehlgeschlagen. Bitte prüfen Sie das Log und den PayPal-Status.'], 422);
             }
 
-            DB::transaction(function () use ($payment, $order): void {
-                $payment->update(['status' => 'REFUNDED']);
-                $order->update(['status' => 'refunded']);
+            DB::transaction(function () use ($payment, $order, $orderManager): void {
+                $payment->update(['status' => PaymentStatus::Refunded]);
+                $orderManager->transitionTo($order, OrderStatus::Refunded);
             });
 
-            return response()->json(['message' => 'Zahlung erstattet.', 'status' => 'refunded']);
+            return response()->json(['message' => 'Zahlung erstattet.', 'status' => OrderStatus::Refunded]);
         } catch (\Throwable $e) {
             Log::error('PayPal refund failed', [
                 'order_id' => $order->id,

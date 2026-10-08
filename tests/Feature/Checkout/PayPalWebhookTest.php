@@ -7,6 +7,8 @@ use App\Mail\OrderConfirmationMail;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Services\PayPalService;
+use App\Support\Orders\OrderStatus;
+use App\Support\Orders\PaymentStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -71,8 +73,8 @@ class PayPalWebhookTest extends TestCase
         $this->postJson(route('paypal.webhook'), $this->refundEvent($payment->paypal_capture_id, $payment->amount))
             ->assertOk();
 
-        $this->assertSame('REFUNDED', $payment->fresh()->status);
-        $this->assertSame('refunded', $order->fresh()->status);
+        $this->assertSame(PaymentStatus::Refunded, $payment->fresh()->status);
+        $this->assertSame(OrderStatus::Refunded, $order->fresh()->status);
     }
 
     public function test_denied_webhook_updates_payment_and_order(): void
@@ -87,8 +89,8 @@ class PayPalWebhookTest extends TestCase
             'id' => $payment->paypal_capture_id,
         ]))->assertOk();
 
-        $this->assertSame('FAILED', $payment->fresh()->status);
-        $this->assertSame('failed', $order->fresh()->status);
+        $this->assertSame(PaymentStatus::Failed, $payment->fresh()->status);
+        $this->assertSame(OrderStatus::Failed, $order->fresh()->status);
     }
 
     public function test_refund_webhook_for_unknown_capture_changes_nothing(): void
@@ -101,8 +103,8 @@ class PayPalWebhookTest extends TestCase
         $this->postJson(route('paypal.webhook'), $this->refundEvent('UNKNOWNCAPTURE', $payment->amount))
             ->assertOk();
 
-        $this->assertSame('COMPLETED', $payment->fresh()->status);
-        $this->assertSame('paid', $order->fresh()->status);
+        $this->assertSame(PaymentStatus::Completed, $payment->fresh()->status);
+        $this->assertSame(OrderStatus::Paid, $order->fresh()->status);
     }
 
     public function test_late_capture_completed_webhook_does_not_revert_a_refund(): void
@@ -119,8 +121,8 @@ class PayPalWebhookTest extends TestCase
         $this->postJson(route('paypal.webhook'), $this->captureCompletedEvent($payment->paypal_capture_id, $order->total_amount))
             ->assertOk();
 
-        $this->assertSame('REFUNDED', $payment->fresh()->status);
-        $this->assertSame('refunded', $order->fresh()->status);
+        $this->assertSame(PaymentStatus::Refunded, $payment->fresh()->status);
+        $this->assertSame(OrderStatus::Refunded, $order->fresh()->status);
         Mail::assertNothingSent();
     }
 
@@ -138,8 +140,8 @@ class PayPalWebhookTest extends TestCase
         $this->postJson(route('paypal.webhook'), $this->captureCompletedEvent('CAPTURE555', $order->total_amount))
             ->assertOk();
 
-        $this->assertSame('COMPLETED', $payment->fresh()->status);
-        $this->assertSame('paid', $order->fresh()->status);
+        $this->assertSame(PaymentStatus::Completed, $payment->fresh()->status);
+        $this->assertSame(OrderStatus::Paid, $order->fresh()->status);
     }
 
     public function test_capture_completed_webhook_stores_captured_amount_and_fee(): void
@@ -159,7 +161,7 @@ class PayPalWebhookTest extends TestCase
             ->assertOk();
 
         $payment->refresh();
-        $this->assertSame('COMPLETED', $payment->status);
+        $this->assertSame(PaymentStatus::Completed, $payment->status);
         $this->assertEquals(4390.00, (float) $payment->amount);
         $this->assertEquals(153.99, (float) $payment->fee);
     }
@@ -178,8 +180,8 @@ class PayPalWebhookTest extends TestCase
         $this->postJson(route('paypal.webhook'), $this->refundEvent($payment->paypal_capture_id, '4390.00'))
             ->assertOk();
 
-        $this->assertSame('REFUNDED', $payment->fresh()->status);
-        $this->assertSame('refunded', $order->fresh()->status);
+        $this->assertSame(PaymentStatus::Refunded, $payment->fresh()->status);
+        $this->assertSame(OrderStatus::Refunded, $order->fresh()->status);
     }
 
     public function test_capture_completed_webhook_rejects_amount_mismatch(): void
@@ -199,8 +201,8 @@ class PayPalWebhookTest extends TestCase
         $this->postJson(route('paypal.webhook'), $this->captureCompletedEvent('CAPTURE777', '1.00'))
             ->assertOk();
 
-        $this->assertSame('MISMATCH', $payment->fresh()->status);
-        $this->assertSame('failed', $order->fresh()->status);
+        $this->assertSame(PaymentStatus::Mismatch, $payment->fresh()->status);
+        $this->assertSame(OrderStatus::Failed, $order->fresh()->status);
     }
 
     public function test_capture_pending_webhook_marks_payment_in_review_and_keeps_the_order_open(): void
@@ -214,9 +216,9 @@ class PayPalWebhookTest extends TestCase
             'status' => 'PENDING',
         ]))->assertOk();
 
-        $this->assertSame('PENDING', $payment->fresh()->status);
+        $this->assertSame(PaymentStatus::Pending, $payment->fresh()->status);
         $this->assertSame('CAPTURE-IN-REVIEW', $payment->fresh()->paypal_capture_id);
-        $this->assertSame('pending', $order->fresh()->status);
+        $this->assertSame(OrderStatus::Pending, $order->fresh()->status);
     }
 
     public function test_capture_reversed_webhook_marks_payment_reversed_and_order_refunded(): void
@@ -230,8 +232,8 @@ class PayPalWebhookTest extends TestCase
 
         $this->postJson(route('paypal.webhook'), $event)->assertOk();
 
-        $this->assertSame('REVERSED', $payment->fresh()->status);
-        $this->assertSame('refunded', $order->fresh()->status);
+        $this->assertSame(PaymentStatus::Reversed, $payment->fresh()->status);
+        $this->assertSame(OrderStatus::Refunded, $order->fresh()->status);
     }
 
     public function test_order_approved_webhook_marks_created_payment_as_approved(): void
@@ -244,7 +246,7 @@ class PayPalWebhookTest extends TestCase
             'id' => 'ORDER-APPROVE-1',
         ]))->assertOk();
 
-        $this->assertSame('APPROVED', $payment->fresh()->status);
+        $this->assertSame(PaymentStatus::Approved, $payment->fresh()->status);
     }
 
     public function test_order_approved_webhook_does_not_downgrade_a_completed_payment(): void
@@ -257,7 +259,7 @@ class PayPalWebhookTest extends TestCase
             'id' => 'ORDER-APPROVE-2',
         ]))->assertOk();
 
-        $this->assertSame('COMPLETED', $payment->fresh()->status);
+        $this->assertSame(PaymentStatus::Completed, $payment->fresh()->status);
     }
 
     public function test_capture_completed_webhook_finds_payment_via_related_order_id(): void
@@ -279,9 +281,9 @@ class PayPalWebhookTest extends TestCase
         ]))->assertOk();
 
         $payment->refresh();
-        $this->assertSame('COMPLETED', $payment->status);
+        $this->assertSame(PaymentStatus::Completed, $payment->status);
         $this->assertSame('CAPTURE-RELATED-1', $payment->paypal_capture_id);
-        $this->assertSame('paid', $order->fresh()->status);
+        $this->assertSame(OrderStatus::Paid, $order->fresh()->status);
     }
 
     public function test_capture_completed_webhook_for_unknown_capture_changes_nothing(): void
@@ -297,8 +299,8 @@ class PayPalWebhookTest extends TestCase
             'supplementary_data' => ['related_ids' => ['order_id' => 'ORDERUNKNOWN']],
         ]))->assertOk();
 
-        $this->assertSame('CREATED', $payment->fresh()->status);
-        $this->assertSame('pending', $order->fresh()->status);
+        $this->assertSame(PaymentStatus::Created, $payment->fresh()->status);
+        $this->assertSame(OrderStatus::Pending, $order->fresh()->status);
         Mail::assertNothingSent();
     }
 
@@ -323,7 +325,7 @@ class PayPalWebhookTest extends TestCase
         $this->postJson(route('paypal.webhook'), $payload)->assertOk();
         $this->postJson(route('paypal.webhook'), $payload)->assertOk();
 
-        $this->assertSame('paid', $order->fresh()->status);
+        $this->assertSame(OrderStatus::Paid, $order->fresh()->status);
         Mail::assertSent(OrderConfirmationMail::class, 1);
         Mail::assertSent(NewOrderMail::class, 1);
     }
@@ -341,8 +343,8 @@ class PayPalWebhookTest extends TestCase
             'resource' => ['id' => $payment->paypal_capture_id],
         ])->assertOk();
 
-        $this->assertSame('COMPLETED', $payment->fresh()->status);
-        $this->assertSame('paid', $order->fresh()->status);
+        $this->assertSame(PaymentStatus::Completed, $payment->fresh()->status);
+        $this->assertSame(OrderStatus::Paid, $order->fresh()->status);
     }
 
     /**
@@ -372,8 +374,8 @@ class PayPalWebhookTest extends TestCase
             'resource' => [],
         ])->assertOk();
 
-        $this->assertSame('CREATED', $payment->fresh()->status);
-        $this->assertSame('pending', $order->fresh()->status);
+        $this->assertSame(PaymentStatus::Created, $payment->fresh()->status);
+        $this->assertSame(OrderStatus::Pending, $order->fresh()->status);
     }
 
     /**
@@ -403,7 +405,7 @@ class PayPalWebhookTest extends TestCase
         ]))->assertOk();
 
         $this->assertSame($paymentStatus, $payment->fresh()->status);
-        $this->assertSame($orderStatus, $order->fresh()->status);
+        $this->assertSame(OrderStatus::from($orderStatus), $order->fresh()->status);
     }
 
     public function test_partial_refund_webhook_does_not_mark_the_whole_order_refunded(): void
@@ -416,8 +418,8 @@ class PayPalWebhookTest extends TestCase
         $this->postJson(route('paypal.webhook'), $this->refundEvent($payment->paypal_capture_id, '10.00'))
             ->assertOk();
 
-        $this->assertSame('COMPLETED', $payment->fresh()->status);
-        $this->assertSame('paid', $order->fresh()->status);
+        $this->assertSame(PaymentStatus::Completed, $payment->fresh()->status);
+        $this->assertSame(OrderStatus::Paid, $order->fresh()->status);
     }
 
     public function test_full_refund_webhook_with_amount_marks_order_refunded(): void
@@ -430,7 +432,7 @@ class PayPalWebhookTest extends TestCase
         $this->postJson(route('paypal.webhook'), $this->refundEvent($payment->paypal_capture_id, '100.00'))
             ->assertOk();
 
-        $this->assertSame('REFUNDED', $payment->fresh()->status);
-        $this->assertSame('refunded', $order->fresh()->status);
+        $this->assertSame(PaymentStatus::Refunded, $payment->fresh()->status);
+        $this->assertSame(OrderStatus::Refunded, $order->fresh()->status);
     }
 }

@@ -4,7 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Support\Cart\PaymentOption;
-use App\Support\Orders\OrderManager;
+use App\Support\Orders\OrderStatus;
+use App\Support\Orders\OrderSummary;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -27,7 +28,7 @@ class CustomerOrderController extends Controller
         return Inertia::render('settings/Orders', ['orders' => $orders]);
     }
 
-    public function show(Request $request, Order $order, OrderManager $orderManager): Response|JsonResponse
+    public function show(Request $request, Order $order): Response|JsonResponse
     {
         abort_unless($order->customer_id === $request->user()->id, 404);
 
@@ -40,19 +41,21 @@ class CustomerOrderController extends Controller
         // gibt; "rated", wenn der Kunde das Produkt schon bewertet hat.
         $ratedProductIds = $request->user()->ratings()->pluck('product_id')->all();
         $ratingState = fn ($item): ?string => match (true) {
-            $order->status !== 'paid' || $item->product === null => null,
+            $order->status !== OrderStatus::Paid || $item->product === null => null,
             in_array($item->product_id, $ratedProductIds, true) => 'rated',
             default => 'rateable',
         };
 
-        $summary = $orderManager->summaryFromOrder($order);
+        $summary = OrderSummary::fromOrder($order);
         $paymentLabels = PaymentOption::configuredLabels();
 
         $payload = [
             'id' => $order->id,
             'status' => $order->status,
             'payment_method' => $order->payment_method,
-            'payment_method_label' => $paymentLabels[$order->payment_method] ?? $order->payment_method,
+            'payment_method_label' => $order->payment_method
+                ? ($paymentLabels[$order->payment_method->value] ?? $order->payment_method->value)
+                : null,
             'created_at' => $order->created_at?->toIso8601String(),
             'updated_at' => $order->updated_at?->toIso8601String(),
             'shipping_address' => $order->shipping_address,

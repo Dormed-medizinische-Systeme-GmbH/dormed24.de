@@ -10,6 +10,8 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\Setting;
 use App\Models\ShippingMethod;
+use App\Support\Orders\OrderStatus;
+use App\Support\Orders\PaymentMethod;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
@@ -54,8 +56,8 @@ class InvoicePurchaseLifecycleTest extends TestCase
         /** @var Order $order */
         $order = Order::query()->sole();
         $response->assertRedirect(route('checkout.success', ['order_id' => $order->id]));
-        $this->assertSame('pending', $order->status);
-        $this->assertSame('invoice', $order->payment_method);
+        $this->assertSame(OrderStatus::Pending, $order->status);
+        $this->assertSame(PaymentMethod::Invoice, $order->payment_method);
         $this->assertSame('1195.90', $order->total_amount);
         $this->assertSame('5.90', $order->shipping_amount);
         $this->assertSame(2, $order->items()->sole()->quantity);
@@ -73,7 +75,7 @@ class InvoicePurchaseLifecycleTest extends TestCase
             ->assertOk()
             ->assertJson(['status' => 'paid']);
 
-        $this->assertSame('paid', $order->fresh()->status);
+        $this->assertSame(OrderStatus::Paid, $order->fresh()->status);
         Mail::assertSent(PaymentConfirmationMail::class, fn ($mail): bool => $mail->hasTo('praxis@example.com'));
         Mail::assertSent(OrderConfirmationMail::class, 1);
         Mail::assertSent(NewOrderMail::class, 1);

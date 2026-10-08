@@ -18,7 +18,7 @@
     $bankIban = Setting::get('shop.bank_iban', '');
     $bankBic = Setting::get('shop.bank_bic', '');
     $bankName = Setting::get('shop.bank_name', '');
-    $isInvoice = ($order->payment_method ?? 'invoice') === 'invoice';
+    $isInvoice = ($order->payment_method ?? \App\Support\Orders\PaymentMethod::Invoice) === \App\Support\Orders\PaymentMethod::Invoice;
 @endphp
 
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:32px 16px;">

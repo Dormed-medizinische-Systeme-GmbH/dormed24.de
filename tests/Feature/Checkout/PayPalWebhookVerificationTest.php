@@ -5,6 +5,8 @@ namespace Tests\Feature\Checkout;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Services\PayPalClientFactory;
+use App\Support\Orders\OrderStatus;
+use App\Support\Orders\PaymentStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Testing\TestResponse;
@@ -65,8 +67,8 @@ class PayPalWebhookVerificationTest extends TestCase
 
         $this->sendWebhook($this->refundBody($payment))->assertOk();
 
-        $this->assertSame('REFUNDED', $payment->fresh()->status);
-        $this->assertSame('refunded', $order->fresh()->status);
+        $this->assertSame(PaymentStatus::Refunded, $payment->fresh()->status);
+        $this->assertSame(OrderStatus::Refunded, $order->fresh()->status);
     }
 
     public function test_webhook_with_tampered_body_is_rejected(): void
@@ -76,8 +78,8 @@ class PayPalWebhookVerificationTest extends TestCase
 
         $this->sendWebhook($body, signedBody: $body.' ')->assertStatus(400);
 
-        $this->assertSame('COMPLETED', $payment->fresh()->status);
-        $this->assertSame('paid', $order->fresh()->status);
+        $this->assertSame(PaymentStatus::Completed, $payment->fresh()->status);
+        $this->assertSame(OrderStatus::Paid, $order->fresh()->status);
     }
 
     public function test_webhook_signed_with_foreign_key_is_rejected(): void
@@ -86,7 +88,7 @@ class PayPalWebhookVerificationTest extends TestCase
 
         $this->sendWebhook($this->refundBody($payment), key: 'foreign-key.pem')->assertStatus(400);
 
-        $this->assertSame('paid', $order->fresh()->status);
+        $this->assertSame(OrderStatus::Paid, $order->fresh()->status);
     }
 
     public function test_webhook_signed_for_another_webhook_id_is_rejected(): void
@@ -95,7 +97,7 @@ class PayPalWebhookVerificationTest extends TestCase
 
         $this->sendWebhook($this->refundBody($payment), webhookId: 'WH-OTHER')->assertStatus(400);
 
-        $this->assertSame('paid', $order->fresh()->status);
+        $this->assertSame(OrderStatus::Paid, $order->fresh()->status);
     }
 
     public function test_webhook_with_non_paypal_cert_url_is_rejected(): void
@@ -104,7 +106,7 @@ class PayPalWebhookVerificationTest extends TestCase
 
         $this->sendWebhook($this->refundBody($payment), certUrl: 'https://evil.example.com/cert.pem')->assertStatus(400);
 
-        $this->assertSame('paid', $order->fresh()->status);
+        $this->assertSame(OrderStatus::Paid, $order->fresh()->status);
     }
 
     public function test_webhook_without_signature_headers_is_rejected(): void
@@ -114,7 +116,7 @@ class PayPalWebhookVerificationTest extends TestCase
         $this->call('POST', route('paypal.webhook'), [], [], [], ['CONTENT_TYPE' => 'application/json'], $this->refundBody($payment))
             ->assertStatus(400);
 
-        $this->assertSame('paid', $order->fresh()->status);
+        $this->assertSame(OrderStatus::Paid, $order->fresh()->status);
     }
 
     /**
@@ -206,8 +208,8 @@ class PayPalWebhookVerificationTest extends TestCase
             'amount' => ['value' => (string) $order->total_amount],
         ]))->assertStatus(400);
 
-        $this->assertSame('APPROVED', $payment->fresh()->status);
-        $this->assertSame('pending', $order->fresh()->status);
+        $this->assertSame(PaymentStatus::Approved, $payment->fresh()->status);
+        $this->assertSame(OrderStatus::Pending, $order->fresh()->status);
         Mail::assertNothingSent();
     }
 }

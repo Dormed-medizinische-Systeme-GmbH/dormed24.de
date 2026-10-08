@@ -2,8 +2,11 @@
 
 namespace App\Models;
 
+use App\Support\Orders\OrderStatus;
+use App\Support\Orders\PaymentMethod;
 use Database\Factories\OrderFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,8 +16,8 @@ use Illuminate\Support\Carbon;
 /**
  * @property int $id
  * @property int|null $customer_id
- * @property string $status
- * @property string|null $payment_method
+ * @property OrderStatus $status
+ * @property PaymentMethod|null $payment_method
  * @property bool $is_test
  * @property string $total_amount
  * @property string $shipping_amount
@@ -32,11 +35,24 @@ class Order extends Model
     protected function casts(): array
     {
         return [
+            'status' => OrderStatus::class,
+            'payment_method' => PaymentMethod::class,
             'total_amount' => 'decimal:2',
             'shipping_amount' => 'decimal:2',
             'shipping_address' => 'array',
             'billing_address' => 'array',
         ];
+    }
+
+    /**
+     * Bezahlte Bestellungen: Grundlage für Umsatz und Bewertungsrecht.
+     *
+     * @param  Builder<Order>  $query
+     * @return Builder<Order>
+     */
+    public function scopePaid(Builder $query): Builder
+    {
+        return $query->where('status', OrderStatus::Paid);
     }
 
     /**

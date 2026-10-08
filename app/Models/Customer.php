@@ -69,7 +69,7 @@ class Customer extends Authenticatable implements MustVerifyEmail, PasskeyUser
     public function paidOrderContaining(Product $product): ?Order
     {
         return $this->orders()
-            ->where('status', 'paid')
+            ->paid()
             ->whereHas('items', fn ($query) => $query->where('product_id', $product->id))
             ->first();
     }

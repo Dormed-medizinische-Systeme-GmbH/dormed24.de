@@ -16,22 +16,24 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 /**
- * Central place for turning a cart into an order and for the post-payment
- * notification flow. Used by every payment method (invoice, PayPal)
- * so order creation and confirmation mails behave identically everywhere.
+ * Central place for turning a cart into an order, for every order-status
+ * transition and for the post-payment notification flow. Used by every
+ * payment method (invoice, PayPal) so order creation, status rules and
+ * confirmation mails behave identically everywhere. Which transitions are
+ * allowed is defined in OrderStatus::reachableFrom().
  */
 class OrderManager
 {
     /**
      * Create a pending order (incl. items) from a cart snapshot.
      */
-    public function createFromCart(Customer $customer, Cart $cart, string $paymentMethod): Order
+    public function createFromCart(Customer $customer, Cart $cart, PaymentMethod $paymentMethod): Order
     {
         return DB::transaction(function () use ($customer, $cart, $paymentMethod): Order {
             /** @var Order $order */
             $order = Order::query()->create([
                 'customer_id' => $customer->id,
-                'status' => 'pending',
+                'status' => OrderStatus::Pending,
                 'payment_method' => $paymentMethod,
                 'is_test' => ! PaymentMode::isLive(),
                 'total_amount' => Money::format($cart->totalCents()),
@@ -68,7 +70,7 @@ class OrderManager
      */
     public function markPaid(Order $order): bool
     {
-        if (! $this->transitionToPaid($order)) {
+        if (! $this->transitionTo($order, OrderStatus::Paid)) {
             return false;
         }
 
@@ -89,7 +91,7 @@ class OrderManager
      */
     public function confirmInvoicePayment(Order $order): bool
     {
-        if (! $this->transitionToPaid($order)) {
+        if (! $this->canConfirmInvoicePayment($order) || ! $this->transitionTo($order, OrderStatus::Paid)) {
             return false;
         }
 
@@ -115,26 +117,33 @@ class OrderManager
     }
 
     /**
-     * Atomic transition to paid, shared by markPaid(),
-     * confirmInvoicePayment() and the admin's silent payment confirmation.
-     * The webhook and the PayPal return URL can both call markPaid() for the
-     * same order at nearly the same time; a plain read-then-write would let
-     * both pass the "already paid" check before either update lands, sending
-     * confirmation mails twice.
-     *
-     * "refunded" is terminal: PayPal delivers webhooks at-least-once and
-     * unordered, so a re-delivered CAPTURE.COMPLETED arriving after a refund
-     * must never flip the order back to paid (and re-send the mails).
-     * "pending" and "failed" may transition (failed = retryable capture);
-     * "cancelled" too - if money actually arrives for a click-cancelled
-     * PayPal order, paid is the state consistent with the money.
+     * Zahlungseingang bestätigen geht nur für offene Rechnungsbestellungen.
+     * PayPal-Bestellungen steuern Capture und Webhook allein.
      */
-    public function transitionToPaid(Order $order): bool
+    public function canConfirmInvoicePayment(Order $order): bool
+    {
+        return $order->payment_method === PaymentMethod::Invoice
+            && $order->status === OrderStatus::Pending;
+    }
+
+    /**
+     * Atomic status transition, allowed only from the states listed in
+     * OrderStatus::reachableFrom(). Returns false (and changes nothing) if
+     * the order is not in one of them, e.g. already paid or refunded.
+     *
+     * Atomic because the webhook and the PayPal return URL can both call
+     * markPaid() for the same order at nearly the same time; a plain
+     * read-then-write would let both pass the check before either update
+     * lands, sending confirmation mails twice. PayPal also delivers webhooks
+     * at-least-once and unordered, so a late CAPTURE.COMPLETED after a
+     * refund must not flip the order back to paid.
+     */
+    public function transitionTo(Order $order, OrderStatus $target): bool
     {
         $affected = Order::query()
             ->whereKey($order->getKey())
-            ->whereNotIn('status', ['paid', 'refunded'])
-            ->update(['status' => 'paid']);
+            ->whereIn('status', $target->reachableFrom())
+            ->update(['status' => $target]);
 
         if ($affected === 0) {
             return false;
@@ -143,6 +152,25 @@ class OrderManager
         $order->refresh();
 
         return true;
+    }
+
+    /**
+     * Storniert abgebrochene PayPal-Versuche eines Kunden: offen und ohne
+     * Zahlung, die eingezogen ist, noch geprüft wird oder mit Abweichung
+     * eingegangen ist.
+     */
+    public function cancelAbandonedPayPalOrders(Customer $customer): int
+    {
+        return Order::query()
+            ->where('customer_id', $customer->id)
+            ->where('payment_method', PaymentMethod::Paypal)
+            ->whereIn('status', OrderStatus::Cancelled->reachableFrom())
+            ->whereDoesntHave('payments', fn ($query) => $query->whereIn('status', [
+                PaymentStatus::Completed,
+                PaymentStatus::Pending,
+                PaymentStatus::Mismatch,
+            ]))
+            ->update(['status' => OrderStatus::Cancelled]);
     }
 
     /**
@@ -169,47 +197,12 @@ class OrderManager
         }
 
         try {
-            Mail::to(Setting::get('shop.email'))->send(new NewOrderMail($order, $this->summaryFromOrder($order), $customer));
+            Mail::to(Setting::get('shop.email'))->send(new NewOrderMail($order, OrderSummary::fromOrder($order), $customer));
         } catch (\Throwable $e) {
             Log::channel('mail')->error('Admin order notification failed', [
                 'order_id' => $order->id,
                 'error' => $e->getMessage(),
             ]);
         }
-    }
-
-    /**
-     * Build the cart-shaped totals/items summary from a persisted order.
-     *
-     * Reused by the admin notification mail and the checkout success page so the
-     * VAT/net maths lives in exactly one place.
-     *
-     * @return array{items: array<int, array<string, mixed>>, subtotal: string, shipping_total: string, vat_rate: int, vat_amount: string, total: string}
-     */
-    public function summaryFromOrder(Order $order): array
-    {
-        $order->loadMissing('items');
-
-        $vatRate = (int) config('shop.cart.vat_rate', 19);
-        $totalCents = (int) round((float) $order->total_amount * 100);
-        $shippingCents = (int) round((float) $order->shipping_amount * 100);
-        $subtotalCents = $totalCents - $shippingCents;
-        $netTotalCents = (int) round($totalCents / (1 + ($vatRate / 100)));
-        $vatAmountCents = $totalCents - $netTotalCents;
-
-        return [
-            'items' => $order->items->map(fn ($item): array => [
-                'name' => $item->product_name,
-                'product_number' => $item->product_id ?? '—',
-                'quantity' => $item->quantity,
-                'unit_price' => number_format((float) $item->unit_price, 2, '.', ''),
-                'line_total' => number_format((float) $item->unit_price * $item->quantity, 2, '.', ''),
-            ])->all(),
-            'subtotal' => number_format($subtotalCents / 100, 2, '.', ''),
-            'shipping_total' => number_format($shippingCents / 100, 2, '.', ''),
-            'vat_rate' => $vatRate,
-            'vat_amount' => number_format($vatAmountCents / 100, 2, '.', ''),
-            'total' => number_format($totalCents / 100, 2, '.', ''),
-        ];
     }
 }
