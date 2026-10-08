@@ -9,19 +9,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable([
-    'order_id',
-    'paypal_order_id',
-    'paypal_payer_id',
-    'paypal_capture_id',
-    'status',
-    'amount',
-    'currency',
-    'fee',
-    'payer_email',
-    'payer_name',
-    'response_data',
-])]
 /**
  * @property int $id
  * @property int $order_id
@@ -36,6 +23,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $payer_name
  * @property array<string, mixed>|null $response_data
  */
+#[Fillable([
+    'order_id',
+    'paypal_order_id',
+    'paypal_payer_id',
+    'paypal_capture_id',
+    'status',
+    'amount',
+    'currency',
+    'fee',
+    'payer_email',
+    'payer_name',
+    'response_data',
+])]
 class Payment extends Model
 {
     /** @use HasFactory<PaymentFactory> */
