@@ -208,7 +208,7 @@
         disabled={sendingTest || !testRecipient}
         title={testRecipient
             ? `Testmail an ${testRecipient}`
-            : 'In den Einstellungen ist keine Shop-E-Mail hinterlegt.'}
+            : 'In config/shop.php ist keine Shop-E-Mail hinterlegt.'}
     >
         <Send class="size-4" />
         {sendingTest ? 'Wird gesendet …' : 'Testmail an Admin'}

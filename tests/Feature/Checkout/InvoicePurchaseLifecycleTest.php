@@ -8,7 +8,6 @@ use App\Mail\PaymentConfirmationMail;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Product;
-use App\Models\Setting;
 use App\Models\ShippingMethod;
 use App\Support\Orders\OrderStatus;
 use App\Support\Orders\PaymentMethod;
@@ -28,7 +27,7 @@ class InvoicePurchaseLifecycleTest extends TestCase
     public function test_invoice_order_can_be_placed_and_marked_paid(): void
     {
         Mail::fake();
-        Setting::set('shop.email', 'shop@dormed.example');
+        config(['shop.contact.email' => 'shop@dormed.example']);
 
         $customer = Customer::factory()->create(['email' => 'praxis@example.com']);
         $product = Product::factory()->create(['price' => '595.00']);

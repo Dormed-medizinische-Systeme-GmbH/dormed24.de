@@ -24,7 +24,7 @@ class AdminAccessTest extends TestCase
             'manufacturers index' => ['admin.manufacturers.index'],
             'social posts index' => ['admin.social-posts.index'],
             'articles index' => ['admin.articles.index'],
-            'settings general' => ['admin.settings.general'],
+            'settings shipping' => ['admin.settings.shipping'],
         ];
     }
 
@@ -42,16 +42,17 @@ class AdminAccessTest extends TestCase
             ->assertOk();
     }
 
-    public function test_settings_index_redirects_to_general(): void
+    public function test_settings_index_redirects_to_shipping(): void
     {
         $this->actingAsAdmin()
             ->get(route('admin.settings.index'))
-            ->assertRedirect('/admin/settings/general');
+            ->assertRedirect('/admin/settings/shipping');
     }
 
     /**
-     * Kategorien (config/categories.php) sowie PayPal-/SMTP-Zugangsdaten (Env)
-     * werden nicht mehr im Admin gepflegt — die Seiten dafür gibt es nicht mehr.
+     * Kategorien (config/categories.php), PayPal-/SMTP-Zugangsdaten (Env) sowie
+     * Kontakt und Bankverbindung (config/shop.php) werden nicht mehr im Admin
+     * gepflegt — die Seiten dafür gibt es nicht mehr.
      *
      * @return array<string, array{string}>
      */
@@ -62,6 +63,7 @@ class AdminAccessTest extends TestCase
             'kategorie anlegen' => ['/admin/categories/create'],
             'mailversand' => ['/admin/settings/mail'],
             'zahlungsarten' => ['/admin/settings/payment'],
+            'allgemein' => ['/admin/settings/general'],
         ];
     }
 
@@ -69,6 +71,13 @@ class AdminAccessTest extends TestCase
     public function test_removed_admin_pages_no_longer_exist(string $path): void
     {
         $this->actingAsAdmin()->get($path)->assertNotFound();
+    }
+
+    public function test_general_settings_can_no_longer_be_saved(): void
+    {
+        $this->actingAsAdmin()
+            ->put('/admin/settings', ['settings' => ['shop.email' => 'x@example.com']])
+            ->assertStatus(405);
     }
 
     public function test_customer_session_does_not_grant_admin_access(): void

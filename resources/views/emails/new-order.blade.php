@@ -7,14 +7,6 @@
 </head>
 <body style="margin:0;padding:0;background:#f5f5f5;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#111827;">
 
-@php
-    use App\Models\Setting;
-
-    $shopName = Setting::get('shop.name', config('app.name', 'Dormed Shop'));
-    $shopEmail = Setting::get('shop.email', 'mail@dormed.de');
-    $shopPhone = Setting::get('shop.phone', '02301188600');
-@endphp
-
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:32px 16px;">
 <tr><td align="center">
 <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">

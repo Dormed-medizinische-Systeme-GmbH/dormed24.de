@@ -7,10 +7,10 @@ use App\Mail\OrderConfirmationMail;
 use App\Mail\PaymentConfirmationMail;
 use App\Models\Customer;
 use App\Models\Order;
-use App\Models\Setting;
 use App\Support\Cart\Cart;
 use App\Support\Cart\Money;
 use App\Support\PaymentMode;
+use App\Support\ShopContact;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -197,7 +197,7 @@ class OrderManager
         }
 
         try {
-            Mail::to(Setting::get('shop.email'))->send(new NewOrderMail($order, OrderSummary::fromOrder($order), $customer));
+            Mail::to(app(ShopContact::class)->email())->send(new NewOrderMail($order, OrderSummary::fromOrder($order), $customer));
         } catch (\Throwable $e) {
             Log::channel('mail')->error('Admin order notification failed', [
                 'order_id' => $order->id,

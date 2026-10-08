@@ -8,7 +8,6 @@ use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Product;
-use App\Models\Setting;
 use App\Services\PayPalClientFactory;
 use App\Support\Orders\OrderStatus;
 use App\Support\Orders\PaymentStatus;
@@ -53,7 +52,7 @@ class PayPalPaymentLifecycleTest extends TestCase
         parent::setUp();
 
         Mail::fake();
-        Setting::set('shop.email', 'shop@dormed.example');
+        config(['shop.contact.email' => 'shop@dormed.example']);
         self::$refundedAmount = null;
         self::$createOrderData = [];
         self::$refundRequestId = null;

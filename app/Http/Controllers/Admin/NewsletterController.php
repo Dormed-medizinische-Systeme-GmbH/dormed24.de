@@ -6,9 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateNewsletterRequest;
 use App\Mail\NewsletterMail;
 use App\Models\Newsletter;
-use App\Models\Setting;
 use App\Support\Newsletter\HtmlSanitizer;
 use App\Support\Newsletter\NewsletterStatus;
+use App\Support\ShopContact;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -71,7 +71,7 @@ class NewsletterController extends Controller
                 'updated_at' => $newsletter->updated_at->format('d.m.Y H:i'),
                 'sent_at' => $newsletter->sent_at?->format('d.m.Y H:i'),
             ],
-            'testRecipient' => Setting::get('shop.email'),
+            'testRecipient' => app(ShopContact::class)->email(),
             'statuses' => NewsletterStatus::badges(),
         ]);
     }
@@ -89,7 +89,7 @@ class NewsletterController extends Controller
                 'design_json' => $newsletter->design_json,
                 'editable' => $newsletter->isEditable(),
             ],
-            'testRecipient' => Setting::get('shop.email'),
+            'testRecipient' => app(ShopContact::class)->email(),
         ]);
     }
 
@@ -129,14 +129,14 @@ class NewsletterController extends Controller
     }
 
     /**
-     * Testversand an die Shop-Adresse (Einstellungen → Allgemein).
+     * Testversand an die Shop-Adresse (config/shop.php).
      */
     public function sendTest(Newsletter $newsletter): JsonResponse
     {
-        $recipient = Setting::get('shop.email');
+        $recipient = app(ShopContact::class)->email();
 
         if (! $recipient) {
-            return response()->json(['message' => 'In den Einstellungen ist keine Shop-E-Mail-Adresse hinterlegt.'], 422);
+            return response()->json(['message' => 'In config/shop.php ist keine Shop-E-Mail-Adresse hinterlegt.'], 422);
         }
 
         if (! $newsletter->hasContent()) {

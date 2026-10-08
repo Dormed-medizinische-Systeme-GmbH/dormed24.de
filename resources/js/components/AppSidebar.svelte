@@ -5,7 +5,6 @@
     import Mail from '@lucide/svelte/icons/mail';
     import Newspaper from '@lucide/svelte/icons/newspaper';
     import Package from '@lucide/svelte/icons/package';
-    import Settings from '@lucide/svelte/icons/settings';
     import Share2 from '@lucide/svelte/icons/share-2';
     import ShoppingCart from '@lucide/svelte/icons/shopping-cart';
     import Truck from '@lucide/svelte/icons/truck';
@@ -49,7 +48,6 @@
     ];
 
     const settingsItems: NavItem[] = [
-        { title: 'Allgemein', href: '/admin/settings/general', icon: Settings },
         {
             title: 'Versandarten',
             href: '/admin/settings/shipping',

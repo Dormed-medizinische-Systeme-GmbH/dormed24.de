@@ -60,7 +60,7 @@ Die Begriffe stammen aus `.claude/skills/codebase-design`:
 | 1 | Ein Modul für den Bestell-Lebenszyklus | #1 | **stark**, erledigt | 0 |
 | 2 | PayPal wird ein echter Adapter | #2 | **stark**, erledigt | 1 |
 | 3 | Admin-Tabellen als ein Modul | #3 | lohnt sich zu prüfen | 2 (sequenziell danach) |
-| 4 | Shop-Einstellungen mit festen Schlüsseln | #4 | lohnt sich zu prüfen | – |
+| 4 | Shop-Einstellungen mit festen Schlüsseln | #4 | erledigt (Config statt Admin) | – |
 | 5 | Kanal-Seam, Queue und Jobs für Marketing | #5 | erst mit dem ersten echten Kanal | API-Freigaben, Newsletter Phase 2 |
 | 6 | Namespaces nach Fachgebiet unter `app/Support` | Modul-Frage | optional | 1, 2 |
 
@@ -246,13 +246,15 @@ Die Begriffe stammen aus `.claude/skills/codebase-design`:
 
 **Ziel:** Jede Einstellung hat einen Namen, einen Standardwert und eine Stelle.
 
-- [ ] Ein Modul „Shop-Einstellungen“ mit benannten Zugriffen (E-Mail, Telefon, Bankdaten …) über `Setting`.
-- [ ] Die erlaubten Schlüssel ziehen aus `Admin/SettingController::ALLOWED_KEYS` dort hinein.
-- [ ] Standardwerte einheitlich. Heute widersprechen sich `HandleInertiaRequests` (`02301 – 188600`) und die Blade-Mails (`02301188600`).
-- [ ] Aufrufer umstellen: `OrderManager`, `PayPalController`, `NewsletterController`, `ModeMailConfiguration`, `HandleInertiaRequests` und die drei Blade-Mails. Mails bekommen die Werte übergeben, statt selbst `Setting::get` aufzurufen.
-- [ ] Tests: Standardwerte, gespeicherte Werte, unbekannter Schlüssel.
+**Entschieden (anders als ursprünglich geplant):** Keine Konfiguration mehr im Admin (`.docs/adr/0004-keine-konfiguration-im-admin.md`). Kontakt und Bankverbindung stehen direkt in `config/shop.php`, der Shopname ist `APP_NAME`. Telefon und Fax als Vorwahl + Rufnummer, weil sich aus `02301188600` allein nicht ablesen lässt, wo die Vorwahl endet. Versandarten bleiben im Admin (Geschäftsdaten). Die Tabelle `settings` wird per Migration gelöscht.
 
-**Aufwand:** klein, ein PR.
+- [x] `App\Support\ShopContact` mit benannten Zugriffen (`email()`, `phone()`, `fax()`, `bank()`, `name()`, `toArray()` für die geteilte Prop) und `App\Support\PhoneNumber` (`display()` „02301 / 188-600“, `href()` „tel:+492301188600“).
+- [x] `Admin/SettingController`, Seite „Einstellungen → Allgemein“, `Setting`-Model, `ContactsSeeder` entfernt; `/admin/settings` leitet auf Versandarten.
+- [x] Standardwerte an einer Stelle; der Widerspruch zwischen `HandleInertiaRequests` und den Mails ist weg.
+- [x] Aufrufer umgestellt: `OrderManager`, `PaymentReconciliation`, `NewsletterController`, `ModeMailConfiguration`, `HandleInertiaRequests`; die Mails bekommen `ShopContact` übergeben.
+- [x] Tests: Anzeige und Link der Nummern, geteilte Prop, Mails mit Kontakt und Bankverbindung, alte Admin-Seite liefert 404/405.
+
+**Offen:** IBAN und BIC sind in `config/shop.php` noch leer; bis sie eingetragen sind, zeigen Rechnungsmails „auf Anfrage“.
 
 ---
 

@@ -46,7 +46,7 @@ Zentrale Klassen (die „Geschäftslogik-Ecke"):
 | `config/categories.php` | Feste Produktkategorien (Reihenfolge = Navigation), Produkte speichern `category_slug` |
 | `config/specialties.php` | Feste Fachrichtungen, nur für Kategorien mit `has_specialties` (Ultraschallsysteme/-sonden); Produkte speichern die Slugs als JSON-Liste (`products.specialties`) |
 | `app/Support/ModeMailConfiguration.php` | Übernimmt beim Booten die SMTP-Zugangsdaten des aktiven Modus aus der Env in den Mailer |
-| `app/Models/Setting.php` | Key-Value-Shop-Settings in DB (Name, Kontakt, Bankverbindung), pro Request memoisiert. PayPal/SMTP **nicht** hier, sondern in der Env |
+| `app/Support/ShopContact.php` | Kontakt und Bankverbindung aus `config/shop.php` (Telefon/Fax als `PhoneNumber` mit Anzeige und `tel:`-Link), Shopname = `APP_NAME`. Keine Konfiguration im Admin |
 | `app/Http/Middleware/HandleInertiaRequests.php` | Shared Props: Cart, Auth, Kontakt, Kategorien, Sandbox-Banner |
 
 ---
@@ -139,10 +139,10 @@ auf Queue ist bei Bedarf ein kleiner Schritt (Interface + `Queueable`-Trait
 zurück auf die beiden Mailables, Worker-Prozess aufsetzen). SMTP-Zugangsdaten
 kommen aus der Env, je Modus getrennt (`MAIL_SANDBOX_*` / `MAIL_LIVE_*`, siehe
 Abschnitt 7). Ist für den aktiven Modus kein Host gesetzt, bleibt `MAIL_MAILER`
-(z. B. `log`) aktiv. Absendername ist der Shop-Name aus den Settings.
+(z. B. `log`) aktiv. Absendername ist `MAIL_FROM_NAME` (Standard: `APP_NAME`).
 Admin-Empfänger der Bestell-Benachrichtigung: fest die
-Kontakt-Mail-Adresse aus Setting `shop.email` (dieselbe, die auch im
-Shop-Frontend angezeigt wird) — kein separates Feld, kein Fallback.
+Kontakt-Mail-Adresse aus `config/shop.php` (`shop.contact.email`, dieselbe,
+die auch im Shop-Frontend angezeigt wird) — kein separates Feld, kein Fallback.
 
 ### 7. Settings & Zugangsdaten
 
@@ -156,10 +156,11 @@ Shop-Frontend angezeigt wird) — kein separates Feld, kein Fallback.
     `config/paypal.php`.
   - SMTP: `MAIL_SANDBOX_*` und `MAIL_LIVE_*` (Host, Port, Benutzer, Passwort,
     Absenderadresse), siehe `config/mail.php` → `modes`.
-- **Datenbank (`settings`-Tabelle, Pflege im Admin):** nur noch Shop-Daten wie
-  Name, Kontakt (`shop.email`) und Bankverbindung.
-- **Code (`config/`):** Kategorien (`categories.php`) und Fachrichtungen
-  (`specialties.php`). Änderungen laufen über Deploy, nicht über den Admin.
+- **Code (`config/`):** Kontakt (E-Mail, Telefon und Fax als Vorwahl +
+  Rufnummer) und Bankverbindung (`shop.php`), Kategorien (`categories.php`)
+  und Fachrichtungen (`specialties.php`). Der Shopname ist `APP_NAME`.
+  Änderungen laufen über Deploy, nicht über den Admin; im Admin gibt es keine
+  Konfiguration (`.docs/adr/0004-keine-konfiguration-im-admin.md`).
 - sandbox/live: live nur bei `APP_ENV=production` **und** `APP_DEBUG=false`,
   sonst sandbox (kein Admin-Override). Der Modus wählt das passende
   Zugangsdaten-Set für PayPal und SMTP. In der Sandbox zeigt das Frontend
@@ -198,7 +199,7 @@ npm run build:ssr                     # Client + SSR-Bundle (bootstrap/ssr/app.j
 1. `php artisan storage:link` — Produktbilder liegen auf dem public-Disk.
 2. `APP_ENV=production`, `APP_DEBUG=false`, `SESSION_SECURE_COOKIE=true`; `config:cache`/`route:cache` sind safe.
 3. Env setzen: `ADMIN_EMAIL`/`ADMIN_PASSWORD`, `PAYPAL_LIVE_*` inkl. **Webhook-ID** (ohne sie werden alle Webhooks abgelehnt — nur im Log sichtbar) und `MAIL_LIVE_*`; danach `php artisan optimize`. Details siehe Abschnitt 7.
-4. Im Admin unter Einstellungen `shop.email` pflegen (Kontakt- **und** Bestell-Benachrichtigungsadresse). Seeder mit Default-Passwörtern laufen nur außerhalb von Produktion.
+4. In `config/shop.php` Kontakt (`contact.email` ist auch die Bestell-Benachrichtigungsadresse) und Bankverbindung (`bank.iban`, `bank.bic`) prüfen; Änderungen per Commit und Deploy. Seeder mit Default-Passwörtern laufen nur außerhalb von Produktion.
 5. DB-Backup-Strategie klären (siehe `ANALYSE.md`).
 6. Scheduler-Cron aktuell **nicht nötig** (keine Scheduled Tasks).
 7. Kein Queue-Worker nötig — Mails laufen synchron (siehe Abschnitt „Mails" oben).

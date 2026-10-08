@@ -5,7 +5,7 @@ namespace Tests\Feature\Support;
 use App\Support\ModeMailConfiguration;
 use App\Support\PaymentMode;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -109,17 +109,19 @@ class OperatingModeTest extends TestCase
         $this->assertSame('log', config('mail.default'));
     }
 
-    public function test_smtp_credentials_in_the_database_are_ignored(): void
+    /**
+     * Es gibt keine Einstellungs-Tabelle mehr, aus der Zugangsdaten kommen
+     * könnten (.docs/adr/0004-keine-konfiguration-im-admin.md).
+     */
+    public function test_mail_configuration_does_not_depend_on_a_settings_table(): void
     {
         $this->runAs('local', true);
         config(['mail.default' => 'log', 'mail.modes.sandbox.host' => null]);
-        DB::table('settings')->insert([
-            ['key' => 'mail.smtp_host', 'value' => 'db.smtp.test', 'created_at' => now(), 'updated_at' => now()],
-        ]);
+
+        $this->assertFalse(Schema::hasTable('settings'));
 
         ModeMailConfiguration::apply();
 
         $this->assertSame('log', config('mail.default'));
-        $this->assertNotSame('db.smtp.test', config('mail.mailers.smtp.host'));
     }
 }

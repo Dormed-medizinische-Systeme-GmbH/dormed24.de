@@ -8,11 +8,10 @@
 <body style="margin:0;padding:0;background:#f5f5f5;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#111827;">
 
 @php
-    use App\Models\Setting;
-
-    $shopEmail = Setting::get('shop.email', 'mail@dormed.de');
-    $shopPhone = Setting::get('shop.phone', '02301188600');
-    $shopPhoneHref = 'tel:'.preg_replace('/[^+\d]/', '', $shopPhone);
+    /** @var \App\Support\ShopContact $shop */
+    $shopEmail = $shop->email() ?? '';
+    $shopPhone = $shop->phone()->display();
+    $shopPhoneHref = $shop->phone()->href();
 @endphp
 
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:32px 16px;">

@@ -8,16 +8,15 @@
 <body style="margin:0;padding:0;background:#f5f5f5;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#111827;">
 
 @php
-    use App\Models\Setting;
-
-    $shopName = Setting::get('shop.name', config('app.name', 'Dormed Shop'));
-    $shopEmail = Setting::get('shop.email', 'mail@dormed.de');
-    $shopPhone = Setting::get('shop.phone', '02301188600');
-    $shopPhoneHref = 'tel:'.preg_replace('/[^+\d]/', '', $shopPhone);
-    $bankAccountHolder = Setting::get('shop.bank_account_holder', $shopName);
-    $bankIban = Setting::get('shop.bank_iban', '');
-    $bankBic = Setting::get('shop.bank_bic', '');
-    $bankName = Setting::get('shop.bank_name', '');
+    /** @var \App\Support\ShopContact $shop */
+    $shopEmail = $shop->email() ?? '';
+    $shopPhone = $shop->phone()->display();
+    $shopPhoneHref = $shop->phone()->href();
+    $bank = $shop->bank();
+    $bankAccountHolder = $bank['account_holder'] ?: $shop->name();
+    $bankIban = $bank['iban'];
+    $bankBic = $bank['bic'];
+    $bankName = $bank['name'];
     $isInvoice = ($order->payment_method ?? \App\Support\Orders\PaymentMethod::Invoice) === \App\Support\Orders\PaymentMethod::Invoice;
 @endphp
 
@@ -66,15 +65,15 @@
                             </tr>
                             <tr>
                                 <td style="font-size:13px;color:#6b7280;padding:3px 0;">IBAN</td>
-                                <td style="font-size:13px;font-weight:600;color:#111827;padding:3px 0;font-family:monospace;">{{ $bankIban ?: 'Bitte in den Einstellungen hinterlegen' }}</td>
+                                <td style="font-size:13px;font-weight:600;color:#111827;padding:3px 0;font-family:monospace;">{{ $bankIban ?: 'auf Anfrage' }}</td>
                             </tr>
                             <tr>
                                 <td style="font-size:13px;color:#6b7280;padding:3px 0;">BIC</td>
-                                <td style="font-size:13px;font-weight:600;color:#111827;padding:3px 0;font-family:monospace;">{{ $bankBic ?: 'Bitte in den Einstellungen hinterlegen' }}</td>
+                                <td style="font-size:13px;font-weight:600;color:#111827;padding:3px 0;font-family:monospace;">{{ $bankBic ?: 'auf Anfrage' }}</td>
                             </tr>
                             <tr>
                                 <td style="font-size:13px;color:#6b7280;padding:3px 0;">Bank</td>
-                                <td style="font-size:13px;font-weight:600;color:#111827;padding:3px 0;">{{ $bankName ?: 'Bitte in den Einstellungen hinterlegen' }}</td>
+                                <td style="font-size:13px;font-weight:600;color:#111827;padding:3px 0;">{{ $bankName ?: 'auf Anfrage' }}</td>
                             </tr>
                             <tr>
                                 <td style="font-size:13px;color:#6b7280;padding:3px 0;">Verwendungszweck</td>

@@ -109,7 +109,7 @@
 
     const testMailHint = $derived(
         !testRecipient
-            ? 'In den Einstellungen ist keine Shop-E-Mail hinterlegt.'
+            ? 'In config/shop.php ist keine Shop-E-Mail hinterlegt.'
             : form.isDirty
               ? 'Bitte zuerst speichern.'
               : `Testmail an ${testRecipient}`,

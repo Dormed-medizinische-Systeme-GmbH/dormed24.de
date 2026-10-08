@@ -5,7 +5,6 @@ namespace Tests\Feature\Admin;
 use App\Mail\NewsletterMail;
 use App\Models\Customer;
 use App\Models\Newsletter;
-use App\Models\Setting;
 use App\Support\Newsletter\NewsletterStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -61,7 +60,7 @@ class NewsletterTest extends TestCase
 
     public function test_form_page_shows_the_settings_and_the_saved_html(): void
     {
-        Setting::set('shop.email', 'shop@dormed.example');
+        config(['shop.contact.email' => 'shop@dormed.example']);
         $newsletter = Newsletter::factory()->withContent()->create([
             'subject' => 'Herbstaktion',
             'preheader' => 'Nur im Oktober',
@@ -198,7 +197,7 @@ class NewsletterTest extends TestCase
     public function test_test_mail_goes_to_the_shop_address_only(): void
     {
         Mail::fake();
-        Setting::set('shop.email', 'shop@dormed.example');
+        config(['shop.contact.email' => 'shop@dormed.example']);
         $newsletter = Newsletter::factory()->withContent()->create(['subject' => 'Herbstaktion']);
 
         $this->actingAsAdmin()
@@ -225,13 +224,13 @@ class NewsletterTest extends TestCase
         Mail::fake();
         $empty = Newsletter::factory()->create();
 
-        Setting::set('shop.email', 'shop@dormed.example');
+        config(['shop.contact.email' => 'shop@dormed.example']);
         $this->actingAsAdmin()
             ->postJson(route('admin.newsletters.test', $empty))
             ->assertUnprocessable()
             ->assertJsonPath('message', 'Der Newsletter ist noch leer. Bitte zuerst speichern.');
 
-        Setting::set('shop.email', '');
+        config(['shop.contact.email' => '']);
         $this->actingAsAdmin()
             ->postJson(route('admin.newsletters.test', Newsletter::factory()->withContent()->create()))
             ->assertUnprocessable();
