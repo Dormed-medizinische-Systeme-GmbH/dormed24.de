@@ -7,6 +7,7 @@ type CardProduct = {
     id: number;
     name: string;
     price: string;
+    old_price?: string | null;
     manufacturer: { id: number; name: string } | null;
     images: ProductImage[];
 };
@@ -61,5 +62,24 @@ describe('ProductCard', () => {
         });
 
         expect(screen.queryByText('Beurer')).not.toBeInTheDocument();
+    });
+
+    it('shows the sale badge and the struck-through old price when there is an old price', () => {
+        render(ProductCard, {
+            props: { product: product({ old_price: '59.90' }) },
+        });
+
+        expect(screen.getByText('Angebot')).toBeInTheDocument();
+        expect(screen.getByText('59,90 €')).toHaveClass('line-through');
+        expect(screen.getByText('49,90 €*')).toBeInTheDocument();
+    });
+
+    it('omits the sale badge and the old price when there is no old price', () => {
+        const { container } = render(ProductCard, {
+            props: { product: product({ old_price: null }) },
+        });
+
+        expect(screen.queryByText('Angebot')).not.toBeInTheDocument();
+        expect(container.querySelector('.line-through')).toBeNull();
     });
 });
