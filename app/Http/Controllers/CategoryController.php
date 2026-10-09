@@ -24,6 +24,8 @@ class CategoryController extends Controller
 
         $baseQuery = $filters->apply($scope->clone())
             ->with(['manufacturer', 'images' => fn ($q) => $q->where('sort_order', 0)])
+            ->withAvg('ratings', 'stars')
+            ->withCount('ratings')
             ->orderBy($column, $direction)
             ->orderBy('id');
 

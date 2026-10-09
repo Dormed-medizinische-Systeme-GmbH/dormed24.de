@@ -1,6 +1,6 @@
 <script lang="ts">
     import { Link } from '@inertiajs/svelte';
-    import { Percent } from '@lucide/svelte';
+    import { Percent, Star } from '@lucide/svelte';
     import * as ProductController from '@/actions/App/Http/Controllers/ProductController';
     import { formatPrice } from '@/lib/currency';
 
@@ -9,18 +9,27 @@
     type ProductCardProduct = {
         id: number;
         name: string;
+        description: string | null;
         price: string;
         old_price?: string | null;
+        is_available?: boolean;
         manufacturer: { id: number; name: string } | null;
         images: ProductImage[];
+        ratings_avg_stars?: number | string | null;
+        ratings_count?: number;
     };
 
     let { product }: { product: ProductCardProduct } = $props();
+
+    const isAvailable = $derived(product.is_available ?? true);
+    const averageStars = $derived(Number(product.ratings_avg_stars ?? 0));
+    const filledStars = $derived(Math.round(averageStars));
+    const averageLabel = $derived(averageStars.toFixed(1).replace('.', ','));
 </script>
 
 <Link
     href={ProductController.show.url(product.id)}
-    class="group relative flex h-full flex-col overflow-hidden rounded-[1.4rem] border border-border bg-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-lg"
+    class="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-lg"
 >
     {#if product.old_price}
         <span
@@ -41,26 +50,67 @@
             <div class="size-full bg-white"></div>
         {/if}
     </div>
-    <div class="flex flex-col gap-1 px-4 pb-5 pt-4">
-        <p
-            class="line-clamp-2 min-h-12 text-[15px] font-medium leading-6 text-foreground transition-colors group-hover:text-brand-accent"
-        >
-            {product.name}
-        </p>
+    <div class="flex flex-1 flex-col gap-2 p-4">
         {#if product.manufacturer}
-            <p class="text-sm text-muted-foreground">
+            <p
+                class="text-xs font-semibold tracking-wider text-muted-foreground uppercase"
+            >
                 {product.manufacturer.name}
             </p>
         {/if}
-        <div class="flex items-baseline gap-2 pt-1">
-            {#if product.old_price}
-                <span class="text-sm text-muted-foreground line-through">
-                    {formatPrice(product.old_price)}
+        <p
+            class="line-clamp-2 min-h-12 text-[15px] leading-6 font-semibold text-foreground transition-colors group-hover:text-brand-accent"
+        >
+            {product.name}
+        </p>
+        {#if product.ratings_count}
+            <div
+                class="flex items-center gap-0.5"
+                role="img"
+                aria-label="Bewertung: {averageLabel} von 5 Sternen"
+            >
+                {#each [1, 2, 3, 4, 5] as star (star)}
+                    <Star
+                        class="size-4 {star <= filledStars
+                            ? 'fill-amber-400 text-amber-400'
+                            : 'text-muted-foreground/30'}"
+                        aria-hidden="true"
+                    />
+                {/each}
+                <span class="ml-1.5 text-xs text-muted-foreground">
+                    {product.ratings_count} Bewertungen
+                </span>
+            </div>
+        {/if}
+        {#if product.description}
+            <p class="line-clamp-2 text-[13px] leading-5 text-muted-foreground">
+                {product.description}
+            </p>
+        {/if}
+        <div class="mt-auto flex items-end justify-between gap-3 pt-3">
+            <div class="flex items-baseline gap-2">
+                {#if product.old_price}
+                    <span class="text-sm text-muted-foreground line-through">
+                        {formatPrice(product.old_price)}
+                    </span>
+                {/if}
+                <p class="text-lg font-bold text-primary">
+                    {formatPrice(product.price)}*
+                </p>
+            </div>
+            {#if isAvailable}
+                <span
+                    class="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground"
+                >
+                    Zum Produkt
+                </span>
+            {:else}
+                <span
+                    class="rounded-lg bg-muted px-3 py-2 text-sm font-semibold text-muted-foreground"
+                >
+                    Nicht verfügbar
                 </span>
             {/if}
-            <p class="text-base font-semibold text-primary">
-                {formatPrice(product.price)}*
-            </p>
         </div>
     </div>
 </Link>

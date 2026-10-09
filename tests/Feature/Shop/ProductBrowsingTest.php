@@ -4,6 +4,7 @@ namespace Tests\Feature\Shop;
 
 use App\Models\Manufacturer;
 use App\Models\Product;
+use App\Models\Rating;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -22,6 +23,21 @@ class ProductBrowsingTest extends TestCase
                     ->component('Products/Index')
                     ->where('total', 3)
                     ->where('sort', 'name_asc')
+            );
+    }
+
+    public function test_index_includes_rating_count_and_average_for_the_product_card(): void
+    {
+        $product = Product::factory()->create();
+        Rating::factory()->for($product)->create(['stars' => 4]);
+        Rating::factory()->for($product)->create(['stars' => 5]);
+
+        $this->get(route('products.index'))
+            ->assertOk()
+            ->assertInertia(
+                fn ($page) => $page
+                    ->where('products.data.0.ratings_count', 2)
+                    ->has('products.data.0.ratings_avg_stars')
             );
     }
 

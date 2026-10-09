@@ -6,16 +6,21 @@ type ProductImage = { id: number; url: string; sort_order: number };
 type CardProduct = {
     id: number;
     name: string;
+    description: string | null;
     price: string;
     old_price?: string | null;
+    is_available?: boolean;
     manufacturer: { id: number; name: string } | null;
     images: ProductImage[];
+    ratings_avg_stars?: number | string | null;
+    ratings_count?: number;
 };
 
 function product(overrides: Partial<CardProduct> = {}): CardProduct {
     return {
         id: 5,
         name: 'Blutdruckmessgerät',
+        description: 'Oberarm-Messgerät mit Speicher für zwei Personen',
         price: '49.90',
         manufacturer: { id: 1, name: 'Beurer' },
         images: [
@@ -64,6 +69,52 @@ describe('ProductCard', () => {
         expect(screen.queryByText('Beurer')).not.toBeInTheDocument();
     });
 
+    it('renders the description', () => {
+        render(ProductCard, { props: { product: product() } });
+
+        expect(
+            screen.getByText(
+                'Oberarm-Messgerät mit Speicher für zwei Personen',
+            ),
+        ).toBeInTheDocument();
+    });
+
+    it('omits the description when there is none', () => {
+        render(ProductCard, {
+            props: { product: product({ description: null }) },
+        });
+
+        expect(
+            screen.queryByText(
+                'Oberarm-Messgerät mit Speicher für zwei Personen',
+            ),
+        ).not.toBeInTheDocument();
+    });
+
+    it('shows the rating with the average and the review count', () => {
+        render(ProductCard, {
+            props: {
+                product: product({
+                    ratings_avg_stars: '4.5',
+                    ratings_count: 12,
+                }),
+            },
+        });
+
+        expect(
+            screen.getByRole('img', { name: 'Bewertung: 4,5 von 5 Sternen' }),
+        ).toBeInTheDocument();
+        expect(screen.getByText('12 Bewertungen')).toBeInTheDocument();
+    });
+
+    it('omits the rating when there are no reviews', () => {
+        render(ProductCard, {
+            props: { product: product({ ratings_count: 0 }) },
+        });
+
+        expect(screen.queryByText(/Bewertungen/)).not.toBeInTheDocument();
+    });
+
     it('shows the sale badge and the struck-through old price when there is an old price', () => {
         render(ProductCard, {
             props: { product: product({ old_price: '59.90' }) },
@@ -81,5 +132,21 @@ describe('ProductCard', () => {
 
         expect(screen.queryByText('Angebot')).not.toBeInTheDocument();
         expect(container.querySelector('.line-through')).toBeNull();
+    });
+
+    it('shows the product action when the product is available', () => {
+        render(ProductCard, { props: { product: product() } });
+
+        expect(screen.getByText('Zum Produkt')).toBeInTheDocument();
+        expect(screen.queryByText('Nicht verfügbar')).not.toBeInTheDocument();
+    });
+
+    it('shows the disabled state when the product is not available', () => {
+        render(ProductCard, {
+            props: { product: product({ is_available: false }) },
+        });
+
+        expect(screen.getByText('Nicht verfügbar')).toBeInTheDocument();
+        expect(screen.queryByText('Zum Produkt')).not.toBeInTheDocument();
     });
 });
