@@ -9,7 +9,7 @@
     type ProductCardProduct = {
         id: number;
         name: string;
-        description: string | null;
+        description?: string | null;
         price: string;
         old_price?: string | null;
         is_available?: boolean;
