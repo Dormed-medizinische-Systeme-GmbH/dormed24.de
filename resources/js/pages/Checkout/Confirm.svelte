@@ -2,7 +2,6 @@
     import { Link, page, router } from '@inertiajs/svelte';
     import ChevronLeft from '@lucide/svelte/icons/chevron-left';
     import AddressForm from '@/components/AddressForm.svelte';
-    import AppFooter from '@/components/AppFooter.svelte';
     import AppHead from '@/components/AppHead.svelte';
     import PayPalButton from '@/components/PayPalButton.svelte';
     import ShopHeader from '@/components/ShopHeader.svelte';
@@ -485,6 +484,4 @@
             </div>
         </div>
     </main>
-
-    <AppFooter />
 </div>

@@ -304,7 +304,7 @@
                             {/each}
                         </nav>
 
-                        <!-- Zusätzlich zu den Header-Icons: Konto + Warenkorb mit Wert -->
+                        <!-- Konto + Warenkorb mit Wert; mobil die einzigen Zugänge (Header-Icons erst ab md) -->
                         <div
                             class="-mx-6 mt-auto flex flex-col gap-2 border-t p-4"
                         >
@@ -342,8 +342,12 @@
                     </SheetContent>
                 </Sheet>
 
-                <!-- Direktlink zum Warenkorb (aktiv) -->
-                <Button variant="ghost" class="gap-2 px-3" asChild>
+                <!-- Direktlink zum Warenkorb (aktiv); mobil nur im Burger-Menü -->
+                <Button
+                    variant="ghost"
+                    class="hidden gap-2 px-3 md:inline-flex"
+                    asChild
+                >
                     {#snippet children(props)}
                         <Link href={cartRoutes.index.url()} class={props.class}>
                             <span
@@ -371,7 +375,12 @@
                     <CartSheet {cart} />
                 -->
 
-                <Button variant="ghost" size="icon" asChild>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    class="hidden md:inline-flex"
+                    asChild
+                >
                     {#snippet children(props)}
                         <Link
                             href={accountHref}

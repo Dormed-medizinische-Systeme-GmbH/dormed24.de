@@ -58,10 +58,10 @@
 
 <AppHead title="Neuer Beitrag — Social-Media — Admin" />
 
-<div class="flex h-full flex-1 flex-col gap-6 p-4">
+<div class="flex h-full flex-1 flex-col gap-6 p-4 pb-20">
     <h1 class="sr-only">Neuer Social-Media-Beitrag</h1>
 
-    <form onsubmit={submit} class="flex max-w-2xl flex-col gap-6">
+    <form onsubmit={submit} class="flex max-w-6xl flex-col gap-6">
         <SocialPostFields
             bind:title={form.title}
             bind:content={form.content}
