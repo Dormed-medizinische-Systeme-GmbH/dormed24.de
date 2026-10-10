@@ -7,4 +7,4 @@ export * from './order';
 export * from './magazine';
 export * from './articleEdit';
 export * from './socialPostEdit';
-export * from './dashboard';
+export * from './customer';

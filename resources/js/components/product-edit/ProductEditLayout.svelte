@@ -21,12 +21,12 @@
     {/if}
 {/snippet}
 
-<!-- Variante D: Galerie links, Kerndaten rechts, Details in Reitern darunter -->
+<!-- Galerie links (Hauptbild 1:1 wie im Shop), Kerndaten rechts, Details in Reitern darunter -->
 <div class="mx-auto flex w-full max-w-6xl flex-col gap-8">
-    <div class="grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+    <div class="grid gap-8 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">
         <div class="flex flex-col gap-4">
             <div
-                class="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-xl border bg-muted"
+                class="flex aspect-square items-center justify-center overflow-hidden rounded-xl border bg-muted"
             >
                 {#if mainImage}
                     <img
@@ -43,15 +43,13 @@
             <ProductImagesEditor
                 productId={product.id}
                 images={product.images}
-                columns={5}
-                showHeader={false}
             />
         </div>
 
-        <form {onsubmit} class="flex flex-col gap-6">
+        <form {onsubmit} class="@container flex min-w-0 flex-col gap-6">
             {@render fields.name()}
             {@render fields.price()}
-            <div class="grid gap-6 sm:grid-cols-2">
+            <div class="grid gap-6 @lg:grid-cols-2">
                 {@render fields.category()}
                 {@render fields.manufacturer()}
             </div>

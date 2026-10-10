@@ -9,12 +9,9 @@
     let {
         specs = $bindable(),
         errors = {},
-        hideHeader = false,
     }: {
         specs: TechnicalSpec[];
         errors?: Partial<Record<string, string>>;
-        /** `true`, wenn das Layout die Überschrift selbst liefert. */
-        hideHeader?: boolean;
     } = $props();
 
     const rowErrors = $derived(
@@ -33,15 +30,13 @@
 </script>
 
 <div class="flex flex-col gap-2">
-    {#if !hideHeader}
-        <div>
-            <Label>Technische Daten</Label>
-            <p class="text-xs text-muted-foreground">
-                Erscheint im Shop im Reiter „Technische Daten“. Leere Zeilen
-                werden beim Speichern ignoriert.
-            </p>
-        </div>
-    {/if}
+    <div>
+        <Label>Technische Daten</Label>
+        <p class="text-xs text-muted-foreground">
+            Erscheint im Shop im Reiter „Technische Daten“. Leere Zeilen werden
+            beim Speichern ignoriert.
+        </p>
+    </div>
 
     {#each specs as spec, index (index)}
         <div class="flex items-center gap-2">

@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { resolveLayoutVariant, withLayoutVariant } from '@/lib/layoutVariants';
-import { EDIT_VARIANTS } from '@/lib/productEdit';
-
-const options = EDIT_VARIANTS;
+const options = [
+    { key: 'A', label: 'a' },
+    { key: 'B', label: 'b' },
+    { key: 'C', label: 'c' },
+    { key: 'D', label: 'd' },
+    { key: 'E', label: 'e' },
+] as const;
 
 describe('resolveLayoutVariant', () => {
     it('falls back to the first option without a parameter', () => {
@@ -64,17 +68,5 @@ describe('withLayoutVariant', () => {
         expect(
             withLayoutVariant('/admin/orders/5?foo=1&variant=B', 'A', options),
         ).toBe('/admin/orders/5?foo=1');
-    });
-});
-
-describe('EDIT_VARIANTS', () => {
-    it('offers exactly the variants A to E', () => {
-        expect(EDIT_VARIANTS.map((variant) => variant.key)).toEqual([
-            'A',
-            'B',
-            'C',
-            'D',
-            'E',
-        ]);
     });
 });

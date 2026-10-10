@@ -1,12 +1,19 @@
 import { fireEvent, render, screen } from '@testing-library/svelte';
 import { describe, expect, it, vi } from 'vitest';
 import VariantSwitcher from '@/components/VariantSwitcher.svelte';
-import { EDIT_VARIANTS } from '@/lib/productEdit';
+
+const options = [
+    { key: 'A', label: 'Reiter (Standard)' },
+    { key: 'B', label: 'Zwei Spalten' },
+    { key: 'C', label: 'Abschnitte' },
+    { key: 'D', label: 'Bilder zuerst' },
+    { key: 'E', label: 'Live-Vorschau' },
+] as const;
 
 function setup(current = 'A') {
     const onselect = vi.fn();
     render(VariantSwitcher, {
-        props: { options: EDIT_VARIANTS, current, onselect },
+        props: { options, current, onselect },
     });
 
     return onselect;
