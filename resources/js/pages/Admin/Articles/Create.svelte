@@ -57,7 +57,7 @@
 
 <AppHead title="Neuer Artikel — Magazin — Admin" />
 
-<div class="flex h-full flex-1 flex-col gap-6 p-4">
+<div class="flex h-full flex-1 flex-col gap-6 p-4 pb-20">
     <h1 class="sr-only">Neuer Magazin-Artikel</h1>
 
     <form onsubmit={submit} class="flex max-w-6xl flex-col gap-6">

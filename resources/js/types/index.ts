@@ -5,3 +5,6 @@ export * from './ui';
 export * from './productEdit';
 export * from './order';
 export * from './magazine';
+export * from './articleEdit';
+export * from './socialPostEdit';
+export * from './dashboard';

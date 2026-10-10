@@ -1,9 +1,9 @@
 <script lang="ts">
-    import EditSection from '@/components/product-edit/EditSection.svelte';
+    import EditSection from '@/components/EditSection.svelte';
     import ProductImagesEditor from '@/components/product-edit/ProductImagesEditor.svelte';
     import ProductRatingsList from '@/components/product-edit/ProductRatingsList.svelte';
     import ProductVariantsEditor from '@/components/product-edit/ProductVariantsEditor.svelte';
-    import { cn } from '@/lib/utils';
+    import SectionNav from '@/components/SectionNav.svelte';
     import type { ProductEditLayoutProps } from '@/types';
 
     let { product, ratings, fields, onsubmit }: ProductEditLayoutProps =
@@ -33,73 +33,13 @@
         },
         { id: 'verfuegbarkeit', title: 'Verfügbarkeit' },
     ]);
-
-    let nav = $state<HTMLElement>();
-    let activeId = $state('allgemein');
-
-    function goTo(id: string) {
-        document
-            .getElementById(id)
-            ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-
-    // Scrollspy: Der Inhalt scrollt im Layout-Container, nicht im Fenster.
-    $effect(() => {
-        const scroller = nav?.closest<HTMLElement>('.overflow-y-auto');
-
-        if (!scroller) {
-            return;
-        }
-
-        const update = () => {
-            const top = scroller.getBoundingClientRect().top;
-            let current = sections[0].id;
-
-            for (const { id } of sections) {
-                const el = document.getElementById(id);
-
-                if (el && el.getBoundingClientRect().top - top < 120) {
-                    current = id;
-                }
-            }
-
-            activeId = current;
-        };
-
-        scroller.addEventListener('scroll', update, { passive: true });
-        update();
-
-        return () => scroller.removeEventListener('scroll', update);
-    });
 </script>
 
 <!-- Variante C: Sprungnavigation links, Abschnitte mit Überschrift darüber -->
 <div
     class="mx-auto grid w-full max-w-4xl gap-10 lg:max-w-5xl lg:grid-cols-[12rem_minmax(0,1fr)]"
 >
-    <nav
-        bind:this={nav}
-        aria-label="Abschnitte"
-        class="sticky top-4 hidden flex-col gap-0.5 self-start lg:flex"
-    >
-        {#each sections as section (section.id)}
-            <button
-                type="button"
-                onclick={() => goTo(section.id)}
-                aria-current={activeId === section.id ? 'location' : undefined}
-                class={cn(
-                    'flex items-center justify-between rounded-md px-2.5 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
-                    activeId === section.id &&
-                        'bg-accent font-medium text-foreground',
-                )}
-            >
-                {section.title}
-                {#if section.count}
-                    <span class="text-xs tabular-nums">{section.count}</span>
-                {/if}
-            </button>
-        {/each}
-    </nav>
+    <SectionNav {sections} />
 
     <div class="min-w-0">
         <EditSection

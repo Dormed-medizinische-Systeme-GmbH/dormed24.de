@@ -17,23 +17,27 @@
     import { Area, AreaChart, ChartClipPath } from 'layerchart';
     import { cubicInOut } from 'svelte/easing';
     import AppHead from '@/components/AppHead.svelte';
+    import DashboardLayoutCards from '@/components/dashboard/DashboardLayoutCards.svelte';
+    import DashboardLayoutDays from '@/components/dashboard/DashboardLayoutDays.svelte';
+    import DashboardLayoutHero from '@/components/dashboard/DashboardLayoutHero.svelte';
+    import DashboardLayoutSegments from '@/components/dashboard/DashboardLayoutSegments.svelte';
+    import DashboardLayoutSidebar from '@/components/dashboard/DashboardLayoutSidebar.svelte';
     import { Button } from '@/components/ui/button';
-    import {
-        Card,
-        CardHeader,
-        CardTitle,
-        CardDescription,
-        CardContent,
-        CardFooter,
-    } from '@/components/ui/card';
     import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
     import type { ChartConfig } from '@/components/ui/chart';
     import * as Popover from '@/components/ui/popover';
+    import VariantSwitcher from '@/components/VariantSwitcher.svelte';
     import { formatPrice } from '@/lib/currency';
+    import { DASHBOARD_VARIANTS } from '@/lib/dashboard';
     import { formatDate } from '@/lib/date';
+    import { useLayoutVariant } from '@/lib/useLayoutVariant.svelte';
+    import type {
+        DashboardLayoutProps,
+        DashboardStats,
+        DashboardTotals,
+    } from '@/types';
 
     type ChartEntry = { date: string; orders: number; revenue: number };
-    type DashboardTotals = { revenue: number; orders: number };
 
     let {
         chartData,
@@ -159,238 +163,273 @@
             100
         );
     });
+
+    // Aus den vorhandenen Daten abgeleitete Kennzahlen für die Layout-Varianten (nur Anzeige).
+    const stats: DashboardStats = $derived.by(() => {
+        const periodOrders = filteredData.reduce((sum, d) => sum + d.orders, 0);
+        const bestDay = filteredData.reduce<
+            (typeof filteredData)[number] | null
+        >(
+            (best, d) => (best === null || d.revenue > best.revenue ? d : best),
+            null,
+        );
+
+        return {
+            periodRevenue: currentPeriodRevenue,
+            periodOrders,
+            averageOrderValue:
+                periodOrders > 0 ? currentPeriodRevenue / periodOrders : null,
+            bestDay,
+            trendPercent: revenueTrendPercent,
+        };
+    });
+
+    // Lazy ausgewertet: Die Snippets existieren erst beim Rendern.
+    const layoutProps: DashboardLayoutProps = $derived({
+        totals,
+        stats,
+        days: filteredData,
+        dateRange,
+        rangePopover,
+        rangeSegments,
+        chart,
+        trend,
+    });
+
+    // Layout-Variante: Auswahl steht in der URL (?variant=B); ohne Parameter gilt A.
+    const layoutVariant = useLayoutVariant(DASHBOARD_VARIANTS);
 </script>
 
 <AppHead title="Admin Dashboard" />
 
-<div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-    <div class="grid gap-4 md:grid-cols-2">
-        <Card>
-            <CardHeader>
-                <CardDescription>Gesamtumsatz</CardDescription>
-                <CardTitle class="text-3xl tabular-nums">
-                    {formatPrice(totals.revenue)}
-                </CardTitle>
-            </CardHeader>
-        </Card>
-
-        <Card>
-            <CardHeader>
-                <CardDescription>Bestellungen gesamt</CardDescription>
-                <CardTitle class="text-3xl tabular-nums">
-                    {totals.orders.toLocaleString('de-DE')}
-                </CardTitle>
-            </CardHeader>
-        </Card>
-    </div>
-
-    <Card>
-        <CardHeader
-            class="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row"
-        >
-            <div class="grid flex-1 gap-1 text-center sm:text-start">
-                <CardTitle>Statistiken</CardTitle>
-                <CardDescription>{dateRange}</CardDescription>
-            </div>
-            <Popover.Root bind:open={popoverOpen}>
-                <Popover.Trigger>
-                    {#snippet child({ props })}
-                        <Button
-                            {...props}
-                            variant="outline"
-                            class="w-44 justify-between rounded-lg sm:ms-auto"
-                            aria-label="Zeitraum auswählen"
-                        >
-                            {timeRangeLabel}
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                class="ml-2 size-4 opacity-50"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"><path d="m6 9 6 6 6-6" /></svg
-                            >
-                        </Button>
-                    {/snippet}
-                </Popover.Trigger>
-                <Popover.Content class="w-52 p-1" align="end">
-                    {#each presets as preset (preset.value)}
-                        <button
-                            class="flex w-full items-center justify-between rounded-md px-3 py-1.5 text-sm transition-colors hover:bg-accent {timeRange ===
-                            preset.value
-                                ? 'font-medium'
-                                : ''}"
-                            onclick={() => {
-                                timeRange = preset.value;
-                                popoverOpen = false;
-                            }}
-                        >
-                            {preset.label}
-                            {#if timeRange === preset.value}
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    class="size-4"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="2"
-                                    ><path d="M20 6 9 17l-5-5" /></svg
-                                >
-                            {/if}
-                        </button>
-                    {/each}
-                </Popover.Content>
-            </Popover.Root>
-        </CardHeader>
-        <CardContent class="pt-6">
-            <ChartContainer
-                config={chartConfig}
-                class="aspect-auto h-75 w-full"
-            >
-                <AreaChart
-                    legend
-                    data={plotData}
-                    x="date"
-                    xScale={scaleUtc()}
-                    series={[
-                        {
-                            key: 'ordersScaled',
-                            label: 'Bestellungen',
-                            color: chartConfig.ordersScaled.color,
-                        },
-                        {
-                            key: 'revenue',
-                            label: 'Umsatz',
-                            color: chartConfig.revenue.color,
-                        },
-                    ]}
-                    seriesLayout="stack"
-                    props={{
-                        xAxis: {
-                            ticks: timeRange === '7d' ? 7 : undefined,
-                            format: (v: Date) => formatDate(v),
-                        },
-                        yAxis: { format: () => '' },
+{#snippet rangePopover()}
+    <Popover.Root bind:open={popoverOpen}>
+        <Popover.Trigger>
+            {#snippet child({ props })}
+                <Button
+                    {...props}
+                    variant="outline"
+                    class="w-44 justify-between rounded-lg sm:ms-auto"
+                    aria-label="Zeitraum auswählen"
+                >
+                    {timeRangeLabel}
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="ml-2 size-4 opacity-50"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"><path d="m6 9 6 6 6-6" /></svg
+                    >
+                </Button>
+            {/snippet}
+        </Popover.Trigger>
+        <Popover.Content class="w-52 p-1" align="end">
+            {#each presets as preset (preset.value)}
+                <button
+                    class="flex w-full items-center justify-between rounded-md px-3 py-1.5 text-sm transition-colors hover:bg-accent {timeRange ===
+                    preset.value
+                        ? 'font-medium'
+                        : ''}"
+                    onclick={() => {
+                        timeRange = preset.value;
+                        popoverOpen = false;
                     }}
                 >
-                    {#snippet marks({ context }: { context: any })}
-                        <defs>
-                            <linearGradient
-                                id="fillOrders"
-                                x1="0"
-                                y1="0"
-                                x2="0"
-                                y2="1"
-                            >
-                                <stop
-                                    offset="5%"
-                                    stop-color="var(--color-ordersScaled)"
-                                    stop-opacity={1.0}
-                                />
-                                <stop
-                                    offset="95%"
-                                    stop-color="var(--color-ordersScaled)"
-                                    stop-opacity={0.1}
-                                />
-                            </linearGradient>
-                            <linearGradient
-                                id="fillRevenue"
-                                x1="0"
-                                y1="0"
-                                x2="0"
-                                y2="1"
-                            >
-                                <stop
-                                    offset="5%"
-                                    stop-color="var(--color-revenue)"
-                                    stop-opacity={1.0}
-                                />
-                                <stop
-                                    offset="95%"
-                                    stop-color="var(--color-revenue)"
-                                    stop-opacity={0.1}
-                                />
-                            </linearGradient>
-                        </defs>
-                        <ChartClipPath
-                            initialWidth={0}
-                            motion={{
-                                width: {
-                                    type: 'tween',
-                                    duration: 1000,
-                                    easing: cubicInOut,
-                                },
-                            }}
+                    {preset.label}
+                    {#if timeRange === preset.value}
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="size-4"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"><path d="M20 6 9 17l-5-5" /></svg
                         >
-                            {#each context.series.visibleSeries as s (s.key)}
-                                <Area
-                                    seriesKey={s.key}
-                                    curve={curveNatural}
-                                    fillOpacity={0.4}
-                                    line={{ class: 'stroke-1' }}
-                                    motion="tween"
-                                    {...s.props}
-                                    fill={s.key === 'ordersScaled'
-                                        ? 'url(#fillOrders)'
-                                        : 'url(#fillRevenue)'}
-                                />
-                            {/each}
-                        </ChartClipPath>
-                    {/snippet}
-                    {#snippet tooltip({ context }: { context: any })}
-                        <ChartTooltip
-                            {context}
-                            indicator="line"
-                            labelFormatter={(v: Date) => formatDate(v)}
-                        >
-                            {#snippet formatter({ value, name, item })}
-                                <div
-                                    class="flex w-full flex-1 items-stretch gap-2"
-                                >
-                                    <div
-                                        class="w-1 shrink-0 rounded-[2px]"
-                                        style="background:{item.color};"
-                                    ></div>
-                                    <div
-                                        class="flex flex-1 items-center justify-between"
-                                    >
-                                        <span class="text-muted-foreground"
-                                            >{name}</span
-                                        >
-                                        <span
-                                            class="font-mono font-medium tabular-nums"
-                                        >
-                                            {item.key === 'revenue'
-                                                ? formatPrice(value as number)
-                                                : Math.round(
-                                                      (value as number) /
-                                                          scaleFactor,
-                                                  )}
-                                        </span>
-                                    </div>
-                                </div>
-                            {/snippet}
-                        </ChartTooltip>
-                    {/snippet}
-                </AreaChart>
-            </ChartContainer>
-        </CardContent>
-        {#if revenueTrendPercent !== null}
-            <CardFooter>
-                <div
-                    class="flex items-center gap-2 text-sm font-medium leading-none"
-                >
-                    Umsatz {revenueTrendPercent >= 0 ? 'steigt' : 'sinkt'} um {Math.abs(
-                        revenueTrendPercent,
-                    ).toFixed(1)}&nbsp;% im gewählten Zeitraum im Vergleich zur
-                    Vorperiode
-                    {#if revenueTrendPercent >= 0}
-                        <TrendingUp class="size-4" />
-                    {:else}
-                        <TrendingDown class="size-4" />
                     {/if}
-                </div>
-            </CardFooter>
-        {/if}
-    </Card>
+                </button>
+            {/each}
+        </Popover.Content>
+    </Popover.Root>
+{/snippet}
+
+{#snippet rangeSegments()}
+    <div
+        role="group"
+        aria-label="Zeitraum auswählen"
+        class="inline-flex flex-wrap rounded-lg bg-muted p-[3px]"
+    >
+        {#each presets as preset (preset.value)}
+            <button
+                type="button"
+                aria-pressed={timeRange === preset.value}
+                onclick={() => (timeRange = preset.value)}
+                class="rounded-md px-3 py-1 text-sm font-medium transition-colors {timeRange ===
+                preset.value
+                    ? 'bg-background shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'}"
+            >
+                {preset.label}
+            </button>
+        {/each}
+    </div>
+{/snippet}
+
+{#snippet chart()}
+    <ChartContainer config={chartConfig} class="aspect-auto h-75 w-full">
+        <AreaChart
+            legend
+            data={plotData}
+            x="date"
+            xScale={scaleUtc()}
+            series={[
+                {
+                    key: 'ordersScaled',
+                    label: 'Bestellungen',
+                    color: chartConfig.ordersScaled.color,
+                },
+                {
+                    key: 'revenue',
+                    label: 'Umsatz',
+                    color: chartConfig.revenue.color,
+                },
+            ]}
+            seriesLayout="stack"
+            props={{
+                xAxis: {
+                    ticks: timeRange === '7d' ? 7 : undefined,
+                    format: (v: Date) => formatDate(v),
+                },
+                yAxis: { format: () => '' },
+            }}
+        >
+            {#snippet marks({ context }: { context: any })}
+                <defs>
+                    <linearGradient id="fillOrders" x1="0" y1="0" x2="0" y2="1">
+                        <stop
+                            offset="5%"
+                            stop-color="var(--color-ordersScaled)"
+                            stop-opacity={1.0}
+                        />
+                        <stop
+                            offset="95%"
+                            stop-color="var(--color-ordersScaled)"
+                            stop-opacity={0.1}
+                        />
+                    </linearGradient>
+                    <linearGradient
+                        id="fillRevenue"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                    >
+                        <stop
+                            offset="5%"
+                            stop-color="var(--color-revenue)"
+                            stop-opacity={1.0}
+                        />
+                        <stop
+                            offset="95%"
+                            stop-color="var(--color-revenue)"
+                            stop-opacity={0.1}
+                        />
+                    </linearGradient>
+                </defs>
+                <ChartClipPath
+                    initialWidth={0}
+                    motion={{
+                        width: {
+                            type: 'tween',
+                            duration: 1000,
+                            easing: cubicInOut,
+                        },
+                    }}
+                >
+                    {#each context.series.visibleSeries as s (s.key)}
+                        <Area
+                            seriesKey={s.key}
+                            curve={curveNatural}
+                            fillOpacity={0.4}
+                            line={{ class: 'stroke-1' }}
+                            motion="tween"
+                            {...s.props}
+                            fill={s.key === 'ordersScaled'
+                                ? 'url(#fillOrders)'
+                                : 'url(#fillRevenue)'}
+                        />
+                    {/each}
+                </ChartClipPath>
+            {/snippet}
+            {#snippet tooltip({ context }: { context: any })}
+                <ChartTooltip
+                    {context}
+                    indicator="line"
+                    labelFormatter={(v: Date) => formatDate(v)}
+                >
+                    {#snippet formatter({ value, name, item })}
+                        <div class="flex w-full flex-1 items-stretch gap-2">
+                            <div
+                                class="w-1 shrink-0 rounded-[2px]"
+                                style="background:{item.color};"
+                            ></div>
+                            <div
+                                class="flex flex-1 items-center justify-between"
+                            >
+                                <span class="text-muted-foreground">{name}</span
+                                >
+                                <span
+                                    class="font-mono font-medium tabular-nums"
+                                >
+                                    {item.key === 'revenue'
+                                        ? formatPrice(value as number)
+                                        : Math.round(
+                                              (value as number) / scaleFactor,
+                                          )}
+                                </span>
+                            </div>
+                        </div>
+                    {/snippet}
+                </ChartTooltip>
+            {/snippet}
+        </AreaChart>
+    </ChartContainer>
+{/snippet}
+
+{#snippet trend()}
+    {#if revenueTrendPercent !== null}
+        <div class="flex items-center gap-2 text-sm font-medium leading-none">
+            Umsatz {revenueTrendPercent >= 0 ? 'steigt' : 'sinkt'} um {Math.abs(
+                revenueTrendPercent,
+            ).toFixed(1)}&nbsp;% im gewählten Zeitraum im Vergleich zur
+            Vorperiode
+            {#if revenueTrendPercent >= 0}
+                <TrendingUp class="size-4" />
+            {:else}
+                <TrendingDown class="size-4" />
+            {/if}
+        </div>
+    {/if}
+{/snippet}
+
+<div
+    class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4 pb-20"
+>
+    {#if layoutVariant.current === 'B'}
+        <DashboardLayoutHero {...layoutProps} />
+    {:else if layoutVariant.current === 'C'}
+        <DashboardLayoutSidebar {...layoutProps} />
+    {:else if layoutVariant.current === 'D'}
+        <DashboardLayoutSegments {...layoutProps} />
+    {:else if layoutVariant.current === 'E'}
+        <DashboardLayoutDays {...layoutProps} />
+    {:else}
+        <DashboardLayoutCards {...layoutProps} />
+    {/if}
 </div>
+
+<VariantSwitcher
+    options={DASHBOARD_VARIANTS}
+    current={layoutVariant.current}
+    onselect={layoutVariant.select}
+/>
