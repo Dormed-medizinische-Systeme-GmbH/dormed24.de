@@ -1,12 +1,15 @@
 <script lang="ts">
     import CustomerAddress from '@/components/customer-detail/CustomerAddress.svelte';
     import OrderStatusPill from '@/components/order-detail/OrderStatusPill.svelte';
+    import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+    import { Card, CardContent } from '@/components/ui/card';
     import { formatPrice } from '@/lib/currency';
     import {
         customerStats,
         customerTimeline,
         formatDay,
     } from '@/lib/customerDetail';
+    import { getInitials } from '@/lib/initials';
     import type { CustomerDetail } from '@/types';
 
     let { customer }: { customer: CustomerDetail } = $props();
@@ -15,20 +18,9 @@
     const events = $derived(customerTimeline(customer));
 </script>
 
-<!-- Variante E: Aktivitätsverlauf – Registrierung, Bestätigung und Bestellungen als Zeitachse -->
-<div
-    class="grid items-start gap-8 p-4 pb-20 lg:grid-cols-[minmax(0,1fr)_22rem]"
->
+<!-- Aktivitätsverlauf links (Registrierung, Bestätigung, Bestellungen), Profil und Adressen rechts -->
+<div class="grid items-start gap-8 p-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
     <section class="min-w-0">
-        <div class="mb-6">
-            <h1 class="text-xl font-semibold">{customer.name}</h1>
-            <a
-                href="mailto:{customer.email}"
-                class="text-sm text-[#1a6bbf] hover:underline"
-                >{customer.email}</a
-            >
-        </div>
-
         <ol class="relative ml-2 border-l pl-6">
             {#each events as event (event.key)}
                 <li class="relative pb-8 last:pb-0">
@@ -101,6 +93,52 @@
                 </dd>
             </div>
         </dl>
+
+        <Card>
+            <CardContent class="flex flex-col gap-4">
+                <div class="flex items-center gap-3">
+                    <Avatar class="size-12">
+                        <AvatarFallback class="font-semibold">
+                            {getInitials(customer.name)}
+                        </AvatarFallback>
+                    </Avatar>
+                    <div class="min-w-0">
+                        <h1 class="truncate text-lg font-semibold">
+                            {customer.name}
+                        </h1>
+                        <a
+                            href="mailto:{customer.email}"
+                            class="block truncate text-sm text-[#1a6bbf] hover:underline"
+                            >{customer.email}</a
+                        >
+                    </div>
+                </div>
+                <dl class="space-y-2 text-sm">
+                    <div class="flex justify-between gap-4">
+                        <dt class="text-muted-foreground">
+                            E-Mail verifiziert
+                        </dt>
+                        <dd>
+                            {customer.email_verified_at
+                                ? formatDay(customer.email_verified_at)
+                                : 'Nein'}
+                        </dd>
+                    </div>
+                    <div class="flex justify-between gap-4">
+                        <dt class="text-muted-foreground">Registriert</dt>
+                        <dd>{formatDay(customer.created_at)}</dd>
+                    </div>
+                    <div class="flex justify-between gap-4">
+                        <dt class="text-muted-foreground">Bestellungen</dt>
+                        <dd class="font-medium">{stats.orderCount}</dd>
+                    </div>
+                    <div class="flex justify-between gap-4">
+                        <dt class="text-muted-foreground">Adressen</dt>
+                        <dd class="font-medium">{stats.addressCount}</dd>
+                    </div>
+                </dl>
+            </CardContent>
+        </Card>
 
         <h2 class="text-sm font-semibold">
             Adressen

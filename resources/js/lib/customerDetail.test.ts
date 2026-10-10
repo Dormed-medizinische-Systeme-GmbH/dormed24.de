@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-    CUSTOMER_VARIANTS,
-    customerStats,
-    customerTimeline,
-} from '@/lib/customerDetail';
+import { customerStats, customerTimeline } from '@/lib/customerDetail';
 import type { CustomerDetail } from '@/types';
 
 const customer = (overrides: Partial<CustomerDetail> = {}): CustomerDetail => ({
@@ -33,16 +29,6 @@ const customer = (overrides: Partial<CustomerDetail> = {}): CustomerDetail => ({
 });
 
 describe('customer detail helpers', () => {
-    it('offers exactly the variants A to E, A first', () => {
-        expect(CUSTOMER_VARIANTS.map((variant) => variant.key)).toEqual([
-            'A',
-            'B',
-            'C',
-            'D',
-            'E',
-        ]);
-    });
-
     it('derives order statistics from the loaded orders', () => {
         const stats = customerStats(customer());
 

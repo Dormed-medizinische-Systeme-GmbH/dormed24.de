@@ -1,15 +1,6 @@
 import { formatDate } from '@/lib/date';
 import type { CustomerDetail, CustomerOrder } from '@/types';
 
-/** Layout-Varianten der Kundendetail-Ansicht, siehe lib/layoutVariants.ts. */
-export const CUSTOMER_VARIANTS = [
-    { key: 'A', label: 'Karten (Standard)' },
-    { key: 'B', label: 'Profil-Kopf' },
-    { key: 'C', label: 'Profil-Spalte' },
-    { key: 'D', label: 'Reiter' },
-    { key: 'E', label: 'Aktivität' },
-] as const;
-
 export const addressTypeLabels: Record<string, string> = {
     shipping: 'Lieferadresse',
     billing: 'Rechnungsadresse',
