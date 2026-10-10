@@ -58,7 +58,9 @@ describe('ProductCard', () => {
     it('renders a placeholder instead of an image when there are none', () => {
         render(ProductCard, { props: { product: product({ images: [] }) } });
 
-        expect(screen.queryByRole('img')).not.toBeInTheDocument();
+        expect(
+            screen.queryByRole('img', { name: 'Blutdruckmessgerät' }),
+        ).not.toBeInTheDocument();
     });
 
     it('omits the manufacturer line when there is none', () => {
@@ -107,12 +109,48 @@ describe('ProductCard', () => {
         expect(screen.getByText('12 Bewertungen')).toBeInTheDocument();
     });
 
-    it('omits the rating when there are no reviews', () => {
+    it('keeps the rating row with empty stars when there are no reviews', () => {
         render(ProductCard, {
             props: { product: product({ ratings_count: 0 }) },
         });
 
-        expect(screen.queryByText(/Bewertungen/)).not.toBeInTheDocument();
+        expect(
+            screen.getByRole('img', { name: 'Noch keine Bewertungen' }),
+        ).toBeInTheDocument();
+        expect(screen.getByText('0 Bewertungen')).toBeInTheDocument();
+    });
+
+    it('keeps the rating row when the review fields are missing', () => {
+        render(ProductCard, { props: { product: product() } });
+
+        expect(screen.getByText('0 Bewertungen')).toBeInTheDocument();
+    });
+
+    it('uses the singular for a single review', () => {
+        render(ProductCard, {
+            props: {
+                product: product({
+                    ratings_avg_stars: 5,
+                    ratings_count: 1,
+                }),
+            },
+        });
+
+        expect(screen.getByText('1 Bewertung')).toBeInTheDocument();
+    });
+
+    it('spans the button over the full card width', () => {
+        render(ProductCard, { props: { product: product() } });
+
+        expect(screen.getByText('Zum Produkt')).toHaveClass('w-full');
+    });
+
+    it('spans the disabled button over the full card width', () => {
+        render(ProductCard, {
+            props: { product: product({ is_available: false }) },
+        });
+
+        expect(screen.getByText('Nicht verfügbar')).toHaveClass('w-full');
     });
 
     it('shows the sale badge and the struck-through old price when there is an old price', () => {

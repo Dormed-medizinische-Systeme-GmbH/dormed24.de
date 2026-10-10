@@ -70,6 +70,8 @@ class ProductController extends Controller
                 ->where('category_slug', $product->category_slug)
                 ->whereKeyNot($product->id)
                 ->with(['manufacturer', 'images' => fn ($query) => $query->where('sort_order', 0)])
+                ->withAvg('ratings', 'stars')
+                ->withCount('ratings')
                 ->orderBy('name')
                 ->get()
                 ->values();

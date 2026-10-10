@@ -25,6 +25,15 @@
     const averageStars = $derived(Number(product.ratings_avg_stars ?? 0));
     const filledStars = $derived(Math.round(averageStars));
     const averageLabel = $derived(averageStars.toFixed(1).replace('.', ','));
+    const ratingsCount = $derived(product.ratings_count ?? 0);
+    const ratingsCountLabel = $derived(
+        ratingsCount === 1 ? '1 Bewertung' : `${ratingsCount} Bewertungen`,
+    );
+    const ratingAriaLabel = $derived(
+        ratingsCount === 0
+            ? 'Noch keine Bewertungen'
+            : `Bewertung: ${averageLabel} von 5 Sternen`,
+    );
 </script>
 
 <Link
@@ -61,32 +70,30 @@
         >
             {product.name}
         </h2>
-        {#if product.ratings_count}
-            <div
-                class="mb-3 flex items-center gap-0.5"
-                role="img"
-                aria-label="Bewertung: {averageLabel} von 5 Sternen"
-            >
-                {#each [1, 2, 3, 4, 5] as star (star)}
-                    <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill={star <= filledStars ? '#FFD700' : 'none'}
-                        stroke={star <= filledStars ? '#FFD700' : '#D4D4D8'}
-                        stroke-width={star <= filledStars ? 0.5 : 1}
-                        aria-hidden="true"
-                    >
-                        <polygon
-                            points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
-                        />
-                    </svg>
-                {/each}
-                <span class="ml-1.5 text-[11px] text-[#71717A]">
-                    {product.ratings_count} Bewertungen
-                </span>
-            </div>
-        {/if}
+        <div
+            class="mb-3 flex items-center gap-0.5"
+            role="img"
+            aria-label={ratingAriaLabel}
+        >
+            {#each [1, 2, 3, 4, 5] as star (star)}
+                <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill={star <= filledStars ? '#FFD700' : 'none'}
+                    stroke={star <= filledStars ? '#FFD700' : '#D4D4D8'}
+                    stroke-width={star <= filledStars ? 0.5 : 1}
+                    aria-hidden="true"
+                >
+                    <polygon
+                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                    />
+                </svg>
+            {/each}
+            <span class="ml-1.5 text-[11px] text-[#71717A]">
+                {ratingsCountLabel}
+            </span>
+        </div>
         <div class="mb-3 flex items-baseline gap-2 max-[400px]:mb-[5px]">
             {#if product.old_price}
                 <span class="mb-0.5 text-[13px] text-[#A1A1AA] line-through">
@@ -104,14 +111,10 @@
                 {product.description}
             </p>
         {/if}
-        <div
-            class="mt-auto flex justify-end max-[400px]:flex-col max-[400px]:items-start max-[400px]:gap-2.5 {product.description
-                ? ''
-                : 'pt-2'}"
-        >
+        <div class="mt-auto {product.description ? '' : 'pt-2'}">
             {#if isAvailable}
                 <span
-                    class="group/btn relative inline-flex items-center gap-1.5 overflow-hidden rounded-[10px] bg-[linear-gradient(45deg,#18181B,#27272A)] px-[15px] py-2 text-[13px] font-semibold text-white shadow-[0_3px_10px_rgba(0,0,0,0.1)] transition duration-300 before:absolute before:inset-y-0 before:left-[-100%] before:w-full before:bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.1),transparent)] before:transition-[left] before:duration-500 before:content-[''] hover:-translate-y-0.5 hover:bg-[linear-gradient(45deg,#27272A,#3F3F46)] hover:shadow-[0_5px_15px_rgba(0,0,0,0.15)] hover:before:left-full max-[400px]:w-full max-[400px]:justify-center"
+                    class="group/btn relative flex w-full items-center justify-center gap-1.5 overflow-hidden rounded-[10px] bg-[linear-gradient(45deg,#18181B,#27272A)] px-[15px] py-2 text-[13px] font-semibold text-white shadow-[0_3px_10px_rgba(0,0,0,0.1)] transition duration-300 before:absolute before:inset-y-0 before:left-[-100%] before:w-full before:bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.1),transparent)] before:transition-[left] before:duration-500 before:content-[''] hover:-translate-y-0.5 hover:bg-[linear-gradient(45deg,#27272A,#3F3F46)] hover:shadow-[0_5px_15px_rgba(0,0,0,0.15)] hover:before:left-full"
                 >
                     Zum Produkt
                     <ShoppingBag
@@ -122,7 +125,7 @@
             {:else}
                 <span
                     aria-disabled="true"
-                    class="relative inline-flex cursor-not-allowed items-center gap-1.5 overflow-hidden rounded-[10px] bg-[#DDE1E8] px-[15px] py-2 text-[13px] font-semibold text-[#4F5663] max-[400px]:w-full max-[400px]:justify-center"
+                    class="relative flex w-full cursor-not-allowed items-center justify-center gap-1.5 overflow-hidden rounded-[10px] bg-[#DDE1E8] px-[15px] py-2 text-[13px] font-semibold text-[#4F5663]"
                 >
                     Nicht verfügbar
                     <ShoppingBag class="size-5" aria-hidden="true" />

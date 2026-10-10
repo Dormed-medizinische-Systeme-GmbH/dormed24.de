@@ -402,6 +402,21 @@ class ProductBrowsingTest extends TestCase
             );
     }
 
+    public function test_show_similar_products_include_the_rating_count_for_the_product_card(): void
+    {
+        $product = Product::factory()->create(['category_slug' => 'zubehoer']);
+        $ratedProduct = Product::factory()->create(['category_slug' => 'zubehoer']);
+        Rating::factory()->for($ratedProduct)->create(['stars' => 5]);
+
+        $this->get(route('products.show', $product))
+            ->assertOk()
+            ->assertInertia(
+                fn ($page) => $page
+                    ->where('similarProducts.0.id', $ratedProduct->id)
+                    ->where('similarProducts.0.ratings_count', 1)
+            );
+    }
+
     public function test_show_similar_products_excludes_the_current_product(): void
     {
         $product = Product::factory()->create(['category_slug' => 'zubehoer']);
