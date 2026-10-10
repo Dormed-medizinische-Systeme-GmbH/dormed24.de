@@ -10,6 +10,7 @@
 </script>
 
 <script lang="ts">
+    import { setLayoutProps } from '@inertiajs/svelte';
     import TrendingDown from '@lucide/svelte/icons/trending-down';
     import TrendingUp from '@lucide/svelte/icons/trending-up';
     import { scaleUtc } from 'd3-scale';
@@ -17,26 +18,21 @@
     import { Area, AreaChart, ChartClipPath } from 'layerchart';
     import { cubicInOut } from 'svelte/easing';
     import AppHead from '@/components/AppHead.svelte';
-    import DashboardLayoutCards from '@/components/dashboard/DashboardLayoutCards.svelte';
-    import DashboardLayoutDays from '@/components/dashboard/DashboardLayoutDays.svelte';
-    import DashboardLayoutHero from '@/components/dashboard/DashboardLayoutHero.svelte';
-    import DashboardLayoutSegments from '@/components/dashboard/DashboardLayoutSegments.svelte';
-    import DashboardLayoutSidebar from '@/components/dashboard/DashboardLayoutSidebar.svelte';
-    import { Button } from '@/components/ui/button';
+    import DashboardRangeControl from '@/components/dashboard/DashboardRangeControl.svelte';
+    import {
+        Card,
+        CardContent,
+        CardDescription,
+        CardFooter,
+        CardHeader,
+        CardTitle,
+    } from '@/components/ui/card';
     import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
     import type { ChartConfig } from '@/components/ui/chart';
-    import * as Popover from '@/components/ui/popover';
-    import VariantSwitcher from '@/components/VariantSwitcher.svelte';
     import { formatPrice } from '@/lib/currency';
-    import { DASHBOARD_VARIANTS } from '@/lib/dashboard';
     import { formatDate } from '@/lib/date';
-    import { useLayoutVariant } from '@/lib/useLayoutVariant.svelte';
-    import type {
-        DashboardLayoutProps,
-        DashboardStats,
-        DashboardTotals,
-    } from '@/types';
 
+    type DashboardTotals = { revenue: number; orders: number };
     type ChartEntry = { date: string; orders: number; revenue: number };
 
     let {
@@ -51,7 +47,6 @@
     type TimeRange = '7d' | '30d' | '90d' | '180d' | '365d';
 
     let timeRange = $state<TimeRange>('7d');
-    let popoverOpen = $state(false);
 
     const presets: { value: TimeRange; label: string; days: number }[] = [
         { value: '7d', label: 'Letzte 7 Tage', days: 7 },
@@ -60,10 +55,6 @@
         { value: '180d', label: 'Letzte 6 Monate', days: 180 },
         { value: '365d', label: 'Letztes Jahr', days: 365 },
     ];
-
-    const timeRangeLabel = $derived(
-        presets.find((p) => p.value === timeRange)?.label ?? 'Zeitraum',
-    );
 
     const filteredData = $derived.by(() => {
         const days = presets.find((p) => p.value === timeRange)?.days ?? 7;
@@ -164,115 +155,22 @@
         );
     });
 
-    // Aus den vorhandenen Daten abgeleitete Kennzahlen für die Layout-Varianten (nur Anzeige).
-    const stats: DashboardStats = $derived.by(() => {
+    const averageOrderValue = $derived.by(() => {
         const periodOrders = filteredData.reduce((sum, d) => sum + d.orders, 0);
-        const bestDay = filteredData.reduce<
-            (typeof filteredData)[number] | null
-        >(
-            (best, d) => (best === null || d.revenue > best.revenue ? d : best),
-            null,
-        );
 
-        return {
-            periodRevenue: currentPeriodRevenue,
-            periodOrders,
-            averageOrderValue:
-                periodOrders > 0 ? currentPeriodRevenue / periodOrders : null,
-            bestDay,
-            trendPercent: revenueTrendPercent,
-        };
+        return periodOrders > 0 ? currentPeriodRevenue / periodOrders : null;
     });
 
-    // Lazy ausgewertet: Die Snippets existieren erst beim Rendern.
-    const layoutProps: DashboardLayoutProps = $derived({
-        totals,
-        stats,
-        days: filteredData,
-        dateRange,
-        rangePopover,
-        rangeSegments,
-        chart,
-        trend,
+    // Zeitraum-Auswahl rechtsbündig im Admin-Header.
+    $effect(() => {
+        setLayoutProps({ actions: headerActions });
     });
-
-    // Layout-Variante: Auswahl steht in der URL (?variant=B); ohne Parameter gilt A.
-    const layoutVariant = useLayoutVariant(DASHBOARD_VARIANTS);
 </script>
 
 <AppHead title="Admin Dashboard" />
 
-{#snippet rangePopover()}
-    <Popover.Root bind:open={popoverOpen}>
-        <Popover.Trigger>
-            {#snippet child({ props })}
-                <Button
-                    {...props}
-                    variant="outline"
-                    class="w-44 justify-between rounded-lg sm:ms-auto"
-                    aria-label="Zeitraum auswählen"
-                >
-                    {timeRangeLabel}
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        class="ml-2 size-4 opacity-50"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"><path d="m6 9 6 6 6-6" /></svg
-                    >
-                </Button>
-            {/snippet}
-        </Popover.Trigger>
-        <Popover.Content class="w-52 p-1" align="end">
-            {#each presets as preset (preset.value)}
-                <button
-                    class="flex w-full items-center justify-between rounded-md px-3 py-1.5 text-sm transition-colors hover:bg-accent {timeRange ===
-                    preset.value
-                        ? 'font-medium'
-                        : ''}"
-                    onclick={() => {
-                        timeRange = preset.value;
-                        popoverOpen = false;
-                    }}
-                >
-                    {preset.label}
-                    {#if timeRange === preset.value}
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            class="size-4"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"><path d="M20 6 9 17l-5-5" /></svg
-                        >
-                    {/if}
-                </button>
-            {/each}
-        </Popover.Content>
-    </Popover.Root>
-{/snippet}
-
-{#snippet rangeSegments()}
-    <div
-        role="group"
-        aria-label="Zeitraum auswählen"
-        class="inline-flex flex-wrap rounded-lg bg-muted p-[3px]"
-    >
-        {#each presets as preset (preset.value)}
-            <button
-                type="button"
-                aria-pressed={timeRange === preset.value}
-                onclick={() => (timeRange = preset.value)}
-                class="rounded-md px-3 py-1 text-sm font-medium transition-colors {timeRange ===
-                preset.value
-                    ? 'bg-background shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'}"
-            >
-                {preset.label}
-            </button>
-        {/each}
-    </div>
+{#snippet headerActions()}
+    <DashboardRangeControl {presets} bind:value={timeRange} />
 {/snippet}
 
 {#snippet chart()}
@@ -412,24 +310,55 @@
     {/if}
 {/snippet}
 
-<div
-    class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4 pb-20"
->
-    {#if layoutVariant.current === 'B'}
-        <DashboardLayoutHero {...layoutProps} />
-    {:else if layoutVariant.current === 'C'}
-        <DashboardLayoutSidebar {...layoutProps} />
-    {:else if layoutVariant.current === 'D'}
-        <DashboardLayoutSegments {...layoutProps} />
-    {:else if layoutVariant.current === 'E'}
-        <DashboardLayoutDays {...layoutProps} />
-    {:else}
-        <DashboardLayoutCards {...layoutProps} />
-    {/if}
-</div>
+<div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+    <Card>
+        <CardHeader>
+            <CardTitle>Übersicht</CardTitle>
+            <CardDescription>{dateRange}</CardDescription>
+        </CardHeader>
 
-<VariantSwitcher
-    options={DASHBOARD_VARIANTS}
-    current={layoutVariant.current}
-    onselect={layoutVariant.select}
-/>
+        <dl
+            class="mx-6 grid grid-cols-2 gap-px overflow-hidden rounded-lg border bg-border lg:grid-cols-4"
+        >
+            <div class="bg-card p-4">
+                <dt class="text-xs text-muted-foreground">Gesamtumsatz</dt>
+                <dd class="text-2xl font-semibold tabular-nums">
+                    {formatPrice(totals.revenue)}
+                </dd>
+            </div>
+            <div class="bg-card p-4">
+                <dt class="text-xs text-muted-foreground">
+                    Bestellungen gesamt
+                </dt>
+                <dd class="text-2xl font-semibold tabular-nums">
+                    {totals.orders.toLocaleString('de-DE')}
+                </dd>
+            </div>
+            <div class="bg-card p-4">
+                <dt class="text-xs text-muted-foreground">
+                    Umsatz im Zeitraum
+                </dt>
+                <dd class="text-2xl font-semibold tabular-nums">
+                    {formatPrice(currentPeriodRevenue)}
+                </dd>
+            </div>
+            <div class="bg-card p-4">
+                <dt class="text-xs text-muted-foreground">Ø Bestellwert</dt>
+                <dd class="text-2xl font-semibold tabular-nums">
+                    {averageOrderValue === null
+                        ? '—'
+                        : formatPrice(averageOrderValue)}
+                </dd>
+            </div>
+        </dl>
+
+        <CardContent>
+            {@render chart()}
+        </CardContent>
+        {#if revenueTrendPercent !== null}
+            <CardFooter>
+                {@render trend()}
+            </CardFooter>
+        {/if}
+    </Card>
+</div>
