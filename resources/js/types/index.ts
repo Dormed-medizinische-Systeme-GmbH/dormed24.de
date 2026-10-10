@@ -2,3 +2,4 @@ export * from './auth';
 export * from './cart';
 export * from './navigation';
 export * from './ui';
+export * from './productEdit';
