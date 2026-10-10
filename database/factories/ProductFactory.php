@@ -15,6 +15,8 @@ class ProductFactory extends Factory
     {
         return [
             'manufacturer_id' => Manufacturer::factory(),
+            // Slug aus config/categories.php; jedes Produkt braucht eine Kategorie (Shop-URL).
+            'category_slug' => 'ultraschallsysteme',
             'name' => fake()->words(3, true),
             'description' => fake()->paragraph(),
             'price' => fake()->randomFloat(2, 5, 500),

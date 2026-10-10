@@ -216,7 +216,7 @@ class CartService
                     quantity: $quantity,
                     unitPriceCents: $unitPriceCents,
                     imageUrl: $product?->images->first()?->url,
-                    productUrl: $product ? route('products.show', $product) : route('products.index'),
+                    productUrl: $product?->url() ?? route('home'),
                     isAvailable: $product !== null && $product->is_available && ! $variantMissing && ! $variantRequiredButMissing,
                 );
             })

@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 /**
  * @property int $id
@@ -20,17 +21,67 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $category_slug Slug aus config/categories.php
  * @property list<string>|null $specialties Slugs aus config/specialties.php
  * @property string $name
+ * @property string|null $slug Teil der Shop-URL, wird beim Anlegen aus dem Namen erzeugt und nie geändert
  * @property string|null $description
  * @property list<array{label: string, value: string}>|null $technical_specs
  * @property string $price
  * @property bool $is_available
  * @property float|string|null $ratings_avg_stars nur mit withAvg('ratings', 'stars') geladen
  */
-#[Fillable(['manufacturer_id', 'category_slug', 'specialties', 'name', 'description', 'technical_specs', 'price', 'is_available'])]
+#[Fillable(['manufacturer_id', 'category_slug', 'specialties', 'name', 'slug', 'description', 'technical_specs', 'price', 'is_available'])]
 class Product extends Model
 {
     /** @use HasFactory<ProductFactory> */
     use HasFactory;
+
+    protected static function booted(): void
+    {
+        // Seeder laufen ohne Model-Events und setzen den Slug selbst.
+        static::creating(function (Product $product): void {
+            if (blank($product->slug)) {
+                $product->slug = self::generateSlug((string) $product->name);
+            }
+        });
+    }
+
+    /**
+     * Slug für die Shop-URL: klein, Umlaute umgeschrieben (ä → ae, ß → ss),
+     * Leerzeichen und Sonderzeichen zu Bindestrichen.
+     */
+    public static function slugFor(string $name): string
+    {
+        return Str::slug($name, '-', 'de');
+    }
+
+    /**
+     * Eindeutiger Slug zum Namen; bei Kollision wird -2, -3 … angehängt
+     * (Sicherheitsnetz für Seeder und Tests, das Admin-Formular lehnt
+     * doppelte Namen vorher ab).
+     */
+    public static function generateSlug(string $name): string
+    {
+        $base = self::slugFor($name) ?: 'produkt';
+        $slug = $base;
+        $suffix = 2;
+
+        while (self::query()->where('slug', $slug)->exists()) {
+            $slug = $base.'-'.$suffix++;
+        }
+
+        return $slug;
+    }
+
+    /**
+     * Öffentliche Shop-URL /{kategorie}/{slug}; null ohne Kategorie oder Slug.
+     */
+    public function url(): ?string
+    {
+        if ($this->category_slug === null || $this->slug === null) {
+            return null;
+        }
+
+        return route('products.show', ['category' => $this->category_slug, 'product' => $this->slug]);
+    }
 
     protected function casts(): array
     {
@@ -106,6 +157,24 @@ class Product extends Model
      */
     public function scopeAvailable(Builder $query): Builder
     {
-        return $query->where('is_available', true);
+        // Ohne Kategorie gibt es keine Shop-URL: solche Produkte sind nicht sichtbar.
+        return $query->where('is_available', true)->whereNotNull('category_slug');
+    }
+
+    /**
+     * Name-Teilstringsuche mit escapten LIKE-Wildcards: `%` und `_` im
+     * Suchbegriff werden literal gematcht, nicht als Platzhalter (verhindert,
+     * dass z. B. "%" alle Produkte zieht). ESCAPE-Klausel für Portabilität
+     * MySQL/SQLite.
+     *
+     * @param  Builder<Product>  $query
+     * @return Builder<Product>
+     */
+    public function scopeNameLike(Builder $query, string $term): Builder
+    {
+        return $query->whereRaw('name LIKE ? ESCAPE ?', [
+            '%'.addcslashes($term, '%_\\').'%',
+            '\\',
+        ]);
     }
 }

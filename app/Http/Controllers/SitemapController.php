@@ -14,7 +14,6 @@ class SitemapController extends Controller
         $xml = Cache::remember('sitemap.xml', now()->addHour(), function () {
             $staticUrls = [
                 ['loc' => url('/'), 'changefreq' => 'weekly', 'priority' => '1.0'],
-                ['loc' => url('/products'), 'changefreq' => 'daily', 'priority' => '0.9'],
                 ['loc' => route('faq'), 'changefreq' => 'monthly', 'priority' => '0.7'],
                 ['loc' => route('agb'), 'changefreq' => 'monthly', 'priority' => '0.3'],
                 ['loc' => route('impressum'), 'changefreq' => 'monthly', 'priority' => '0.3'],
@@ -24,7 +23,16 @@ class SitemapController extends Controller
                 ['loc' => route('zahlung'), 'changefreq' => 'monthly', 'priority' => '0.4'],
             ];
 
-            $products = Product::select('id', 'updated_at')->get();
+            // Nur Produkte mit Shop-URL (Kategorie und Slug); nicht verfügbare
+            // Produkte bleiben erreichbar und gehören deshalb dazu.
+            $products = Product::query()
+                ->whereNotNull('category_slug')
+                ->whereNotNull('slug')
+                ->get(['id', 'category_slug', 'slug', 'updated_at'])
+                ->map(fn (Product $product): array => [
+                    'loc' => (string) $product->url(),
+                    'lastmod' => $product->updated_at->toAtomString(),
+                ]);
             $categories = Categories::all();
 
             // Die XML-Deklaration steht nicht im Template: Bei short_open_tag=On

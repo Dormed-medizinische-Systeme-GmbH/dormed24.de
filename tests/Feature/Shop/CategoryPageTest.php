@@ -117,7 +117,7 @@ class CategoryPageTest extends TestCase
 
     public function test_navigation_lists_configured_categories_in_config_order(): void
     {
-        $this->get(route('products.index'))
+        $this->get(route('home'))
             ->assertOk()
             ->assertInertia(
                 fn ($page) => $page->where('navCategories', [

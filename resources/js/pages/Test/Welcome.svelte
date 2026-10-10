@@ -74,6 +74,8 @@
 
     type RandomProduct = {
         id: number;
+        slug: string;
+        category_slug: string;
         name: string;
         price: string | null;
         image_url: string | null;
@@ -333,7 +335,10 @@
 
                 <div class="mt-10 md:hidden">
                     <Link
-                        href={ProductController.show.url(activeProduct)}
+                        href={ProductController.show.url({
+                            category: activeProduct.category_slug,
+                            product: activeProduct.slug,
+                        })}
                         class="block text-center"
                     >
                         <div
@@ -411,7 +416,10 @@
                 >
                     {#each randomProducts as product (product.id)}
                         <Link
-                            href={ProductController.show.url(product)}
+                            href={ProductController.show.url({
+                                category: product.category_slug,
+                                product: product.slug,
+                            })}
                             class="text-center"
                         >
                             <div

@@ -12,27 +12,27 @@ class ProductBrowsingTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_index_lists_products(): void
+    public function test_category_page_lists_products(): void
     {
         Product::factory()->count(3)->create();
 
-        $this->get(route('products.index'))
+        $this->get(route('category.show', 'ultraschallsysteme'))
             ->assertOk()
             ->assertInertia(
                 fn ($page) => $page
-                    ->component('Products/Index')
+                    ->component('Products/ByCategory')
                     ->where('total', 3)
                     ->where('sort', 'name_asc')
             );
     }
 
-    public function test_index_includes_rating_count_and_average_for_the_product_card(): void
+    public function test_category_page_includes_rating_count_and_average_for_the_product_card(): void
     {
         $product = Product::factory()->create();
         Rating::factory()->for($product)->create(['stars' => 4]);
         Rating::factory()->for($product)->create(['stars' => 5]);
 
-        $this->get(route('products.index'))
+        $this->get(route('category.show', 'ultraschallsysteme'))
             ->assertOk()
             ->assertInertia(
                 fn ($page) => $page
@@ -45,34 +45,19 @@ class ProductBrowsingTest extends TestCase
     {
         // Basis für Canonical-/og:url in AppHead.svelte — im SSR gibt es
         // kein window.location, og:url verlangt absolute URLs (V4 SEO-1).
-        $this->get(route('products.index'))
+        $this->get(route('category.show', 'ultraschallsysteme'))
             ->assertOk()
             ->assertInertia(
                 fn ($page) => $page->where('appUrl', config('app.url'))->etc()
             );
     }
 
-    public function test_index_filters_by_search_query(): void
-    {
-        Product::factory()->create(['name' => 'Beatmungsgerät Pro']);
-        Product::factory()->create(['name' => 'Infusionspumpe']);
-
-        $this->get(route('products.index', ['q' => 'Beatmung']))
-            ->assertOk()
-            ->assertInertia(
-                fn ($page) => $page
-                    ->component('Products/Index')
-                    ->where('total', 1)
-                    ->where('query', 'Beatmung')
-            );
-    }
-
-    public function test_index_excludes_unavailable_products(): void
+    public function test_category_page_excludes_unavailable_products(): void
     {
         Product::factory()->create(['is_available' => true]);
         Product::factory()->create(['is_available' => false]);
 
-        $this->get(route('products.index'))
+        $this->get(route('category.show', 'ultraschallsysteme'))
             ->assertOk()
             ->assertInertia(fn ($page) => $page->where('total', 1));
     }
@@ -84,7 +69,7 @@ class ProductBrowsingTest extends TestCase
 
         // "%" darf nicht als LIKE-Platzhalter wirken (sonst kaemen alle
         // Produkte zurueck) — als literaler String matcht es nichts.
-        $this->getJson(route('products.search', ['q' => '%']))
+        $this->getJson(route('search', ['q' => '%']))
             ->assertOk()
             ->assertJson(['total' => 0, 'results' => []]);
     }
@@ -94,21 +79,21 @@ class ProductBrowsingTest extends TestCase
         Product::factory()->create(['name' => 'Rabatt 10% Set']);
         Product::factory()->create(['name' => 'Infusionspumpe']);
 
-        $this->getJson(route('products.search', ['q' => '10%']))
+        $this->getJson(route('search', ['q' => '10%']))
             ->assertOk()
             ->assertJson(['total' => 1]);
     }
 
-    public function test_index_accepts_price_sort(): void
+    public function test_category_page_accepts_price_sort(): void
     {
         Product::factory()->create();
 
-        $this->get(route('products.index', ['sort' => 'price_desc']))
+        $this->get(route('category.show', ['category' => 'ultraschallsysteme', 'sort' => 'price_desc']))
             ->assertOk()
             ->assertInertia(fn ($page) => $page->where('sort', 'price_desc'));
     }
 
-    public function test_index_exposes_manufacturer_filter_options_with_counts(): void
+    public function test_category_page_exposes_manufacturer_filter_options_with_counts(): void
     {
         $sony = Manufacturer::factory()->create(['name' => 'Sony']);
         $mindray = Manufacturer::factory()->create(['name' => 'Mindray']);
@@ -117,7 +102,7 @@ class ProductBrowsingTest extends TestCase
         Product::factory()->for($mindray)->create(['is_available' => false]);
         Product::factory()->create(['manufacturer_id' => null]);
 
-        $this->get(route('products.index'))
+        $this->get(route('category.show', 'ultraschallsysteme'))
             ->assertOk()
             ->assertInertia(
                 fn ($page) => $page
@@ -129,14 +114,14 @@ class ProductBrowsingTest extends TestCase
             );
     }
 
-    public function test_index_filters_by_manufacturer(): void
+    public function test_category_page_filters_by_manufacturer(): void
     {
         $sony = Manufacturer::factory()->create();
         $mindray = Manufacturer::factory()->create();
         Product::factory()->count(2)->for($sony)->create();
         Product::factory()->for($mindray)->create();
 
-        $this->get(route('products.index', ['hersteller' => [$sony->id]]))
+        $this->get(route('category.show', ['category' => 'ultraschallsysteme', 'hersteller' => [$sony->id]]))
             ->assertOk()
             ->assertInertia(
                 fn ($page) => $page
@@ -147,7 +132,7 @@ class ProductBrowsingTest extends TestCase
             );
     }
 
-    public function test_index_combines_multiple_manufacturers_with_or(): void
+    public function test_category_page_combines_multiple_manufacturers_with_or(): void
     {
         $sony = Manufacturer::factory()->create();
         $mindray = Manufacturer::factory()->create();
@@ -155,18 +140,18 @@ class ProductBrowsingTest extends TestCase
         Product::factory()->for($mindray)->create();
         Product::factory()->create();
 
-        $this->get(route('products.index', ['hersteller' => [$sony->id, $mindray->id]]))
+        $this->get(route('category.show', ['category' => 'ultraschallsysteme', 'hersteller' => [$sony->id, $mindray->id]]))
             ->assertOk()
             ->assertInertia(fn ($page) => $page->where('total', 2));
     }
 
-    public function test_index_ignores_invalid_and_foreign_manufacturer_ids(): void
+    public function test_category_page_ignores_invalid_and_foreign_manufacturer_ids(): void
     {
         $sony = Manufacturer::factory()->create();
         $withoutProducts = Manufacturer::factory()->create();
         Product::factory()->count(2)->for($sony)->create();
 
-        $this->get(route('products.index', ['hersteller' => ['abc', '-1', $withoutProducts->id, 999999]]))
+        $this->get(route('category.show', ['category' => 'ultraschallsysteme', 'hersteller' => ['abc', '-1', $withoutProducts->id, 999999]]))
             ->assertOk()
             ->assertInertia(
                 fn ($page) => $page
@@ -175,13 +160,13 @@ class ProductBrowsingTest extends TestCase
             );
     }
 
-    public function test_index_ignores_scalar_manufacturer_parameter_format(): void
+    public function test_category_page_ignores_scalar_manufacturer_parameter_format(): void
     {
         $sony = Manufacturer::factory()->create();
         Product::factory()->for($sony)->create();
         Product::factory()->create();
 
-        $this->get(route('products.index', ['hersteller' => (string) $sony->id]))
+        $this->get(route('category.show', ['category' => 'ultraschallsysteme', 'hersteller' => (string) $sony->id]))
             ->assertOk()
             ->assertInertia(
                 fn ($page) => $page
@@ -190,30 +175,13 @@ class ProductBrowsingTest extends TestCase
             );
     }
 
-    public function test_index_manufacturer_options_follow_the_search_query(): void
-    {
-        $sony = Manufacturer::factory()->create();
-        $mindray = Manufacturer::factory()->create();
-        Product::factory()->for($sony)->create(['name' => 'Druckerpapier UPP-110S']);
-        Product::factory()->for($mindray)->create(['name' => 'Ultraschallsystem MU7']);
-
-        $this->get(route('products.index', ['q' => 'Druckerpapier']))
-            ->assertOk()
-            ->assertInertia(
-                fn ($page) => $page
-                    ->has('filterOptions.manufacturers', 1)
-                    ->where('filterOptions.manufacturers.0.id', $sony->id)
-                    ->where('filterOptions.total', 1)
-            );
-    }
-
-    public function test_index_exposes_specialty_options_in_config_order_with_counts(): void
+    public function test_category_page_exposes_specialty_options_in_config_order_with_counts(): void
     {
         Product::factory()->create(['category_slug' => 'ultraschallsysteme', 'specialties' => ['urologie', 'kardiologie']]);
-        Product::factory()->create(['category_slug' => 'ultraschallsonden', 'specialties' => ['kardiologie']]);
-        Product::factory()->create(['category_slug' => 'zubehoer']);
+        Product::factory()->create(['category_slug' => 'ultraschallsysteme', 'specialties' => ['kardiologie']]);
+        Product::factory()->create(['category_slug' => 'ultraschallsysteme']);
 
-        $this->get(route('products.index'))
+        $this->get(route('category.show', 'ultraschallsysteme'))
             ->assertOk()
             ->assertInertia(
                 fn ($page) => $page
@@ -227,14 +195,14 @@ class ProductBrowsingTest extends TestCase
             );
     }
 
-    public function test_index_filters_by_specialty_with_or_within_the_group(): void
+    public function test_category_page_filters_by_specialty_with_or_within_the_group(): void
     {
         Product::factory()->create(['specialties' => ['kardiologie']]);
         Product::factory()->create(['specialties' => ['urologie', 'radiologie']]);
         Product::factory()->create(['specialties' => ['paediatrie']]);
         Product::factory()->create();
 
-        $this->get(route('products.index', ['fachrichtung' => ['kardiologie', 'urologie']]))
+        $this->get(route('category.show', ['category' => 'ultraschallsysteme', 'fachrichtung' => ['kardiologie', 'urologie']]))
             ->assertOk()
             ->assertInertia(
                 fn ($page) => $page
@@ -244,11 +212,11 @@ class ProductBrowsingTest extends TestCase
             );
     }
 
-    public function test_index_ignores_unknown_or_unused_specialties(): void
+    public function test_category_page_ignores_unknown_or_unused_specialties(): void
     {
         Product::factory()->count(2)->create(['specialties' => ['kardiologie']]);
 
-        $this->get(route('products.index', ['fachrichtung' => ['zahnmedizin', 'urologie']]))
+        $this->get(route('category.show', ['category' => 'ultraschallsysteme', 'fachrichtung' => ['zahnmedizin', 'urologie']]))
             ->assertOk()
             ->assertInertia(
                 fn ($page) => $page
@@ -266,7 +234,7 @@ class ProductBrowsingTest extends TestCase
         Product::factory()->for($sony)->create(['specialties' => ['urologie']]);
         Product::factory()->for($mindray)->create(['specialties' => ['kardiologie']]);
 
-        $this->get(route('products.index', ['hersteller' => [$sony->id], 'fachrichtung' => ['kardiologie']]))
+        $this->get(route('category.show', ['category' => 'ultraschallsysteme', 'hersteller' => [$sony->id], 'fachrichtung' => ['kardiologie']]))
             ->assertOk()
             ->assertInertia(
                 fn ($page) => $page
@@ -291,7 +259,7 @@ class ProductBrowsingTest extends TestCase
         Product::factory()->for($sony)->create(['specialties' => ['kardiologie']]);
         Product::factory()->for($mindray)->create(['specialties' => ['urologie']]);
 
-        $this->get(route('products.index', ['hersteller' => [$mindray->id], 'fachrichtung' => ['kardiologie']]))
+        $this->get(route('category.show', ['category' => 'ultraschallsysteme', 'hersteller' => [$mindray->id], 'fachrichtung' => ['kardiologie']]))
             ->assertOk()
             ->assertInertia(
                 fn ($page) => $page
@@ -305,7 +273,7 @@ class ProductBrowsingTest extends TestCase
     {
         $product = Product::factory()->create();
 
-        $this->get(route('products.show', $product))
+        $this->get($product->url())
             ->assertOk()
             ->assertInertia(
                 fn ($page) => $page
@@ -325,7 +293,7 @@ class ProductBrowsingTest extends TestCase
     {
         $product = Product::factory()->create(['is_available' => false]);
 
-        $this->get(route('products.show', $product))
+        $this->get($product->url())
             ->assertOk()
             ->assertInertia(
                 fn ($page) => $page
@@ -344,7 +312,7 @@ class ProductBrowsingTest extends TestCase
             ],
         ]);
 
-        $this->get(route('products.show', $product))
+        $this->get($product->url())
             ->assertOk()
             ->assertInertia(
                 fn ($page) => $page
@@ -359,7 +327,7 @@ class ProductBrowsingTest extends TestCase
     {
         $product = Product::factory()->create();
 
-        $this->get(route('products.show', $product))
+        $this->get($product->url())
             ->assertOk()
             ->assertInertia(fn ($page) => $page->where('product.technical_specs', []));
     }
@@ -371,7 +339,7 @@ class ProductBrowsingTest extends TestCase
             'specialties' => ['urologie', 'kardiologie'],
         ]);
 
-        $this->get(route('products.show', $product))
+        $this->get($product->url())
             ->assertOk()
             ->assertInertia(
                 fn ($page) => $page->where('product.specialties', [
@@ -383,7 +351,7 @@ class ProductBrowsingTest extends TestCase
 
     public function test_show_returns_404_for_unknown_product(): void
     {
-        $this->get('/products/999999')->assertNotFound();
+        $this->get('/ultraschallsysteme/gibt-es-nicht')->assertNotFound();
     }
 
     public function test_show_lists_similar_products_from_the_same_category(): void
@@ -392,7 +360,7 @@ class ProductBrowsingTest extends TestCase
         $sameCategoryProduct = Product::factory()->create(['category_slug' => 'zubehoer']);
         Product::factory()->create(['category_slug' => 'verbrauchsartikel']);
 
-        $this->get(route('products.show', $product))
+        $this->get($product->url())
             ->assertOk()
             ->assertInertia(
                 fn ($page) => $page
@@ -406,17 +374,7 @@ class ProductBrowsingTest extends TestCase
     {
         $product = Product::factory()->create(['category_slug' => 'zubehoer']);
 
-        $this->get(route('products.show', $product))
-            ->assertOk()
-            ->assertInertia(fn ($page) => $page->has('similarProducts', 0));
-    }
-
-    public function test_show_returns_no_similar_products_without_a_category(): void
-    {
-        $product = Product::factory()->create(['category_slug' => null]);
-        Product::factory()->create(['category_slug' => null]);
-
-        $this->get(route('products.show', $product))
+        $this->get($product->url())
             ->assertOk()
             ->assertInertia(fn ($page) => $page->has('similarProducts', 0));
     }
@@ -426,7 +384,7 @@ class ProductBrowsingTest extends TestCase
         Product::factory()->create(['name' => 'Sauerstoffgerät']);
         Product::factory()->create(['name' => 'Verbandmaterial']);
 
-        $this->getJson(route('products.search', ['q' => 'Sauerstoff']))
+        $this->getJson(route('search', ['q' => 'Sauerstoff']))
             ->assertOk()
             ->assertJson(['total' => 1])
             ->assertJsonCount(1, 'results')
@@ -437,7 +395,7 @@ class ProductBrowsingTest extends TestCase
     {
         Product::factory()->create();
 
-        $this->getJson(route('products.search', ['q' => '']))
+        $this->getJson(route('search', ['q' => '']))
             ->assertOk()
             ->assertExactJson(['results' => [], 'total' => 0]);
     }
@@ -447,7 +405,7 @@ class ProductBrowsingTest extends TestCase
         Product::factory()->create(['name' => 'Maske Standard', 'is_available' => true]);
         Product::factory()->create(['name' => 'Maske Deluxe', 'is_available' => false]);
 
-        $this->getJson(route('products.search', ['q' => 'Maske']))
+        $this->getJson(route('search', ['q' => 'Maske']))
             ->assertOk()
             ->assertJson(['total' => 1])
             ->assertJsonCount(1, 'results')
@@ -458,7 +416,7 @@ class ProductBrowsingTest extends TestCase
     {
         Product::factory()->count(8)->create(['name' => 'Maske Standard']);
 
-        $response = $this->getJson(route('products.search', ['q' => 'Maske']))
+        $response = $this->getJson(route('search', ['q' => 'Maske']))
             ->assertOk()
             ->assertJson(['total' => 8]);
 

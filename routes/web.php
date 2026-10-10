@@ -19,10 +19,12 @@ Route::get('/test', function () {
         ->with(['images' => fn ($query) => $query->where('sort_order', 0)])
         ->inRandomOrder()
         ->limit(8)
-        ->get(['id', 'name', 'price'])
+        ->get(['id', 'name', 'slug', 'category_slug', 'price'])
         ->map(fn (Product $product) => [
             'id' => $product->id,
             'name' => $product->name,
+            'slug' => $product->slug,
+            'category_slug' => $product->category_slug,
             'price' => $product->price,
             'image_url' => $product->images->first()?->url,
         ])
@@ -56,5 +58,6 @@ require __DIR__.'/products.php';
 require __DIR__.'/public/rating.php';
 require __DIR__.'/checkout.php';
 require __DIR__.'/settings.php';
-require __DIR__.'/categories.php';
 require __DIR__.'/paypal.php';
+// Zuletzt: Die Kategorie-/Produkt-Muster fangen sonst feste Pfade ab.
+require __DIR__.'/categories.php';

@@ -6,6 +6,8 @@ type ProductImage = { id: number; url: string; sort_order: number };
 type CardProduct = {
     id: number;
     name: string;
+    slug: string;
+    category_slug: string;
     description: string | null;
     price: string;
     old_price?: string | null;
@@ -20,6 +22,8 @@ function product(overrides: Partial<CardProduct> = {}): CardProduct {
     return {
         id: 5,
         name: 'Blutdruckmessgerät',
+        slug: 'blutdruckmessgeraet',
+        category_slug: 'zubehoer',
         description: 'Oberarm-Messgerät mit Speicher für zwei Personen',
         price: '49.90',
         manufacturer: { id: 1, name: 'Beurer' },
@@ -44,7 +48,9 @@ describe('ProductCard', () => {
 
         const link = screen.getByRole('link') as HTMLAnchorElement;
 
-        expect(new URL(link.href).pathname).toBe('/products/5');
+        expect(new URL(link.href).pathname).toBe(
+            '/zubehoer/blutdruckmessgeraet',
+        );
     });
 
     it('renders the cover image with the product name as alt text', () => {

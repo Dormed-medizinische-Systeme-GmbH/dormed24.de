@@ -22,6 +22,7 @@
     import ProductCell from './ProductCell.svelte';
 
     type Product = {
+        slug: string;
         id: number;
         name: string;
         price: string;
@@ -83,14 +84,19 @@
             cell: ({ row }) =>
                 renderComponent(RowActions, {
                     editHref: AdminProductController.edit.url(row.original.id),
-                    links: [
-                        {
-                            href: ProductController.show.url(row.original.id),
-                            label: 'Im Shop ansehen',
-                            icon: ExternalLink,
-                            external: true,
-                        },
-                    ],
+                    links: row.original.category_slug
+                        ? [
+                              {
+                                  href: ProductController.show.url({
+                                      category: row.original.category_slug,
+                                      product: row.original.slug,
+                                  }),
+                                  label: 'Im Shop ansehen',
+                                  icon: ExternalLink,
+                                  external: true,
+                              },
+                          ]
+                        : [],
                     destroyHref: AdminProductController.destroy.url(
                         row.original.id,
                     ),

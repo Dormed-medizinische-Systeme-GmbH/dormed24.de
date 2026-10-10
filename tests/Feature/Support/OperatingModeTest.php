@@ -45,7 +45,7 @@ class OperatingModeTest extends TestCase
     {
         $this->runAs($environment, $debug);
 
-        $this->get(route('products.index'))
+        $this->get(route('home'))
             ->assertOk()
             ->assertInertia(fn ($page) => $page->where('sandbox', $expected === 'sandbox')->etc());
     }

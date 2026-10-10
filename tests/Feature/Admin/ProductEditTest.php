@@ -130,6 +130,7 @@ class ProductEditTest extends TestCase
         $this->actingAsAdmin()
             ->post(route('admin.products.store'), [
                 'name' => 'Sonde C5',
+                'category_slug' => 'ultraschallsonden',
                 'price' => '199.00',
                 'is_available' => true,
                 'technical_specs' => [['label' => 'Frequenz', 'value' => '2–5 MHz']],
@@ -345,10 +346,11 @@ class ProductEditTest extends TestCase
         ])->assertRedirect(route('admin.login'));
     }
 
-    public function test_product_can_be_updated(): void
+    public function test_product_can_be_updated_but_keeps_its_name_and_slug(): void
     {
         $manufacturer = Manufacturer::factory()->create();
         $product = Product::factory()->create(['name' => 'Old Name', 'price' => '5.00']);
+        $slug = $product->slug;
 
         $this->actingAsAdmin()
             ->put(route('admin.products.update', $product), [
@@ -361,7 +363,9 @@ class ProductEditTest extends TestCase
             ->assertRedirect(route('admin.products.index'));
 
         $product->refresh();
-        $this->assertSame('Updated Name', $product->name);
+        $this->assertSame('Old Name', $product->name, 'Der Name steckt in der Shop-URL und ist nicht änderbar.');
+        $this->assertSame($slug, $product->slug);
+        $this->assertSame('A new description.', $product->description);
         $this->assertEquals('19.99', $product->price);
         $this->assertSame($manufacturer->id, $product->manufacturer_id);
     }
@@ -390,10 +394,9 @@ class ProductEditTest extends TestCase
 
         $this->actingAsAdmin()
             ->put(route('admin.products.update', $product), [
-                'name' => '',
                 'price' => '',
             ])
-            ->assertSessionHasErrors(['name', 'price']);
+            ->assertSessionHasErrors(['price']);
     }
 
     public function test_update_validates_manufacturer_exists(): void
@@ -483,5 +486,91 @@ class ProductEditTest extends TestCase
                 ->has('categories')
                 ->has('specialtyCategories')
                 ->has('specialties'));
+    }
+
+    public function test_update_cannot_clear_the_category(): void
+    {
+        $product = Product::factory()->create(['category_slug' => 'zubehoer']);
+
+        $this->actingAsAdmin()
+            ->put(route('admin.products.update', $product), [
+                'price' => '19.99',
+                'category_slug' => '',
+                'is_available' => true,
+            ])
+            ->assertSessionHasErrors('category_slug');
+
+        $this->assertSame('zubehoer', $product->refresh()->category_slug);
+    }
+
+    public function test_update_without_category_field_keeps_the_category(): void
+    {
+        $product = Product::factory()->create(['category_slug' => 'zubehoer']);
+
+        $this->actingAsAdmin()
+            ->put(route('admin.products.update', $product), [
+                'price' => '19.99',
+                'is_available' => true,
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('zubehoer', $product->refresh()->category_slug);
+    }
+
+    public function test_store_requires_a_category(): void
+    {
+        $this->actingAsAdmin()
+            ->post(route('admin.products.store'), [
+                'name' => 'Ohne Kategorie',
+                'price' => '10.00',
+                'is_available' => true,
+            ])
+            ->assertSessionHasErrors('category_slug');
+
+        $this->assertDatabaseMissing('products', ['name' => 'Ohne Kategorie']);
+    }
+
+    public function test_store_creates_the_slug_from_the_name(): void
+    {
+        $this->actingAsAdmin()
+            ->post(route('admin.products.store'), [
+                'name' => 'Größe Röntgen-Set 2',
+                'category_slug' => 'zubehoer',
+                'price' => '10.00',
+                'is_available' => true,
+            ])
+            ->assertSessionHasNoErrors();
+
+        $product = Product::query()->where('name', 'Größe Röntgen-Set 2')->sole();
+
+        $this->assertSame('groesse-roentgen-set-2', $product->slug);
+    }
+
+    public function test_store_rejects_a_name_that_yields_an_existing_slug(): void
+    {
+        Product::factory()->create(['name' => 'Tragbares Ultraschallsystem MU7']);
+
+        $this->actingAsAdmin()
+            ->post(route('admin.products.store'), [
+                'name' => 'tragbares  Ultraschallsystem mu7',
+                'category_slug' => 'ultraschallsysteme',
+                'price' => '10.00',
+                'is_available' => true,
+            ])
+            ->assertSessionHasErrors('name');
+
+        $this->assertSame(1, Product::query()->count());
+    }
+
+    public function test_store_rejects_a_name_without_letters_or_digits(): void
+    {
+        $this->actingAsAdmin()
+            ->post(route('admin.products.store'), [
+                'name' => '!!! ???',
+                'category_slug' => 'zubehoer',
+                'price' => '10.00',
+                'is_available' => true,
+            ])
+            ->assertSessionHasErrors('name');
     }
 }

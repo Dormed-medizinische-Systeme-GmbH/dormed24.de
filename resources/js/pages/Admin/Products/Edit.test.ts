@@ -26,6 +26,7 @@ const props = {
     product: {
         id: 34,
         name: 'Tragbares Ultraschallsystem MU7',
+        slug: 'tragbares-ultraschallsystem-mu7',
         description: 'Beschreibung',
         technical_specs: [],
         price: '4390.00',

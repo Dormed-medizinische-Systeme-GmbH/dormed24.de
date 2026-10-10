@@ -9,6 +9,8 @@
     type ProductCardProduct = {
         id: number;
         name: string;
+        slug: string;
+        category_slug: string;
         description?: string | null;
         price: string;
         old_price?: string | null;
@@ -28,7 +30,10 @@
 </script>
 
 <Link
-    href={ProductController.show.url(product.id)}
+    href={ProductController.show.url({
+        category: product.category_slug,
+        product: product.slug,
+    })}
     class="group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-[15px] bg-white leading-[normal] shadow-[0_5px_20px_rgba(0,0,0,0.1)] transition duration-300 ease-[ease] hover:-translate-y-[5px] hover:shadow-[0_10px_25px_rgba(0,0,0,0.15)]"
 >
     {#if product.old_price}

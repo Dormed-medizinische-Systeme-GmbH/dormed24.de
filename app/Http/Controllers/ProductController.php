@@ -4,75 +4,27 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Models\Product;
-use App\Support\Products\ProductFilters;
-use App\Support\Products\ProductSort;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ProductController extends Controller
 {
-    /**
-     * Name-Teilstringsuche mit escapten LIKE-Wildcards: `%` und `_` im
-     * Suchbegriff werden literal gematcht, nicht als Platzhalter (verhindert,
-     * dass z. B. "%" alle Produkte zieht). ESCAPE-Klausel für Portabilität
-     * MySQL/SQLite.
-     *
-     * @param  Builder<Product>  $query
-     * @return Builder<Product>
-     */
-    private function whereNameLike(Builder $query, string $term): Builder
+    public function show(Request $request, string $category, Product $product): Response
     {
-        return $query->whereRaw('name LIKE ? ESCAPE ?', [
-            '%'.addcslashes($term, '%_\\').'%',
-            '\\',
-        ]);
-    }
+        // Die URL trägt die Kategorie: Produkt und Kategorie müssen zusammenpassen.
+        abort_unless($product->category_slug === $category, 404);
 
-    public function index(Request $request): Response
-    {
-        $query = $request->string('q')->trim();
-        [$sort, $column, $direction] = ProductSort::fromRequest($request);
-
-        $scope = Product::available()
-            ->when($query->isNotEmpty(), fn ($q) => $this->whereNameLike($q, $query->toString()));
-
-        $filters = ProductFilters::fromRequest($request, $scope);
-
-        $baseQuery = $filters->apply($scope->clone())
-            ->with(['manufacturer', 'images' => fn ($q) => $q->where('sort_order', 0)])
-            ->withAvg('ratings', 'stars')
-            ->withCount('ratings')
-            ->orderBy($column, $direction)
-            ->orderBy('id');
-
-        $total = $baseQuery->count();
-
-        return Inertia::render('Products/Index', [
-            'products' => Inertia::scroll(fn () => $baseQuery->paginate(24)),
-            'total' => $total,
-            'query' => $query->toString(),
-            'sort' => $sort,
-            ...$filters->toProps(),
-        ]);
-    }
-
-    public function show(Request $request, Product $product): Response
-    {
         $product->load(['manufacturer', 'ratings', 'images', 'variants']);
         $product->loadAvg('ratings', 'stars');
 
-        $similarProducts = $product->category_slug === null
-            ? collect()
-            : Product::available()
-                ->where('category_slug', $product->category_slug)
-                ->whereKeyNot($product->id)
-                ->with(['manufacturer', 'images' => fn ($query) => $query->where('sort_order', 0)])
-                ->orderBy('name')
-                ->get()
-                ->values();
+        $similarProducts = Product::available()
+            ->where('category_slug', $product->category_slug)
+            ->whereKeyNot($product->id)
+            ->with(['manufacturer', 'images' => fn ($query) => $query->where('sort_order', 0)])
+            ->orderBy('name')
+            ->get()
+            ->values();
 
         return Inertia::render('Products/Show', [
             'product' => array_merge($product->toArray(), [
@@ -111,36 +63,6 @@ class ProductController extends Controller
             // noch nicht bewertet haben.
             'canRate' => $request->user() instanceof Customer && $request->user()->canRate($product),
             'similarProducts' => $similarProducts,
-        ]);
-    }
-
-    public function search(Request $request): JsonResponse
-    {
-        $query = $request->string('q')->trim();
-
-        if ($query->isEmpty()) {
-            return response()->json(['results' => [], 'total' => 0]);
-        }
-
-        $results = $this->whereNameLike(
-            Product::available()->with(['images' => fn ($q) => $q->where('sort_order', 0)]),
-            $query->toString(),
-        )
-            ->orderBy('name')
-            ->limit(5)
-            ->get(['id', 'name', 'price'])
-            ->map(fn (Product $product) => [
-                'id' => $product->id,
-                'name' => $product->name,
-                'price' => $product->price,
-                'image_url' => $product->images->first()?->url,
-            ]);
-
-        $total = $this->whereNameLike(Product::available(), $query->toString())->count();
-
-        return response()->json([
-            'results' => $results,
-            'total' => $total,
         ]);
     }
 }

@@ -120,7 +120,7 @@ class CartShapeTest extends TestCase
                     'line_total' => '299.00',
                     'line_total_cents' => 29900,
                     'image_url' => $image->url,
-                    'product_url' => route('products.show', $couch),
+                    'product_url' => $couch->url(),
                     'is_available' => true,
                 ],
                 [
@@ -137,7 +137,7 @@ class CartShapeTest extends TestCase
                     'line_total' => '29.97',
                     'line_total_cents' => 2997,
                     'image_url' => null,
-                    'product_url' => route('products.show', $gel),
+                    'product_url' => $gel->url(),
                     'is_available' => false,
                 ],
             ],

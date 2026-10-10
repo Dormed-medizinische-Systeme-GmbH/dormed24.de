@@ -79,7 +79,7 @@
                                         <Button asChild>
                                             {#snippet children(props)}
                                                 <Link
-                                                    href="/products"
+                                                    href="/"
                                                     class={props.class}
                                                 >
                                                     Weiter einkaufen

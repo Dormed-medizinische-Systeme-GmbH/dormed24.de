@@ -37,6 +37,7 @@ const fields = Object.fromEntries(
 const product: ProductEditProduct = {
     id: 7,
     name: 'Rollator',
+    slug: 'rollator',
     description: 'Leicht',
     technical_specs: [],
     price: '189.00',

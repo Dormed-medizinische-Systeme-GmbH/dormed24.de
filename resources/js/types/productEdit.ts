@@ -18,6 +18,7 @@ export type ProductVariant = {
 export type ProductEditProduct = {
     id: number;
     name: string;
+    slug: string;
     description: string | null;
     technical_specs: { label: string; value: string }[] | null;
     price: string;
