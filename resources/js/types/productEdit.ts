@@ -43,7 +43,7 @@ export type Specialty = { slug: string; name: string };
 
 /**
  * Die Formularfelder der Produktmaske als Snippets. `Edit.svelte` besitzt das
- * Formular und rendert jedes Feld; die Layout-Varianten ordnen sie nur an.
+ * Formular und rendert jedes Feld; das Layout ordnet sie nur an.
  */
 export type ProductEditFields = {
     name: Snippet;
@@ -52,27 +52,14 @@ export type ProductEditFields = {
     specialties: Snippet;
     manufacturer: Snippet;
     description: Snippet;
-    /** `true` blendet die eigene Überschrift aus (das Layout liefert sie). */
-    specs: Snippet<[boolean?]>;
+    specs: Snippet;
     availability: Snippet;
-    actions: Snippet;
 };
 
-/** Gemeinsame Props aller Layout-Varianten. */
+/** Props der Produktmaske. */
 export type ProductEditLayoutProps = {
     product: ProductEditProduct;
     ratings: ProductRating[];
     fields: ProductEditFields;
     onsubmit: (event: SubmitEvent) => void;
-};
-
-/** Live-Werte aus dem (noch ungespeicherten) Formular für die Vorschau. */
-export type ProductEditPreview = {
-    name: string;
-    description: string;
-    price: string;
-    isAvailable: boolean;
-    manufacturer: Manufacturer | null;
-    category: Category | null;
-    specs: { label: string; value: string }[];
 };

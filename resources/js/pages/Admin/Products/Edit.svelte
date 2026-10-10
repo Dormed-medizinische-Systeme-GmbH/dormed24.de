@@ -14,11 +14,7 @@
     import * as AdminProductController from '@/actions/App/Http/Controllers/Admin/ProductController';
     import * as ProductController from '@/actions/App/Http/Controllers/ProductController';
     import AppHead from '@/components/AppHead.svelte';
-    import EditLayoutColumns from '@/components/product-edit/EditLayoutColumns.svelte';
-    import EditLayoutGallery from '@/components/product-edit/EditLayoutGallery.svelte';
-    import EditLayoutPreview from '@/components/product-edit/EditLayoutPreview.svelte';
-    import EditLayoutSections from '@/components/product-edit/EditLayoutSections.svelte';
-    import EditLayoutTabs from '@/components/product-edit/EditLayoutTabs.svelte';
+    import ProductEditLayout from '@/components/product-edit/ProductEditLayout.svelte';
     import RowActions from '@/components/RowActions.svelte';
     import SpecialtyPicker from '@/components/SpecialtyPicker.svelte';
     import TechnicalSpecsEditor from '@/components/TechnicalSpecsEditor.svelte';
@@ -26,19 +22,16 @@
     import { Input } from '@/components/ui/input';
     import { Label } from '@/components/ui/label';
     import * as Select from '@/components/ui/select';
-    import VariantSwitcher from '@/components/VariantSwitcher.svelte';
-    import { EDIT_VARIANTS } from '@/lib/productEdit';
     import { guardUnsavedChanges } from '@/lib/unsavedChanges';
-    import { useLayoutVariant } from '@/lib/useLayoutVariant.svelte';
     import type {
         Category,
         Manufacturer,
         ProductEditFields,
-        ProductEditPreview,
         ProductEditProduct,
         ProductRating,
         Specialty,
     } from '@/types';
+    import AvailabilityBadge from './AvailabilityBadge.svelte';
 
     let {
         product,
@@ -85,19 +78,6 @@
         specialtyCategories.includes(form.category_slug),
     );
 
-    // Layout-Variante: Auswahl steht in der URL (?variant=B); ohne Parameter gilt A.
-    const layoutVariant = useLayoutVariant(EDIT_VARIANTS);
-
-    const preview: ProductEditPreview = $derived({
-        name: form.name,
-        description: form.description,
-        price: form.price,
-        isAvailable: form.is_available,
-        manufacturer: selectedManufacturer,
-        category: selectedCategory,
-        specs: form.technical_specs,
-    });
-
     function submit(e: SubmitEvent) {
         e.preventDefault();
         save();
@@ -129,7 +109,6 @@
         description: descriptionField,
         specs: specsField,
         availability: availabilityField,
-        actions: formActions,
     });
 </script>
 
@@ -151,27 +130,41 @@
     </Button>
 {/snippet}
 
+<!--
+    Der Name ist nach dem Anlegen nicht mehr änderbar (er wird später Teil der
+    Shop-URL und der Sitemap) und deshalb nur noch eine Anzeige. Er wird beim
+    Speichern unverändert mitgesendet.
+-->
 {#snippet nameField()}
-    <div class="flex flex-col gap-2">
-        <Label for="name">Name</Label>
-        <Input id="name" bind:value={form.name} placeholder="Produktname" />
-        {#if form.errors.name}
-            <p class="text-sm text-destructive">{form.errors.name}</p>
-        {/if}
+    <div class="flex flex-col gap-1">
+        <div class="flex items-center gap-2">
+            <AvailabilityBadge isAvailable={form.is_available} />
+            <span class="text-xs text-muted-foreground">
+                Artikel-ID {product.id}
+            </span>
+        </div>
+        <h2 class="text-2xl font-semibold">{product.name}</h2>
     </div>
 {/snippet}
 
 {#snippet priceField()}
     <div class="flex flex-col gap-2">
-        <Label for="price">Preis (€)</Label>
-        <Input
-            id="price"
-            type="number"
-            step="0.01"
-            min="0"
-            bind:value={form.price}
-            placeholder="0.00"
-        />
+        <Label for="price">Preis</Label>
+        <div class="relative w-48">
+            <Input
+                id="price"
+                type="number"
+                step="0.01"
+                min="0"
+                bind:value={form.price}
+                placeholder="0.00"
+                class="h-12 pr-10 text-2xl font-semibold tabular-nums md:text-2xl"
+            />
+            <span
+                class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xl text-muted-foreground"
+                aria-hidden="true">€</span
+            >
+        </div>
         {#if form.errors.price}
             <p class="text-sm text-destructive">{form.errors.price}</p>
         {/if}
@@ -246,11 +239,10 @@
     </div>
 {/snippet}
 
-{#snippet specsField(hideHeader = false)}
+{#snippet specsField()}
     <TechnicalSpecsEditor
         bind:specs={form.technical_specs}
         errors={form.errors}
-        {hideHeader}
     />
 {/snippet}
 
@@ -283,43 +275,10 @@
     </div>
 {/snippet}
 
-{#snippet formActions()}
-    <div class="flex gap-3">
-        <Button type="submit" disabled={form.processing}>
-            {form.processing ? 'Speichert…' : 'Speichern'}
-        </Button>
-        <Button type="button" variant="outline" onclick={() => history.back()}>
-            Abbrechen
-        </Button>
-    </div>
-{/snippet}
-
 <AppHead title="{product.name} bearbeiten — Admin" />
 
-<div class="flex h-full flex-1 flex-col gap-6 p-4 pb-20">
+<div class="flex h-full flex-1 flex-col gap-6 p-4">
     <h1 class="sr-only">{product.name} bearbeiten</h1>
 
-    {#if layoutVariant.current === 'B'}
-        <EditLayoutColumns {product} {ratings} {fields} onsubmit={submit} />
-    {:else if layoutVariant.current === 'C'}
-        <EditLayoutSections {product} {ratings} {fields} onsubmit={submit} />
-    {:else if layoutVariant.current === 'D'}
-        <EditLayoutGallery {product} {ratings} {fields} onsubmit={submit} />
-    {:else if layoutVariant.current === 'E'}
-        <EditLayoutPreview
-            {product}
-            {ratings}
-            {fields}
-            {preview}
-            onsubmit={submit}
-        />
-    {:else}
-        <EditLayoutTabs {product} {ratings} {fields} onsubmit={submit} />
-    {/if}
+    <ProductEditLayout {product} {ratings} {fields} onsubmit={submit} />
 </div>
-
-<VariantSwitcher
-    options={EDIT_VARIANTS}
-    current={layoutVariant.current}
-    onselect={layoutVariant.select}
-/>
