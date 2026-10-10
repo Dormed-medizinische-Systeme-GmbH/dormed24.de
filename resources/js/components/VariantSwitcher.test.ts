@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/svelte';
 import { describe, expect, it, vi } from 'vitest';
-import VariantSwitcher from '@/components/product-edit/VariantSwitcher.svelte';
+import VariantSwitcher from '@/components/VariantSwitcher.svelte';
 import { EDIT_VARIANTS } from '@/lib/productEdit';
 
 function setup(current = 'A') {

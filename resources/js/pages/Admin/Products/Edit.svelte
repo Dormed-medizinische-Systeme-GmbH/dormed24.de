@@ -9,7 +9,7 @@
 </script>
 
 <script lang="ts">
-    import { page, router, setLayoutProps, useForm } from '@inertiajs/svelte';
+    import { setLayoutProps, useForm } from '@inertiajs/svelte';
     import ExternalLink from '@lucide/svelte/icons/external-link';
     import * as AdminProductController from '@/actions/App/Http/Controllers/Admin/ProductController';
     import * as ProductController from '@/actions/App/Http/Controllers/ProductController';
@@ -19,7 +19,6 @@
     import EditLayoutPreview from '@/components/product-edit/EditLayoutPreview.svelte';
     import EditLayoutSections from '@/components/product-edit/EditLayoutSections.svelte';
     import EditLayoutTabs from '@/components/product-edit/EditLayoutTabs.svelte';
-    import VariantSwitcher from '@/components/product-edit/VariantSwitcher.svelte';
     import RowActions from '@/components/RowActions.svelte';
     import SpecialtyPicker from '@/components/SpecialtyPicker.svelte';
     import TechnicalSpecsEditor from '@/components/TechnicalSpecsEditor.svelte';
@@ -27,13 +26,10 @@
     import { Input } from '@/components/ui/input';
     import { Label } from '@/components/ui/label';
     import * as Select from '@/components/ui/select';
-    import {
-        EDIT_VARIANTS,
-        resolveEditVariant,
-        withEditVariant,
-    } from '@/lib/productEdit';
-    import type { EditVariantKey } from '@/lib/productEdit';
+    import VariantSwitcher from '@/components/VariantSwitcher.svelte';
+    import { EDIT_VARIANTS } from '@/lib/productEdit';
     import { guardUnsavedChanges } from '@/lib/unsavedChanges';
+    import { useLayoutVariant } from '@/lib/useLayoutVariant.svelte';
     import type {
         Category,
         Manufacturer,
@@ -89,29 +85,8 @@
         specialtyCategories.includes(form.category_slug),
     );
 
-    // Layout-Variante: Auswahl steht in der URL (?variant=B); ohne Parameter
-    // gilt die Standard-Variante A.
-    let variant = $state<EditVariantKey>(resolveEditVariant(page.url));
-
-    function writeVariantToUrl(key: EditVariantKey) {
-        const target = withEditVariant(window.location.href, key);
-
-        if (target !== window.location.pathname + window.location.search) {
-            window.history.replaceState(window.history.state, '', target);
-        }
-    }
-
-    function selectVariant(key: string) {
-        variant = resolveEditVariant(`?variant=${key}`);
-        writeVariantToUrl(variant);
-    }
-
-    // Inertia-Antworten (Upload, Löschen …) setzen die URL zurück: Parameter erneuern.
-    $effect(() => {
-        const current = variant;
-
-        return router.on('navigate', () => writeVariantToUrl(current));
-    });
+    // Layout-Variante: Auswahl steht in der URL (?variant=B); ohne Parameter gilt A.
+    const layoutVariant = useLayoutVariant(EDIT_VARIANTS);
 
     const preview: ProductEditPreview = $derived({
         name: form.name,
@@ -324,13 +299,13 @@
 <div class="flex h-full flex-1 flex-col gap-6 p-4 pb-20">
     <h1 class="sr-only">{product.name} bearbeiten</h1>
 
-    {#if variant === 'B'}
+    {#if layoutVariant.current === 'B'}
         <EditLayoutColumns {product} {ratings} {fields} onsubmit={submit} />
-    {:else if variant === 'C'}
+    {:else if layoutVariant.current === 'C'}
         <EditLayoutSections {product} {ratings} {fields} onsubmit={submit} />
-    {:else if variant === 'D'}
+    {:else if layoutVariant.current === 'D'}
         <EditLayoutGallery {product} {ratings} {fields} onsubmit={submit} />
-    {:else if variant === 'E'}
+    {:else if layoutVariant.current === 'E'}
         <EditLayoutPreview
             {product}
             {ratings}
@@ -345,6 +320,6 @@
 
 <VariantSwitcher
     options={EDIT_VARIANTS}
-    current={variant}
-    onselect={selectVariant}
+    current={layoutVariant.current}
+    onselect={layoutVariant.select}
 />
