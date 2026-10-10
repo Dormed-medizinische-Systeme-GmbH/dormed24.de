@@ -19,14 +19,7 @@
     import { cubicInOut } from 'svelte/easing';
     import AppHead from '@/components/AppHead.svelte';
     import DashboardRangeControl from '@/components/dashboard/DashboardRangeControl.svelte';
-    import {
-        Card,
-        CardContent,
-        CardDescription,
-        CardFooter,
-        CardHeader,
-        CardTitle,
-    } from '@/components/ui/card';
+    import { Card, CardContent, CardFooter } from '@/components/ui/card';
     import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
     import type { ChartConfig } from '@/components/ui/chart';
     import { formatPrice } from '@/lib/currency';
@@ -67,21 +60,6 @@
         );
 
         return allData.filter((d) => d.date >= cutoff);
-    });
-
-    const dateRange = $derived.by(() => {
-        if (!filteredData.length) {
-            return '';
-        }
-
-        const from = filteredData[0].date;
-        const to = filteredData[filteredData.length - 1].date;
-        // Show the year once start/end span more than one calendar year -
-        // otherwise e.g. "Letztes Jahr" reads as "08.07. – 08.07." (same
-        // day/month, one year apart) with no way to tell them apart.
-        const withYear = from.getUTCFullYear() !== to.getUTCFullYear();
-
-        return `${formatDate(from, { withYear })} – ${formatDate(to, { withYear })}`;
     });
 
     // Orders (small integers, e.g. 0-50) and revenue (EUR, e.g. 0-5000) live
@@ -312,11 +290,6 @@
 
 <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
     <Card>
-        <CardHeader>
-            <CardTitle>Übersicht</CardTitle>
-            <CardDescription>{dateRange}</CardDescription>
-        </CardHeader>
-
         <dl
             class="mx-6 grid grid-cols-2 gap-px overflow-hidden rounded-lg border bg-border lg:grid-cols-4"
         >
