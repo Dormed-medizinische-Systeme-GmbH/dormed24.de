@@ -74,7 +74,6 @@ class SearchPageTest extends TestCase
 
         $this->getJson(route('search', ['q' => 'Sauerstoff']))
             ->assertOk()
-            ->assertHeader('Vary', 'Accept')
             ->assertJsonPath('results.0.slug', 'sauerstoffgeraet')
             ->assertJsonPath('results.0.category_slug', 'zubehoer');
     }

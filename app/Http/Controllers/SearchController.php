@@ -73,6 +73,6 @@ class SearchController extends Controller
         return response()->json([
             'results' => $results,
             'total' => Product::available()->nameLike($term)->count(),
-        ])->header('Vary', 'Accept');
+        ]);
     }
 }
