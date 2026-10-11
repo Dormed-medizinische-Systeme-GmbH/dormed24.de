@@ -13,6 +13,14 @@ vi.mock('@inertiajs/svelte', () => ({ router: { visit: routerVisitMock } }));
 
 type ButtonsConfig = {
     fundingSource: string;
+    onInit: (
+        data: unknown,
+        actions: { enable: () => void; disable: () => void },
+    ) => void;
+    onClick: (
+        data: unknown,
+        actions: { resolve: () => Promise<void>; reject: () => Promise<void> },
+    ) => Promise<void>;
     createOrder: () => Promise<string>;
     onApprove: (approval: { orderID: string }) => Promise<void>;
     onCancel: () => void;
@@ -259,5 +267,60 @@ describe('PayPalButtons', () => {
                 'Bitte akzeptieren Sie die AGB und vervollständigen Sie Ihre Lieferadresse.',
             ),
         ).toBeInTheDocument();
+    });
+
+    describe('disabling', () => {
+        const actionsMock = () => ({
+            enable: vi.fn(),
+            disable: vi.fn(),
+        });
+
+        it('disables a button in onInit while the terms are not accepted', async () => {
+            const { configs } = await renderAndLoadSdk({ disabled: true });
+            const actions = actionsMock();
+
+            configs.sepa.onInit({}, actions);
+
+            expect(actions.disable).toHaveBeenCalled();
+            expect(actions.enable).not.toHaveBeenCalled();
+        });
+
+        it('does not disable a button in onInit when it is allowed', async () => {
+            const { configs } = await renderAndLoadSdk();
+            const actions = actionsMock();
+
+            configs.card.onInit({}, actions);
+
+            expect(actions.disable).not.toHaveBeenCalled();
+        });
+
+        it('rejects the click with a hint when disabled', async () => {
+            const { configs } = await renderAndLoadSdk({ disabled: true });
+            const actions = {
+                resolve: vi.fn().mockResolvedValue(undefined),
+                reject: vi.fn().mockResolvedValue(undefined),
+            };
+
+            await configs.paypal.onClick({}, actions);
+            await tick();
+
+            expect(actions.reject).toHaveBeenCalled();
+            expect(actions.resolve).not.toHaveBeenCalled();
+            expect(
+                screen.getAllByText(/AGB und vervollständigen/).length,
+            ).toBeGreaterThan(0);
+        });
+
+        it('resolves the click when allowed', async () => {
+            const { configs } = await renderAndLoadSdk();
+            const actions = {
+                resolve: vi.fn().mockResolvedValue(undefined),
+                reject: vi.fn().mockResolvedValue(undefined),
+            };
+
+            await configs.paypal.onClick({}, actions);
+
+            expect(actions.resolve).toHaveBeenCalled();
+        });
     });
 });

@@ -29,6 +29,23 @@
     let errorMessage = $state<string | null>(null);
     let eligibleSources = $state<FundingSource[]>([]);
 
+    // Schalter der gerenderten Buttons (kommen aus onInit). Kein $state: nur
+    // der Effekt unten liest sie, und der reagiert auf "disabled".
+    const buttonActions: Partial<Record<FundingSource, PayPalButtonActions>> =
+        {};
+
+    $effect(() => {
+        const isDisabled = disabled;
+
+        for (const actions of Object.values(buttonActions)) {
+            if (isDisabled) {
+                actions.disable();
+            } else {
+                actions.enable();
+            }
+        }
+    });
+
     const GUIDANCE =
         'Bitte akzeptieren Sie die AGB und vervollständigen Sie Ihre Lieferadresse.';
 
@@ -93,6 +110,24 @@
                 color: source.color,
                 shape: 'rect',
                 height: '45',
+            },
+            // Button erst freigeben, wenn AGB und Adresse passen (graut ihn
+            // sonst aus); onClick fängt den Rest ab.
+            onInit: (_data: unknown, actions: PayPalButtonActions) => {
+                buttonActions[source.id] = actions;
+
+                if (disabled) {
+                    actions.disable();
+                }
+            },
+            onClick: (_data: unknown, actions: PayPalClickActions) => {
+                if (disabled) {
+                    errorMessage = GUIDANCE;
+
+                    return actions.reject();
+                }
+
+                return actions.resolve();
             },
             createOrder: async (): Promise<string> => {
                 // Normally unreachable: the overlay above blocks the click
@@ -188,12 +223,10 @@
         </div>
 
         {#if disabled}
-            <!-- PayPal's rendered buttons live in iframes (inline z-index:
-            100, set by their zoid component) and can't be disabled via the
-            disabled attribute; this overlay must sit above that z-index to
-            actually block the click before it reaches a button, so
-            createOrder's own guard (kept as defense-in-depth) is never hit
-            in normal use. -->
+            <!-- Die Buttons werden über actions.disable() ausgegraut. Ein
+            deaktivierter Button im iframe nimmt aber keinen Klick an und
+            zeigt deshalb auch keinen Hinweis; diese Fläche liegt über dem
+            iframe (inline z-index: 100) und liefert die Meldung. -->
             <button
                 type="button"
                 class="absolute inset-0 z-[200] cursor-not-allowed bg-transparent"
