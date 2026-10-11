@@ -63,6 +63,8 @@
     type SimilarProduct = {
         id: number;
         name: string;
+        slug: string;
+        category_slug: string;
         price: string;
         manufacturer: { id: number; name: string } | null;
         images: ProductImage[];
