@@ -169,38 +169,6 @@
 
             <div class="flex flex-col gap-6 lg:flex-row lg:items-start">
                 <div class="flex flex-1 flex-col gap-6">
-                    <!-- AGB -->
-                    <div class="rounded-lg border bg-white p-5">
-                        <h2 class="mb-2 font-bold text-foreground">
-                            AGB und Widerrufsbelehrung
-                        </h2>
-                        <Separator class="mb-4" />
-                        <p class="mb-3 text-sm text-muted-foreground">
-                            Bitte beachten Sie die
-                            <Link
-                                href="/informationen/widerrufsbelehrung"
-                                class="text-brand-accent hover:underline"
-                            >
-                                Widerrufsbelehrung
-                            </Link>.
-                        </p>
-                        <label class="flex cursor-pointer items-start gap-3">
-                            <Checkbox
-                                bind:checked={agreedToTerms}
-                                class="mt-0.5"
-                            />
-                            <span class="text-sm text-muted-foreground">
-                                Ich habe die
-                                <Link
-                                    href="/unternehmen/agb"
-                                    class="text-brand-accent hover:underline"
-                                    >AGB</Link
-                                >
-                                gelesen und bin mit ihnen einverstanden.
-                            </span>
-                        </label>
-                    </div>
-
                     <!-- Lieferadresse -->
                     <div class="rounded-lg border bg-white p-5">
                         <div class="mb-2 flex items-center justify-between">
@@ -262,7 +230,38 @@
                     </div>
                 </div>
 
-                <div class="w-full lg:w-80 xl:w-88">
+                <div class="flex w-full flex-col gap-6 lg:w-80 xl:w-88">
+                    <!-- AGB -->
+                    <div class="rounded-lg border bg-white p-5">
+                        <h2 class="mb-2 font-bold text-foreground">
+                            AGB und Widerrufsbelehrung
+                        </h2>
+                        <Separator class="mb-4" />
+                        <p class="mb-3 text-sm text-muted-foreground">
+                            Bitte beachten Sie die
+                            <Link
+                                href="/informationen/widerrufsbelehrung"
+                                class="text-brand-accent hover:underline"
+                            >
+                                Widerrufsbelehrung
+                            </Link>.
+                        </p>
+                        <label class="flex cursor-pointer items-start gap-3">
+                            <Checkbox
+                                bind:checked={agreedToTerms}
+                                class="mt-0.5"
+                            />
+                            <span class="text-sm text-muted-foreground">
+                                Ich habe die
+                                <Link
+                                    href="/unternehmen/agb"
+                                    class="text-brand-accent hover:underline"
+                                    >AGB</Link
+                                >
+                                gelesen und bin mit ihnen einverstanden.
+                            </span>
+                        </label>
+                    </div>
                     <div class="rounded-lg border bg-white p-5">
                         <h2 class="mb-4 text-xl font-bold text-foreground">
                             Zusammenfassung
@@ -353,7 +352,7 @@
                         {/if}
                     </div>
 
-                    <p class="mt-3 text-center text-xs text-muted-foreground">
+                    <p class="-mt-3 text-center text-xs text-muted-foreground">
                         * Preise inkl. MwSt. zzgl. Versandkosten
                     </p>
                 </div>
