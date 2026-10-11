@@ -34,6 +34,8 @@
     type Product = {
         id: number;
         name: string;
+        slug: string;
+        category_slug: string;
         description: string | null;
         technical_specs: TechnicalSpec[];
         specialties: { slug: string; name: string }[];
@@ -61,6 +63,8 @@
     type SimilarProduct = {
         id: number;
         name: string;
+        slug: string;
+        category_slug: string;
         price: string;
         manufacturer: { id: number; name: string } | null;
         images: ProductImage[];
@@ -135,8 +139,15 @@
             : 'https://schema.org/OutOfStock',
     );
 
+    const productPath = $derived(
+        ProductController.show.url({
+            category: product.category_slug,
+            product: product.slug,
+        }),
+    );
+
     const productUrl = $derived.by(() => {
-        const path = ProductController.show.url(product.id);
+        const path = productPath;
 
         return typeof window === 'undefined'
             ? path
@@ -259,7 +270,7 @@
 </script>
 
 <AppHead
-    canonical={ProductController.show.url(product.id)}
+    canonical={productPath}
     title={product.name}
     description={metaDescription}
     ogImage={product.images[0]?.url ?? null}
@@ -278,7 +289,6 @@
         <ShopBreadcrumbs
             class="mb-8"
             items={[
-                { title: 'Alle Produkte', href: ProductController.index.url() },
                 ...(product.category
                     ? [
                           {

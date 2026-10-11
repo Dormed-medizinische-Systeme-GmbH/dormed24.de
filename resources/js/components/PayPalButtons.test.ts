@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import PayPalButton from '@/components/PayPalButton.svelte';
+import PayPalButtons from '@/components/PayPalButtons.svelte';
 
 const { fetchJsonMock, routerVisitMock } = vi.hoisted(() => ({
     fetchJsonMock: vi.fn(),
@@ -12,38 +12,57 @@ vi.mock('@/lib/http', () => ({ fetchJson: fetchJsonMock }));
 vi.mock('@inertiajs/svelte', () => ({ router: { visit: routerVisitMock } }));
 
 type ButtonsConfig = {
+    fundingSource: string;
+    onInit: (
+        data: unknown,
+        actions: { enable: () => void; disable: () => void },
+    ) => void;
+    onClick: (
+        data: unknown,
+        actions: { resolve: () => Promise<void>; reject: () => Promise<void> },
+    ) => Promise<void>;
     createOrder: () => Promise<string>;
     onApprove: (approval: { orderID: string }) => Promise<void>;
     onCancel: () => void;
     onError: (error: unknown) => void;
 };
 
-/** Renders the button, fires the SDK's load event and captures the config
- * object passed to paypal.Buttons(), the same way the real button does it. */
+/** Renders the buttons, fires the SDK's load event and returns the configs
+ * passed to paypal.Buttons() by funding source, the same way the real
+ * component does it. `eligible` lists the funding sources PayPal offers. */
 async function renderAndLoadSdk(
     props: { clientId?: string; disabled?: boolean } = {},
-): Promise<ButtonsConfig> {
-    let config!: ButtonsConfig;
+    eligible: string[] = ['paypal', 'sepa', 'card'],
+): Promise<{
+    configs: Record<string, ButtonsConfig>;
+    renderMock: ReturnType<typeof vi.fn>;
+}> {
+    const configs: Record<string, ButtonsConfig> = {};
+    const renderMock = vi.fn();
     vi.stubGlobal('paypal', {
         Buttons: vi.fn((c: ButtonsConfig) => {
-            config = c;
+            configs[c.fundingSource] = c;
 
-            return { render: vi.fn() };
+            return {
+                isEligible: () => eligible.includes(c.fundingSource),
+                render: renderMock,
+            };
         }),
     });
 
-    render(PayPalButton, {
+    render(PayPalButtons, {
         props: { clientId: 'sb-client-id-1234567890', ...props },
     });
 
     const script = document.head.querySelector('script') as HTMLScriptElement;
     script.onload?.(new Event('load'));
     await tick();
+    await tick();
 
-    return config;
+    return { configs, renderMock };
 }
 
-describe('PayPalButton', () => {
+describe('PayPalButtons', () => {
     beforeEach(() => {
         fetchJsonMock.mockReset();
         routerVisitMock.mockReset();
@@ -51,14 +70,14 @@ describe('PayPalButton', () => {
     });
 
     it('shows a configuration error and loads no SDK script when clientId is missing', () => {
-        render(PayPalButton, { props: { clientId: '' } });
+        render(PayPalButtons, { props: { clientId: '' } });
 
         expect(screen.getByText(/nicht konfiguriert/)).toBeInTheDocument();
         expect(document.head.querySelector('script')).toBeNull();
     });
 
     it('loads the PayPal SDK with the given client id', () => {
-        render(PayPalButton, {
+        render(PayPalButtons, {
             props: { clientId: 'sb-client-id-1234567890' },
         });
 
@@ -68,7 +87,7 @@ describe('PayPalButton', () => {
     });
 
     it('shows an error when the SDK script fails to load', async () => {
-        render(PayPalButton, {
+        render(PayPalButtons, {
             props: { clientId: 'sb-client-id-1234567890' },
         });
         const script = document.head.querySelector(
@@ -83,7 +102,50 @@ describe('PayPalButton', () => {
         ).toBeInTheDocument();
     });
 
+    it('renders one button per eligible funding source, in order', async () => {
+        const { configs, renderMock } = await renderAndLoadSdk();
+
+        expect(Object.keys(configs)).toEqual(['paypal', 'sepa', 'card']);
+        expect(renderMock).toHaveBeenCalledTimes(3);
+    });
+
+    it('renders no button for funding sources PayPal does not offer', async () => {
+        const { renderMock } = await renderAndLoadSdk({}, ['paypal', 'card']);
+
+        expect(renderMock).toHaveBeenCalledTimes(2);
+    });
+
+    it('loads the SDK with the sepa and card funding enabled', () => {
+        render(PayPalButtons, {
+            props: { clientId: 'sb-client-id-1234567890' },
+        });
+
+        expect(document.head.querySelector('script')?.src).toContain(
+            'enable-funding=sepa,card',
+        );
+    });
+
     describe('createOrder', () => {
+        it('sends the funding source of the clicked button', async () => {
+            fetchJsonMock.mockResolvedValueOnce({
+                ok: true,
+                status: 200,
+                data: { id: 'PAY-2', status: 'CREATED' },
+            });
+
+            const { configs } = await renderAndLoadSdk();
+
+            await configs.sepa.createOrder();
+
+            expect(fetchJsonMock).toHaveBeenCalledWith(
+                expect.stringContaining('/paypal/order/create'),
+                {
+                    method: 'POST',
+                    body: { agreed_to_terms: true, funding_source: 'sepa' },
+                },
+            );
+        });
+
         it('posts agreed_to_terms via fetchJson and resolves with the PayPal order id', async () => {
             fetchJsonMock.mockResolvedValueOnce({
                 ok: true,
@@ -91,18 +153,23 @@ describe('PayPalButton', () => {
                 data: { id: 'PAY-1', status: 'CREATED' },
             });
 
-            const config = await renderAndLoadSdk();
+            const { configs } = await renderAndLoadSdk();
+            const config = configs.paypal;
             const orderId = await config.createOrder();
 
             expect(fetchJsonMock).toHaveBeenCalledWith(
                 expect.stringContaining('/paypal/order/create'),
-                { method: 'POST', body: { agreed_to_terms: true } },
+                {
+                    method: 'POST',
+                    body: { agreed_to_terms: true, funding_source: 'paypal' },
+                },
             );
             expect(orderId).toBe('PAY-1');
         });
 
         it('rejects without calling fetchJson when disabled', async () => {
-            const config = await renderAndLoadSdk({ disabled: true });
+            const { configs } = await renderAndLoadSdk({ disabled: true });
+            const config = configs.paypal;
 
             await expect(config.createOrder()).rejects.toThrow();
             expect(fetchJsonMock).not.toHaveBeenCalled();
@@ -119,7 +186,8 @@ describe('PayPalButton', () => {
                 },
             });
 
-            const config = await renderAndLoadSdk();
+            const { configs } = await renderAndLoadSdk();
+            const config = configs.paypal;
 
             await expect(config.createOrder()).rejects.toThrow(
                 'Bitte vervollständigen Sie Ihre Lieferadresse.',
@@ -135,7 +203,8 @@ describe('PayPalButton', () => {
                 data: {},
             });
 
-            const config = await renderAndLoadSdk();
+            const { configs } = await renderAndLoadSdk();
+            const config = configs.paypal;
             await config.onApprove({ orderID: 'PAY-1' });
 
             expect(fetchJsonMock).toHaveBeenCalledWith(
@@ -154,7 +223,8 @@ describe('PayPalButton', () => {
                 data: { error: 'Zahlung konnte nicht abgeschlossen werden.' },
             });
 
-            const config = await renderAndLoadSdk();
+            const { configs } = await renderAndLoadSdk();
+            const config = configs.paypal;
             await config.onApprove({ orderID: 'PAY-1' });
             await tick();
 
@@ -166,7 +236,8 @@ describe('PayPalButton', () => {
     });
 
     it('shows a cancellation message via onCancel', async () => {
-        const config = await renderAndLoadSdk();
+        const { configs } = await renderAndLoadSdk();
+        const config = configs.paypal;
 
         config.onCancel();
         await tick();
@@ -175,7 +246,8 @@ describe('PayPalButton', () => {
     });
 
     it('shows a generic error via onError', async () => {
-        const config = await renderAndLoadSdk();
+        const { configs } = await renderAndLoadSdk();
+        const config = configs.paypal;
 
         config.onError(new Error('boom'));
         await tick();
@@ -186,7 +258,7 @@ describe('PayPalButton', () => {
     });
 
     it('renders a blocking overlay with a guidance label when disabled', () => {
-        render(PayPalButton, {
+        render(PayPalButtons, {
             props: { clientId: 'sb-client-id-1234567890', disabled: true },
         });
 
@@ -195,5 +267,60 @@ describe('PayPalButton', () => {
                 'Bitte akzeptieren Sie die AGB und vervollständigen Sie Ihre Lieferadresse.',
             ),
         ).toBeInTheDocument();
+    });
+
+    describe('disabling', () => {
+        const actionsMock = () => ({
+            enable: vi.fn(),
+            disable: vi.fn(),
+        });
+
+        it('disables a button in onInit while the terms are not accepted', async () => {
+            const { configs } = await renderAndLoadSdk({ disabled: true });
+            const actions = actionsMock();
+
+            configs.sepa.onInit({}, actions);
+
+            expect(actions.disable).toHaveBeenCalled();
+            expect(actions.enable).not.toHaveBeenCalled();
+        });
+
+        it('does not disable a button in onInit when it is allowed', async () => {
+            const { configs } = await renderAndLoadSdk();
+            const actions = actionsMock();
+
+            configs.card.onInit({}, actions);
+
+            expect(actions.disable).not.toHaveBeenCalled();
+        });
+
+        it('rejects the click with a hint when disabled', async () => {
+            const { configs } = await renderAndLoadSdk({ disabled: true });
+            const actions = {
+                resolve: vi.fn().mockResolvedValue(undefined),
+                reject: vi.fn().mockResolvedValue(undefined),
+            };
+
+            await configs.paypal.onClick({}, actions);
+            await tick();
+
+            expect(actions.reject).toHaveBeenCalled();
+            expect(actions.resolve).not.toHaveBeenCalled();
+            expect(
+                screen.getAllByText(/AGB und vervollständigen/).length,
+            ).toBeGreaterThan(0);
+        });
+
+        it('resolves the click when allowed', async () => {
+            const { configs } = await renderAndLoadSdk();
+            const actions = {
+                resolve: vi.fn().mockResolvedValue(undefined),
+                reject: vi.fn().mockResolvedValue(undefined),
+            };
+
+            await configs.paypal.onClick({}, actions);
+
+            expect(actions.resolve).toHaveBeenCalled();
+        });
     });
 });

@@ -64,7 +64,6 @@ class CartShapeTest extends TestCase
                     (string) $gel->id => 3,
                 ],
                 'shipping_method' => (string) $express->id,
-                'payment_method' => 'paypal',
                 'shipping_address' => $shippingAddress,
                 'billing_address' => ['city' => 'Hamburg'],
             ],
@@ -88,20 +87,6 @@ class CartShapeTest extends TestCase
             'price_cents' => 1200,
             'selected' => true,
         ];
-        $invoiceOption = [
-            'id' => 'invoice',
-            'provider' => 'invoice',
-            'label' => 'Kauf auf Rechnung',
-            'description' => 'Zahlung per Überweisung nach Erhalt der Rechnung.',
-            'selected' => false,
-        ];
-        $paypalOption = [
-            'id' => 'paypal',
-            'provider' => 'paypal',
-            'label' => 'PayPal',
-            'description' => 'Sicher bezahlen mit PayPal – Lastschrift, Kreditkarte oder PayPal-Guthaben.',
-            'selected' => true,
-        ];
 
         // 2 × 149,50 + 3 × 9,99 + 12,00 Versand = 340,97 brutto, 19 % MwSt.
         $this->assertSame([
@@ -120,7 +105,7 @@ class CartShapeTest extends TestCase
                     'line_total' => '299.00',
                     'line_total_cents' => 29900,
                     'image_url' => $image->url,
-                    'product_url' => route('products.show', $couch),
+                    'product_url' => $couch->url(),
                     'is_available' => true,
                 ],
                 [
@@ -137,7 +122,7 @@ class CartShapeTest extends TestCase
                     'line_total' => '29.97',
                     'line_total_cents' => 2997,
                     'image_url' => null,
-                    'product_url' => route('products.show', $gel),
+                    'product_url' => $gel->url(),
                     'is_available' => false,
                 ],
             ],
@@ -145,9 +130,7 @@ class CartShapeTest extends TestCase
             'is_empty' => false,
             'vat_rate' => 19,
             'shipping_methods' => [$standardOption, $expressOption],
-            'payment_methods' => [$invoiceOption, $paypalOption],
             'selected_shipping_method' => $expressOption,
-            'selected_payment_method' => $paypalOption,
             'subtotal' => '328.97',
             'shipping_total' => '12.00',
             'total' => '340.97',
@@ -167,7 +150,6 @@ class CartShapeTest extends TestCase
         $this->assertTrue($cart['is_empty']);
         $this->assertSame([], $cart['shipping_methods']);
         $this->assertNull($cart['selected_shipping_method']);
-        $this->assertSame('invoice', $cart['selected_payment_method']['id']);
         $this->assertSame('0.00', $cart['subtotal']);
         $this->assertSame('0.00', $cart['shipping_total']);
         $this->assertSame('0.00', $cart['total']);

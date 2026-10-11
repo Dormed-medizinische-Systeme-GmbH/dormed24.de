@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Models\Product;
 use App\Support\Catalog\Categories;
 use App\Support\Catalog\Specialties;
 use Closure;
@@ -42,12 +43,18 @@ class StoreProductRequest extends FormRequest
     }
 
     /**
+     * Der Name steckt in der Shop-URL und wird deshalb nur beim Anlegen
+     * (POST) angenommen. Beim Aktualisieren hat er keine Regel und taucht in
+     * `validated()` nicht auf: ein mitgeschickter Name wird ignoriert.
+     *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
+        $creating = $this->isMethod('POST');
+
         return [
-            'name' => ['required', 'string', 'max:255'],
+            ...($creating ? ['name' => ['required', 'string', 'max:255', $this->nameMustYieldFreeSlug(...)]] : []),
             'description' => ['nullable', 'string'],
             'technical_specs' => ['nullable', 'array', 'max:50'],
             'technical_specs.*' => ['array:label,value'],
@@ -55,7 +62,9 @@ class StoreProductRequest extends FormRequest
             'technical_specs.*.value' => ['required', 'string', 'max:1000'],
             'price' => ['required', 'numeric', 'min:0'],
             'manufacturer_id' => ['nullable', 'integer', 'exists:manufacturers,id'],
-            'category_slug' => ['nullable', 'string', Rule::in(Categories::slugs())],
+            // Jedes Produkt braucht eine Kategorie (Shop-URL). Beim Aktualisieren
+            // darf sie fehlen (bleibt dann), aber nicht geleert werden.
+            'category_slug' => [...($creating ? [] : ['sometimes']), 'required', 'string', Rule::in(Categories::slugs())],
             'specialties' => [
                 'nullable',
                 'array',
@@ -87,6 +96,20 @@ class StoreProductRequest extends FormRequest
         }
 
         return $data;
+    }
+
+    /**
+     * Aus dem Namen entsteht die Shop-URL: Sie muss etwas enthalten und frei sein.
+     */
+    private function nameMustYieldFreeSlug(string $attribute, mixed $value, Closure $fail): void
+    {
+        $slug = Product::slugFor((string) $value);
+
+        if ($slug === '') {
+            $fail('Der Name muss mindestens einen Buchstaben oder eine Ziffer enthalten.');
+        } elseif (Product::query()->where('slug', $slug)->exists()) {
+            $fail('Ein Produkt mit diesem Namen gibt es schon (gleiche Shop-Adresse).');
+        }
     }
 
     private function specialtyCategoryNames(): string

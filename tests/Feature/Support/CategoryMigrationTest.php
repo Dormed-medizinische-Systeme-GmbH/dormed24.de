@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Support;
 
+use App\Models\Manufacturer;
 use App\Models\Product;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -34,6 +35,25 @@ class CategoryMigrationTest extends TestCase
         return $migration;
     }
 
+    /**
+     * Produkt im Zustand vor der Migration (ohne category_slug-Spalte): die
+     * Factory würde die Spalte mitschreiben.
+     */
+    private function legacyProduct(string $name): Product
+    {
+        $id = DB::table('products')->insertGetId([
+            'manufacturer_id' => Manufacturer::factory()->create()->id,
+            'name' => $name,
+            'slug' => $name,
+            'description' => '',
+            'price' => '10.00',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return Product::query()->findOrFail($id);
+    }
+
     private function categoryId(string $slug): int
     {
         return (int) DB::table('categories')->where('slug', $slug)->value('id');
@@ -43,9 +63,9 @@ class CategoryMigrationTest extends TestCase
     {
         $migration = $this->rollBack();
 
-        $accessory = Product::factory()->create();
-        $consumable = Product::factory()->create();
-        $uncategorized = Product::factory()->create();
+        $accessory = $this->legacyProduct('zubehoer-produkt');
+        $consumable = $this->legacyProduct('verbrauch-produkt');
+        $uncategorized = $this->legacyProduct('ohne-kategorie');
         DB::table('products')->where('id', $accessory->id)->update(['category_id' => $this->categoryId('zubehoer')]);
         DB::table('products')->where('id', $consumable->id)->update(['category_id' => $this->categoryId('verbrauchsartikel')]);
 
@@ -68,7 +88,7 @@ class CategoryMigrationTest extends TestCase
             'created_at' => now(),
             'updated_at' => now(),
         ]);
-        $product = Product::factory()->create();
+        $product = $this->legacyProduct('altes-produkt');
         DB::table('products')->where('id', $product->id)->update(['category_id' => $legacyId]);
 
         try {

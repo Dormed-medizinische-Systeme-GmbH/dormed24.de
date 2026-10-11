@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\Cart\UpdateCartPaymentMethodRequest;
 use App\Http\Requests\Checkout\PlaceOrderRequest;
 use App\Models\Customer;
 use App\Models\Order;
@@ -35,15 +34,9 @@ class CheckoutController extends Controller
             return to_route('checkout.index');
         }
 
-        $paypalClientId = null;
-
-        if ($cart->selectedPaymentMethod()?->id === PaymentMethod::Paypal->value) {
-            $paypalClientId = config('paypal.'.PaymentMode::current().'.client_id') ?: null;
-        }
-
         return Inertia::render('Checkout/Confirm', [
             'cart' => $cart->toArray(),
-            'paypal_client_id' => $paypalClientId,
+            'paypal_client_id' => config('paypal.'.PaymentMode::current().'.client_id') ?: null,
         ]);
     }
 
@@ -63,13 +56,6 @@ class CheckoutController extends Controller
         if ($billing = $customer->defaultBillingAddress()) {
             $this->cartService->setBillingAddress($billing->toAddressArray());
         }
-    }
-
-    public function updatePayment(UpdateCartPaymentMethodRequest $request): RedirectResponse
-    {
-        $this->cartService->setPaymentMethod($request->string('payment_method')->toString());
-
-        return back();
     }
 
     public function updateAddress(Request $request): RedirectResponse
@@ -109,12 +95,9 @@ class CheckoutController extends Controller
             return back()->withErrors(['cart' => 'Ihr Warenkorb enthält nicht mehr verfügbare Produkte. Bitte aktualisieren Sie Ihren Warenkorb.']);
         }
 
-        // PayPal payments run through the PayPal JS SDK and PayPalController;
-        // this endpoint only finalizes invoice ("Kauf auf Rechnung") orders.
-        if ($cart->selectedPaymentMethod()?->id !== PaymentMethod::Invoice->value) {
-            return back()->withErrors(['payment_method' => 'Diese Zahlungsart wird über PayPal abgeschlossen.']);
-        }
-
+        // Die PayPal-Buttons laufen über das PayPal-JS-SDK und den
+        // PayPalController; dieser Endpunkt schließt nur Bestellungen "Kauf auf
+        // Rechnung" ab.
         $order = $this->orderManager->createFromCart($request->user(), $cart, PaymentMethod::Invoice);
 
         // Invoice stays "pending" until payment arrives by bank transfer, but the

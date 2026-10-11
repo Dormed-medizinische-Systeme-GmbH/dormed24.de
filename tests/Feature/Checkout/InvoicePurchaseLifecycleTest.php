@@ -38,8 +38,6 @@ class InvoicePurchaseLifecycleTest extends TestCase
             ->assertSessionHasNoErrors();
         $this->patch(route('cart.shipping.update'), ['shipping_method' => (string) $shipping->id])
             ->assertSessionHasNoErrors();
-        $this->patch(route('checkout.payment.update'), ['payment_method' => 'invoice'])
-            ->assertSessionHasNoErrors();
         $this->patch(route('checkout.address.update'), ['shipping_address' => [
             'first_name' => 'Erika',
             'last_name' => 'Musterfrau',

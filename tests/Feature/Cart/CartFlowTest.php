@@ -110,7 +110,6 @@ class CartFlowTest extends TestCase
                     ],
                 ],
                 'shipping_method' => (string) $this->freeShipping->id,
-                'payment_method' => 'invoice',
             ],
         ])->patch(route('cart.items.update', $product), [
             'quantity' => 3,
@@ -131,7 +130,6 @@ class CartFlowTest extends TestCase
             'cart' => [
                 'items' => [],
                 'shipping_method' => (string) $this->freeShipping->id,
-                'payment_method' => 'invoice',
             ],
         ])->patch(route('cart.shipping.update'), [
             'shipping_method' => (string) $expressShipping->id,
@@ -168,7 +166,6 @@ class CartFlowTest extends TestCase
                         ],
                     ],
                     'shipping_method' => (string) $this->freeShipping->id,
-                    'payment_method' => 'invoice',
                     'shipping_address' => $this->completeAddress(),
                 ],
             ])->post(route('checkout.submit'), [
@@ -182,7 +179,6 @@ class CartFlowTest extends TestCase
         $this->assertDatabaseHas('orders', [
             'customer_id' => $customer->id,
             'status' => 'pending',
-            'payment_method' => 'invoice',
             'total_amount' => '20.00',
         ]);
 
@@ -212,7 +208,6 @@ class CartFlowTest extends TestCase
                         ],
                     ],
                     'shipping_method' => (string) $this->freeShipping->id,
-                    'payment_method' => 'invoice',
                     'shipping_address' => $this->completeAddress(),
                 ],
             ]);
@@ -245,7 +240,6 @@ class CartFlowTest extends TestCase
                         ],
                     ],
                     'shipping_method' => (string) $this->freeShipping->id,
-                    'payment_method' => 'invoice',
                 ],
             ])->post(route('checkout.submit'), [
                 'agreed_to_terms' => true,
@@ -330,7 +324,6 @@ class CartFlowTest extends TestCase
             'cart' => [
                 'items' => [$lineKey => 1],
                 'shipping_method' => (string) $this->freeShipping->id,
-                'payment_method' => 'invoice',
             ],
         ])->patch(route('cart.items.update', [$product, $variant]), ['quantity' => 3])
             ->assertRedirect()
@@ -364,7 +357,6 @@ class CartFlowTest extends TestCase
                 'cart' => [
                     'items' => ["{$product->id}:{$variant->id}" => 2],
                     'shipping_method' => (string) $this->freeShipping->id,
-                    'payment_method' => 'invoice',
                     'shipping_address' => $this->completeAddress(),
                 ],
             ])->post(route('checkout.submit'), [
@@ -399,7 +391,6 @@ class CartFlowTest extends TestCase
                 'cart' => [
                     'items' => [$lineKey => 1],
                     'shipping_method' => (string) $this->freeShipping->id,
-                    'payment_method' => 'invoice',
                     'shipping_address' => $this->completeAddress(),
                 ],
             ])->post(route('checkout.submit'), [
@@ -424,7 +415,6 @@ class CartFlowTest extends TestCase
                 'cart' => [
                     'items' => [(string) $product->id => 1],
                     'shipping_method' => (string) $this->freeShipping->id,
-                    'payment_method' => 'invoice',
                     'shipping_address' => $this->completeAddress(),
                 ],
             ]);

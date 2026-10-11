@@ -11,7 +11,6 @@ use App\Models\OrderItem;
 use App\Support\Cart\Cart;
 use App\Support\Cart\CartAddress;
 use App\Support\Cart\CartItem;
-use App\Support\Cart\PaymentOption;
 use App\Support\Cart\ShippingOption;
 use App\Support\Orders\OrderManager;
 use App\Support\Orders\OrderStatus;
@@ -177,7 +176,6 @@ class OrderManagerTest extends TestCase
             ],
             vatRate: 19,
             shippingMethods: [new ShippingOption('1', 'Standard', null, 490, true)],
-            paymentMethods: [new PaymentOption('invoice', 'invoice', 'Kauf auf Rechnung', null, true)],
             shippingAddress: CartAddress::fromArray(['first_name' => 'Erika', 'last_name' => 'Muster', 'city' => 'Berlin']),
             billingAddress: null,
         );

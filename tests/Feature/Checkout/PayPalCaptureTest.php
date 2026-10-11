@@ -9,11 +9,13 @@ use App\Models\Payment;
 use App\Models\Product;
 use App\Services\PayPalService;
 use App\Support\Orders\OrderStatus;
+use App\Support\Orders\PaymentMethod;
 use App\Support\Orders\PaymentReconciliation;
 use App\Support\Orders\PaymentStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Support\PayPalFixtures;
 use Tests\TestCase;
 
@@ -231,11 +233,83 @@ class PayPalCaptureTest extends TestCase
 
         $this->actingAs($customer)
             ->withSession($this->cartSession($product))
-            ->postJson(route('paypal.order.create'), ['agreed_to_terms' => true])
+            ->postJson(route('paypal.order.create'), ['agreed_to_terms' => true, 'funding_source' => 'paypal'])
             ->assertOk();
 
         $this->assertSame(OrderStatus::Pending, $inReview->fresh()->status);
         $this->assertSame(OrderStatus::Cancelled, $abandoned->fresh()->status);
+    }
+
+    /**
+     * @return array<string, array{string, PaymentMethod}>
+     */
+    public static function fundingSources(): array
+    {
+        return [
+            'PayPal' => ['paypal', PaymentMethod::Paypal],
+            'Lastschrift' => ['sepa', PaymentMethod::Sepa],
+            'Kreditkarte' => ['card', PaymentMethod::Card],
+        ];
+    }
+
+    #[DataProvider('fundingSources')]
+    public function test_create_order_stores_the_clicked_funding_source_as_payment_method(string $fundingSource, PaymentMethod $expected): void
+    {
+        $customer = Customer::factory()->create();
+        $product = Product::factory()->create(['price' => '10.00']);
+
+        $this->mock(PayPalService::class, function ($mock): void {
+            $mock->shouldReceive('createOrder')->once()->andReturn(PayPalFixtures::sdkResponse('orders/create'));
+        });
+
+        $this->actingAs($customer)
+            ->withSession($this->cartSession($product))
+            ->postJson(route('paypal.order.create'), ['agreed_to_terms' => true, 'funding_source' => $fundingSource])
+            ->assertOk();
+
+        $this->assertSame($expected, Order::query()->sole()->payment_method);
+    }
+
+    public function test_create_order_rejects_missing_or_unknown_funding_source(): void
+    {
+        $customer = Customer::factory()->create();
+        $product = Product::factory()->create(['price' => '10.00']);
+
+        $this->actingAs($customer)->withSession($this->cartSession($product));
+
+        $this->postJson(route('paypal.order.create'), ['agreed_to_terms' => true])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('funding_source');
+
+        $this->postJson(route('paypal.order.create'), ['agreed_to_terms' => true, 'funding_source' => 'invoice'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('funding_source');
+
+        $this->assertSame(0, Order::query()->count());
+    }
+
+    public function test_new_attempt_cancels_abandoned_card_and_sepa_orders(): void
+    {
+        $customer = Customer::factory()->create();
+        $product = Product::factory()->create(['price' => '10.00']);
+        $abandonedCard = Order::factory()->for($customer)->create(['status' => 'pending', 'payment_method' => PaymentMethod::Card]);
+        Payment::factory()->created()->for($abandonedCard)->create();
+        $abandonedSepa = Order::factory()->for($customer)->create(['status' => 'pending', 'payment_method' => PaymentMethod::Sepa]);
+        Payment::factory()->created()->for($abandonedSepa)->create();
+        $openInvoice = Order::factory()->for($customer)->create(['status' => 'pending', 'payment_method' => PaymentMethod::Invoice]);
+
+        $this->mock(PayPalService::class, function ($mock): void {
+            $mock->shouldReceive('createOrder')->once()->andReturn(PayPalFixtures::sdkResponse('orders/create'));
+        });
+
+        $this->actingAs($customer)
+            ->withSession($this->cartSession($product))
+            ->postJson(route('paypal.order.create'), ['agreed_to_terms' => true, 'funding_source' => 'paypal'])
+            ->assertOk();
+
+        $this->assertSame(OrderStatus::Cancelled, $abandonedCard->fresh()->status);
+        $this->assertSame(OrderStatus::Cancelled, $abandonedSepa->fresh()->status);
+        $this->assertSame(OrderStatus::Pending, $openInvoice->fresh()->status);
     }
 
     public function test_declined_capture_in_completed_order_is_not_booked_as_paid(): void
@@ -289,7 +363,7 @@ class PayPalCaptureTest extends TestCase
                     ],
                 ],
             ])
-            ->postJson(route('paypal.order.create'), ['agreed_to_terms' => true])
+            ->postJson(route('paypal.order.create'), ['agreed_to_terms' => true, 'funding_source' => 'paypal'])
             ->assertStatus(422);
 
         $this->assertSame(0, Order::query()->count());
@@ -338,7 +412,7 @@ class PayPalCaptureTest extends TestCase
                     ],
                 ],
             ])
-            ->postJson(route('paypal.order.create'), ['agreed_to_terms' => true])
+            ->postJson(route('paypal.order.create'), ['agreed_to_terms' => true, 'funding_source' => 'paypal'])
             ->assertOk();
 
         $this->assertSame(OrderStatus::Cancelled, $staleOrder->fresh()->status);
@@ -378,7 +452,7 @@ class PayPalCaptureTest extends TestCase
                     ],
                 ],
             ])
-            ->postJson(route('paypal.order.create'), ['agreed_to_terms' => true]);
+            ->postJson(route('paypal.order.create'), ['agreed_to_terms' => true, 'funding_source' => 'paypal']);
 
         $response->assertStatus(500);
         $this->assertArrayNotHasKey('debug', $response->json());
@@ -484,7 +558,7 @@ class PayPalCaptureTest extends TestCase
         $this->mock(PayPalService::class, fn ($mock) => $mock->shouldNotReceive('createOrder'));
 
         $this->actingAs(Customer::factory()->create())
-            ->postJson(route('paypal.order.create'), ['agreed_to_terms' => true])
+            ->postJson(route('paypal.order.create'), ['agreed_to_terms' => true, 'funding_source' => 'paypal'])
             ->assertStatus(400)
             ->assertJson(['error' => 'Warenkorb ist leer.']);
 
@@ -498,7 +572,7 @@ class PayPalCaptureTest extends TestCase
 
         $this->actingAs(Customer::factory()->create())
             ->withSession($this->cartSession($product, completeAddress: false))
-            ->postJson(route('paypal.order.create'), ['agreed_to_terms' => true])
+            ->postJson(route('paypal.order.create'), ['agreed_to_terms' => true, 'funding_source' => 'paypal'])
             ->assertUnprocessable()
             ->assertJson(['error' => 'Bitte vervollständigen Sie Ihre Lieferadresse.']);
 
@@ -514,7 +588,7 @@ class PayPalCaptureTest extends TestCase
 
         $this->actingAs(Customer::factory()->create())
             ->withSession($this->cartSession($product))
-            ->postJson(route('paypal.order.create'), ['agreed_to_terms' => true])
+            ->postJson(route('paypal.order.create'), ['agreed_to_terms' => true, 'funding_source' => 'paypal'])
             ->assertStatus(500)
             ->assertJson(['error' => 'PayPal-Order konnte nicht erstellt werden.']);
 

@@ -17,8 +17,8 @@
 
     @foreach ($products as $product)
     <url>
-        <loc>{{ url('/products/' . $product->id) }}</loc>
-        <lastmod>{{ $product->updated_at->toAtomString() }}</lastmod>
+        <loc>{{ $product['loc'] }}</loc>
+        <lastmod>{{ $product['lastmod'] }}</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>

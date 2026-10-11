@@ -150,7 +150,7 @@ class RatingTest extends TestCase
             'content' => 'In Ordnung für den Preis.',
         ]);
 
-        $this->get(route('products.show', $product))
+        $this->get($product->url())
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Products/Show')
@@ -167,7 +167,7 @@ class RatingTest extends TestCase
         // Bestand aus der Zeit vor der Kaufbindung.
         Rating::factory()->for($product)->create(['created_at' => now()->subYear()]);
 
-        $this->get(route('products.show', $product))
+        $this->get($product->url())
             ->assertInertia(fn ($page) => $page
                 ->where('ratings.0.verified', true)
                 ->where('ratings.1.verified', false)
@@ -183,18 +183,18 @@ class RatingTest extends TestCase
         [$customer, $product] = $this->buyer();
         [$pendingCustomer, $pendingProduct] = $this->buyer('pending');
 
-        $this->get(route('products.show', $product))
+        $this->get($product->url())
             ->assertInertia(fn ($page) => $page->where('canRate', false));
 
-        $this->actingAs($pendingCustomer)->get(route('products.show', $pendingProduct))
+        $this->actingAs($pendingCustomer)->get($pendingProduct->url())
             ->assertInertia(fn ($page) => $page->where('canRate', false));
 
-        $this->actingAs($customer)->get(route('products.show', $product))
+        $this->actingAs($customer)->get($product->url())
             ->assertInertia(fn ($page) => $page->where('canRate', true));
 
         Rating::factory()->for($product)->create(['customer_id' => $customer->id]);
 
-        $this->actingAs($customer)->get(route('products.show', $product))
+        $this->actingAs($customer)->get($product->url())
             ->assertInertia(fn ($page) => $page->where('canRate', false));
     }
 

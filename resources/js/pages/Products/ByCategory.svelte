@@ -1,7 +1,6 @@
 <script lang="ts">
-    import { InfiniteScroll, Link } from '@inertiajs/svelte';
+    import { InfiniteScroll } from '@inertiajs/svelte';
     import * as CategoryController from '@/actions/App/Http/Controllers/CategoryController';
-    import * as ProductController from '@/actions/App/Http/Controllers/ProductController';
     import AppFooter from '@/components/AppFooter.svelte';
     import AppHead from '@/components/AppHead.svelte';
     import ProductCard from '@/components/ProductCard.svelte';
@@ -19,6 +18,8 @@
 
     type Product = {
         id: number;
+        slug: string;
+        category_slug: string;
         name: string;
         price: string;
         description: string | null;
@@ -65,15 +66,7 @@
         <div
             class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
         >
-            <ShopBreadcrumbs
-                items={[
-                    {
-                        title: 'Alle Produkte',
-                        href: ProductController.index.url(),
-                    },
-                    { title: category.name },
-                ]}
-            />
+            <ShopBreadcrumbs items={[{ title: category.name }]} />
             {#if filterOptions.total > 0}
                 <ProductFilterSheet {filters} {filterOptions} />
             {/if}
@@ -98,12 +91,6 @@
                     <p class="text-muted-foreground">
                         Keine Produkte in dieser Kategorie.
                     </p>
-                    <Link
-                        href={ProductController.index.url()}
-                        class="mt-4 inline-block text-sm text-brand-accent hover:underline"
-                    >
-                        Alle Produkte anzeigen
-                    </Link>
                 {/if}
             </div>
         {:else}

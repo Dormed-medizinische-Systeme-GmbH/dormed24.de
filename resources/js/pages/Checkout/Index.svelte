@@ -79,7 +79,7 @@
                                         <Button asChild>
                                             {#snippet children(props)}
                                                 <Link
-                                                    href="/products"
+                                                    href="/"
                                                     class={props.class}
                                                 >
                                                     Weiter einkaufen
@@ -308,20 +308,28 @@
                             </div>
                         </div>
 
-                        <Button
-                            asChild
-                            class="mt-4 w-full bg-primary text-white hover:bg-primary/90"
-                            disabled={cart.is_empty}
-                        >
-                            {#snippet children(props)}
-                                <Link
-                                    href={checkout.confirm.url()}
-                                    class={props.class}
-                                >
-                                    Zur Kasse
-                                </Link>
-                            {/snippet}
-                        </Button>
+                        {#if cart.is_empty}
+                            <Button
+                                class="mt-4 w-full bg-primary text-white"
+                                disabled
+                            >
+                                Zur Kasse
+                            </Button>
+                        {:else}
+                            <Button
+                                asChild
+                                class="mt-4 w-full bg-primary text-white hover:bg-primary/90"
+                            >
+                                {#snippet children(props)}
+                                    <Link
+                                        href={checkout.confirm.url()}
+                                        class={props.class}
+                                    >
+                                        Zur Kasse
+                                    </Link>
+                                {/snippet}
+                            </Button>
+                        {/if}
                     </div>
 
                     <p class="mt-3 text-center text-xs text-muted-foreground">

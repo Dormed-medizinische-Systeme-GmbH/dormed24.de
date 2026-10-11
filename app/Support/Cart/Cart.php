@@ -5,13 +5,12 @@ namespace App\Support\Cart;
 use Illuminate\Contracts\Support\Arrayable;
 
 /**
- * Momentaufnahme des Warenkorbs mit Positionen, Versand- und Zahlarten,
+ * Momentaufnahme des Warenkorbs mit Positionen, Versandarten,
  * Adressen und allen Summen. Beträge werden intern in Cents geführt,
  * toArray() liefert die Form, die Frontend und Inertia erwarten.
  *
  * @phpstan-import-type CartItemArray from CartItem
  * @phpstan-import-type ShippingOptionArray from ShippingOption
- * @phpstan-import-type PaymentOptionArray from PaymentOption
  *
  * @implements Arrayable<string, mixed>
  */
@@ -20,13 +19,11 @@ final readonly class Cart implements Arrayable
     /**
      * @param  list<CartItem>  $items
      * @param  list<ShippingOption>  $shippingMethods
-     * @param  list<PaymentOption>  $paymentMethods
      */
     public function __construct(
         public array $items,
         public int $vatRate,
         public array $shippingMethods,
-        public array $paymentMethods,
         public CartAddress $shippingAddress,
         public ?CartAddress $billingAddress,
     ) {}
@@ -72,17 +69,6 @@ final readonly class Cart implements Arrayable
         return null;
     }
 
-    public function selectedPaymentMethod(): ?PaymentOption
-    {
-        foreach ($this->paymentMethods as $method) {
-            if ($method->selected) {
-                return $method;
-            }
-        }
-
-        return null;
-    }
-
     public function subtotalCents(): int
     {
         $subtotalCents = 0;
@@ -115,7 +101,7 @@ final readonly class Cart implements Arrayable
     }
 
     /**
-     * @return array{items: list<CartItemArray>, count: int, is_empty: bool, vat_rate: int, shipping_methods: list<ShippingOptionArray>, payment_methods: list<PaymentOptionArray>, selected_shipping_method: ShippingOptionArray|null, selected_payment_method: PaymentOptionArray|null, subtotal: string, shipping_total: string, total: string, net_total: string, vat_amount: string, shipping_address: array<string, string|null>, billing_address: array<string, string|null>|null}
+     * @return array{items: list<CartItemArray>, count: int, is_empty: bool, vat_rate: int, shipping_methods: list<ShippingOptionArray>, selected_shipping_method: ShippingOptionArray|null, subtotal: string, shipping_total: string, total: string, net_total: string, vat_amount: string, shipping_address: array<string, string|null>, billing_address: array<string, string|null>|null}
      */
     public function toArray(): array
     {
@@ -125,9 +111,7 @@ final readonly class Cart implements Arrayable
             'is_empty' => $this->isEmpty(),
             'vat_rate' => $this->vatRate,
             'shipping_methods' => array_map(fn (ShippingOption $method): array => $method->toArray(), $this->shippingMethods),
-            'payment_methods' => array_map(fn (PaymentOption $method): array => $method->toArray(), $this->paymentMethods),
             'selected_shipping_method' => $this->selectedShippingMethod()?->toArray(),
-            'selected_payment_method' => $this->selectedPaymentMethod()?->toArray(),
             'subtotal' => Money::format($this->subtotalCents()),
             'shipping_total' => Money::format($this->shippingCents()),
             'total' => Money::format($this->totalCents()),

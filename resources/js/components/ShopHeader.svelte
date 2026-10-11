@@ -7,6 +7,7 @@
     import User from '@lucide/svelte/icons/user';
     import X from '@lucide/svelte/icons/x';
     import * as ProductController from '@/actions/App/Http/Controllers/ProductController';
+    import * as SearchController from '@/actions/App/Http/Controllers/SearchController';
     import AppLogo from '@/components/AppLogo.svelte';
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     import CartSheet from '@/components/CartSheet.svelte'; // benötigt für auskommentierte Sidebar-Variante unten
@@ -31,8 +32,11 @@
 
     const navCategories = $derived(page.props.navCategories as NavCategory[]);
 
-    // Startseite ist über das Logo erreichbar und steht vorne in jeder Breadcrumb.
-    const staticNavStart = [{ label: 'Alle Produkte', href: '/products' }];
+    // Aktiv ist die Kategorie der Seite, auch für deren Produktseiten
+    // (/{kategorie}/{produkt}).
+    const activeCategorySlug = $derived(
+        page.url.split(/[?#]/)[0].split('/')[1] ?? '',
+    );
 
     let mobileMenuOpen = $state(false);
 
@@ -42,6 +46,8 @@
     type SearchResult = {
         id: number;
         name: string;
+        slug: string;
+        category_slug: string;
         price: string;
         image_url: string | null;
     };
@@ -70,7 +76,7 @@
 
         isLoading = true;
         debounceTimer = setTimeout(async () => {
-            const url = ProductController.search.url({ query: { q } });
+            const url = SearchController.index.url({ query: { q } });
             const res = await fetch(url, {
                 headers: { Accept: 'application/json' },
             });
@@ -84,6 +90,13 @@
 
         return () => clearTimeout(debounceTimer);
     });
+
+    function productUrl(product: SearchResult): string {
+        return ProductController.show.url({
+            category: product.category_slug,
+            product: product.slug,
+        });
+    }
 
     function clearSearch() {
         query = '';
@@ -120,9 +133,7 @@
         if (e.key === 'Enter' && activeResultIndex >= 0) {
             e.preventDefault();
             isOpen = false;
-            router.visit(
-                ProductController.show.url(results[activeResultIndex].id),
-            );
+            router.visit(productUrl(results[activeResultIndex]));
         }
     }
 
@@ -136,7 +147,7 @@
     }
 
     const allResultsUrl = $derived(
-        ProductController.index.url({ query: { q: query } }),
+        SearchController.index.url({ query: { q: query } }),
     );
     const accountHref = $derived(auth?.user ? toUrl(editProfile()) : '/login');
 </script>
@@ -209,9 +220,7 @@
                                 {#each results as product, index (product.id)}
                                     <li class="border-b last:border-b-0">
                                         <Link
-                                            href={ProductController.show.url(
-                                                product.id,
-                                            )}
+                                            href={productUrl(product)}
                                             class={`flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-accent ${activeResultIndex === index ? 'bg-[#eef5ff] text-primary' : ''}`}
                                             onclick={() => (isOpen = false)}
                                             onmouseenter={() =>
@@ -286,18 +295,14 @@
                             <AppLogo />
                         </Link>
                         <nav class="mt-6 flex flex-col gap-1">
-                            {#each staticNavStart as item (item.label)}
-                                <Link
-                                    href={item.href}
-                                    class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-brand-secondary"
-                                >
-                                    {item.label}
-                                </Link>
-                            {/each}
                             {#each navCategories as cat (cat.slug)}
                                 <Link
                                     href={`/${cat.slug}`}
-                                    class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-brand-secondary"
+                                    class={`rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-brand-secondary ${cat.slug === activeCategorySlug ? 'text-brand-secondary' : 'text-muted-foreground'}`}
+                                    aria-current={cat.slug ===
+                                    activeCategorySlug
+                                        ? 'page'
+                                        : undefined}
                                 >
                                     {cat.name}
                                 </Link>
@@ -406,18 +411,13 @@
     <div class="hidden border-t md:block">
         <div class="mx-auto max-w-7xl px-4 lg:px-8">
             <nav class="flex items-center justify-center">
-                {#each staticNavStart as item (item.label)}
-                    <Link
-                        href={item.href}
-                        class="border-b-2 border-transparent px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:border-brand-accent hover:text-brand-secondary"
-                    >
-                        {item.label}
-                    </Link>
-                {/each}
                 {#each navCategories as cat (cat.slug)}
                     <Link
                         href={`/${cat.slug}`}
-                        class="border-b-2 border-transparent px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:border-brand-accent hover:text-brand-secondary"
+                        class={`border-b-2 border-transparent px-4 py-3 text-sm font-medium transition-colors hover:border-brand-accent hover:text-brand-secondary ${cat.slug === activeCategorySlug ? 'text-brand-secondary' : 'text-muted-foreground'}`}
+                        aria-current={cat.slug === activeCategorySlug
+                            ? 'page'
+                            : undefined}
                     >
                         {cat.name}
                     </Link>

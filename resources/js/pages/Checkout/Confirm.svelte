@@ -3,7 +3,7 @@
     import ChevronLeft from '@lucide/svelte/icons/chevron-left';
     import AddressForm from '@/components/AddressForm.svelte';
     import AppHead from '@/components/AppHead.svelte';
-    import PayPalButton from '@/components/PayPalButton.svelte';
+    import PayPalButtons from '@/components/PayPalButtons.svelte';
     import ShopHeader from '@/components/ShopHeader.svelte';
     import { Button } from '@/components/ui/button';
     import { Checkbox } from '@/components/ui/checkbox';
@@ -36,11 +36,6 @@
     const auth = $derived(page.props.auth);
     const customer = $derived(auth.user as Customer | undefined);
 
-    const selectedPayment = $derived(cart.selected_payment_method);
-    const selectedProvider = $derived(selectedPayment?.provider ?? null);
-    const isInvoice = $derived(selectedProvider === 'invoice');
-    const isPayPal = $derived(selectedProvider === 'paypal');
-
     const addressComplete = $derived(
         shippingAddress.first_name !== '' &&
             shippingAddress.last_name !== '' &&
@@ -48,6 +43,12 @@
             shippingAddress.house_number !== '' &&
             shippingAddress.zip !== '' &&
             shippingAddress.city !== '',
+    );
+
+    // Eine Bedingung für alle Zahlarten: die PayPal-Buttons und der Rechnungs-
+    // Button werden dadurch immer gemeinsam gesperrt und freigegeben.
+    const canOrder = $derived(
+        agreedToTerms && !cart.is_empty && addressComplete,
     );
 
     function handleAddressUpdate(update: {
@@ -138,62 +139,12 @@
         });
     }
 
-    function updatePayment(paymentMethod: string) {
-        router.patch(
-            checkout.payment.update.url(),
-            { payment_method: paymentMethod },
-            { preserveScroll: true, preserveState: true },
-        );
-    }
-
     function submitOrder() {
         router.post(
             checkout.submit.url(),
             { agreed_to_terms: agreedToTerms },
             { preserveScroll: true },
         );
-    }
-
-    // Hold-to-confirm
-    const HOLD_DURATION = 1500;
-    let holdProgress = $state(0);
-    let holdStartTime: number | null = null;
-    let holdRaf: number | null = null;
-
-    function holdStart() {
-        if (!agreedToTerms || cart.is_empty || !addressComplete) {
-            return;
-        }
-
-        holdStartTime = performance.now();
-        tick();
-    }
-
-    function tick() {
-        if (holdStartTime === null) {
-            return;
-        }
-
-        const elapsed = performance.now() - holdStartTime;
-        holdProgress = Math.min(100, (elapsed / HOLD_DURATION) * 100);
-
-        if (holdProgress < 100) {
-            holdRaf = requestAnimationFrame(tick);
-        } else {
-            holdRaf = null;
-            holdStartTime = null;
-            submitOrder();
-        }
-    }
-
-    function holdEnd() {
-        if (holdRaf !== null) {
-            cancelAnimationFrame(holdRaf);
-            holdRaf = null;
-        }
-
-        holdStartTime = null;
-        holdProgress = 0;
     }
 </script>
 
@@ -218,38 +169,6 @@
 
             <div class="flex flex-col gap-6 lg:flex-row lg:items-start">
                 <div class="flex flex-1 flex-col gap-6">
-                    <!-- AGB -->
-                    <div class="rounded-lg border bg-white p-5">
-                        <h2 class="mb-2 font-bold text-foreground">
-                            AGB und Widerrufsbelehrung
-                        </h2>
-                        <Separator class="mb-4" />
-                        <p class="mb-3 text-sm text-muted-foreground">
-                            Bitte beachten Sie die
-                            <Link
-                                href="/informationen/widerrufsbelehrung"
-                                class="text-brand-accent hover:underline"
-                            >
-                                Widerrufsbelehrung
-                            </Link>.
-                        </p>
-                        <label class="flex cursor-pointer items-start gap-3">
-                            <Checkbox
-                                bind:checked={agreedToTerms}
-                                class="mt-0.5"
-                            />
-                            <span class="text-sm text-muted-foreground">
-                                Ich habe die
-                                <Link
-                                    href="/unternehmen/agb"
-                                    class="text-brand-accent hover:underline"
-                                    >AGB</Link
-                                >
-                                gelesen und bin mit ihnen einverstanden.
-                            </span>
-                        </label>
-                    </div>
-
                     <!-- Lieferadresse -->
                     <div class="rounded-lg border bg-white p-5">
                         <div class="mb-2 flex items-center justify-between">
@@ -311,7 +230,38 @@
                     </div>
                 </div>
 
-                <div class="w-full lg:w-80 xl:w-88">
+                <div class="flex w-full flex-col gap-6 lg:w-80 xl:w-88">
+                    <!-- AGB -->
+                    <div class="rounded-lg border bg-white p-5">
+                        <h2 class="mb-2 font-bold text-foreground">
+                            AGB und Widerrufsbelehrung
+                        </h2>
+                        <Separator class="mb-4" />
+                        <p class="mb-3 text-sm text-muted-foreground">
+                            Bitte beachten Sie die
+                            <Link
+                                href="/informationen/widerrufsbelehrung"
+                                class="text-brand-accent hover:underline"
+                            >
+                                Widerrufsbelehrung
+                            </Link>.
+                        </p>
+                        <label class="flex cursor-pointer items-start gap-3">
+                            <Checkbox
+                                bind:checked={agreedToTerms}
+                                class="mt-0.5"
+                            />
+                            <span class="text-sm text-muted-foreground">
+                                Ich habe die
+                                <Link
+                                    href="/unternehmen/agb"
+                                    class="text-brand-accent hover:underline"
+                                    >AGB</Link
+                                >
+                                gelesen und bin mit ihnen einverstanden.
+                            </span>
+                        </label>
+                    </div>
                     <div class="rounded-lg border bg-white p-5">
                         <h2 class="mb-4 text-xl font-bold text-foreground">
                             Zusammenfassung
@@ -358,99 +308,24 @@
                             </div>
                         </div>
 
-                        {#if cart.payment_methods.length > 1}
-                            <div class="mt-4 border-t pt-4">
-                                <h3
-                                    class="mb-3 text-sm font-bold text-foreground"
-                                >
-                                    Zahlungsart
-                                </h3>
-                                <div class="flex flex-col gap-3">
-                                    {#each cart.payment_methods as method (method.id)}
-                                        <label
-                                            class="flex cursor-pointer items-start gap-3"
-                                        >
-                                            <input
-                                                type="radio"
-                                                name="payment"
-                                                value={method.id}
-                                                checked={method.selected}
-                                                onchange={() =>
-                                                    updatePayment(method.id)}
-                                                class="mt-0.5 accent-primary"
-                                            />
-                                            <span class="text-sm">
-                                                <span
-                                                    class="font-semibold text-foreground"
-                                                    >{method.label}</span
-                                                >
-                                                {#if method.description}
-                                                    <br />
-                                                    <span
-                                                        class="text-muted-foreground"
-                                                        >{method.description}</span
-                                                    >
-                                                {/if}
-                                            </span>
-                                        </label>
-                                    {/each}
-                                </div>
-                            </div>
-                        {/if}
-
                         {#if customer}
-                            {#if isInvoice}
-                                {@const isDisabled =
-                                    !agreedToTerms ||
-                                    cart.is_empty ||
-                                    !addressComplete}
-                                <div class="mt-6">
-                                    <button
-                                        class="relative w-full overflow-hidden rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-white transition-opacity select-none"
-                                        disabled={isDisabled}
-                                        onpointerdown={holdStart}
-                                        onpointerup={holdEnd}
-                                        onpointerleave={holdEnd}
-                                        onpointercancel={holdEnd}
-                                        style:opacity={isDisabled ? '0.5' : '1'}
-                                        style:cursor={isDisabled
-                                            ? 'not-allowed'
-                                            : 'pointer'}
-                                    >
-                                        <span
-                                            class="pointer-events-none absolute inset-0 origin-left transition-none"
-                                            style="background:rgba(255,255,255,0.15);transform:scaleX({holdProgress /
-                                                100});transform-origin:left;"
-                                        ></span>
-                                        <span class="relative">
-                                            {#if holdProgress > 0}
-                                                Gedrückt halten… {Math.round(
-                                                    holdProgress,
-                                                )}&nbsp;%
-                                            {:else}
-                                                Kaufen auf Rechnung
-                                            {/if}
-                                        </span>
-                                    </button>
-                                </div>
-                                <p class="mt-3 text-sm text-muted-foreground">
-                                    Halten Sie den Button gedrückt, um
-                                    verbindlich zu bestellen. Sie erhalten eine
-                                    Bestätigungsmail mit Bankverbindung.
-                                </p>
-                            {:else if isPayPal && paypal_client_id}
-                                <div class="mt-6">
-                                    <PayPalButton
-                                        clientId={paypal_client_id ?? ''}
-                                        disabled={!agreedToTerms ||
-                                            !addressComplete}
-                                    />
-                                </div>
-                            {:else}
-                                <p class="mt-3 text-sm text-muted-foreground">
-                                    Kein aktiver Zahlungsanbieter ausgewählt.
-                                </p>
-                            {/if}
+                            <div class="mt-6 flex flex-col gap-3">
+                                <PayPalButtons
+                                    clientId={paypal_client_id ?? ''}
+                                    disabled={!canOrder}
+                                />
+                                <Button
+                                    class="h-11 w-full"
+                                    disabled={!canOrder}
+                                    onclick={submitOrder}
+                                >
+                                    Kaufen auf Rechnung
+                                </Button>
+                            </div>
+                            <p class="mt-3 text-sm text-muted-foreground">
+                                Bei Kauf auf Rechnung erhalten Sie eine
+                                Bestätigungsmail mit Bankverbindung.
+                            </p>
                         {:else}
                             <Button
                                 asChild
@@ -477,7 +352,7 @@
                         {/if}
                     </div>
 
-                    <p class="mt-3 text-center text-xs text-muted-foreground">
+                    <p class="-mt-3 text-center text-xs text-muted-foreground">
                         * Preise inkl. MwSt. zzgl. Versandkosten
                     </p>
                 </div>

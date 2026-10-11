@@ -51,7 +51,7 @@
 
     // svelte-ignore state_referenced_locally
     const form = useForm({
-        name: product.name,
+        // Der Name ist nicht änderbar (Teil der Shop-URL) und wird nicht gesendet.
         description: product.description ?? '',
         technical_specs: (product.technical_specs ?? []).map((spec) => ({
             ...spec,
@@ -114,14 +114,19 @@
 
 {#snippet headerActions()}
     <RowActions
-        links={[
-            {
-                href: ProductController.show.url(product.id),
-                label: 'Im Shop ansehen',
-                icon: ExternalLink,
-                external: true,
-            },
-        ]}
+        links={product.category_slug
+            ? [
+                  {
+                      href: ProductController.show.url({
+                          category: product.category_slug,
+                          product: product.slug,
+                      }),
+                      label: 'Im Shop ansehen',
+                      icon: ExternalLink,
+                      external: true,
+                  },
+              ]
+            : []}
         destroyHref={AdminProductController.destroy.url(product.id)}
         confirmMessage={`Produkt „${product.name}“ wirklich löschen?`}
     />

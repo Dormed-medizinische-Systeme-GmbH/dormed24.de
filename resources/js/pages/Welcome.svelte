@@ -10,6 +10,7 @@
     import Rocket from '@lucide/svelte/icons/rocket';
     import ShieldCheck from '@lucide/svelte/icons/shield-check';
     import Truck from '@lucide/svelte/icons/truck';
+    import * as CategoryController from '@/actions/App/Http/Controllers/CategoryController';
     import * as ProductController from '@/actions/App/Http/Controllers/ProductController';
     import AppFooter from '@/components/AppFooter.svelte';
     import AppHead from '@/components/AppHead.svelte';
@@ -120,6 +121,8 @@
 
     type RandomProduct = {
         id: number;
+        slug: string;
+        category_slug: string;
         name: string;
         price: string | null;
         image_url: string | null;
@@ -132,6 +135,13 @@
         randomProductsTitle?: string;
         randomProducts?: RandomProduct[];
     } = $props();
+
+    // Es gibt keine Seite „Alle Produkte“: Einstieg ins Sortiment ist die erste Kategorie.
+    const sortimentUrl = $derived(
+        CategoryController.show.url(
+            (page.props.navCategories as { slug: string }[])[0]?.slug ?? '',
+        ),
+    );
 
     const contact = $derived(page.props.contact as ContactInfo);
 
@@ -410,7 +420,10 @@
 
                 <div class="mt-10 md:hidden">
                     <Link
-                        href={ProductController.show.url(activeProduct)}
+                        href={ProductController.show.url({
+                            category: activeProduct.category_slug,
+                            product: activeProduct.slug,
+                        })}
                         class="block text-center"
                     >
                         <div
@@ -488,7 +501,10 @@
                 >
                     {#each randomProducts as product (product.id)}
                         <Link
-                            href={ProductController.show.url(product)}
+                            href={ProductController.show.url({
+                                category: product.category_slug,
+                                product: product.slug,
+                            })}
                             class="text-center"
                         >
                             <div
@@ -549,10 +565,10 @@
                     </p>
                 </div>
                 <Link
-                    href={ProductController.index.url()}
+                    href={sortimentUrl}
                     class="hidden shrink-0 text-sm font-semibold text-brand-accent hover:underline lg:inline-flex lg:items-center lg:gap-2"
                 >
-                    Alle Produkte ansehen
+                    Sortiment ansehen
                     <ArrowRight class="size-4" />
                 </Link>
             </div>
@@ -581,7 +597,7 @@
                                 >{product.price}</span
                             >
                             <Link
-                                href={ProductController.index.url()}
+                                href={sortimentUrl}
                                 class="text-sm font-semibold text-brand-accent hover:underline"
                             >
                                 Zum Sortiment
@@ -593,10 +609,10 @@
 
             <div class="mt-6 lg:hidden">
                 <Link
-                    href={ProductController.index.url()}
+                    href={sortimentUrl}
                     class="inline-flex items-center gap-2 text-sm font-semibold text-brand-accent hover:underline"
                 >
-                    Alle Produkte ansehen
+                    Sortiment ansehen
                     <ArrowRight class="size-4" />
                 </Link>
             </div>
@@ -657,7 +673,7 @@
 
                     <div class="mt-6 flex flex-wrap gap-3">
                         <Link
-                            href={ProductController.index.url()}
+                            href={sortimentUrl}
                             class="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary/90"
                         >
                             Jetzt shoppen

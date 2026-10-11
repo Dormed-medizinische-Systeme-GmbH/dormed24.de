@@ -53,7 +53,11 @@ class StaticPagesTest extends TestCase
         $locations = collect(iterator_to_array($xml->url, false))->map(fn ($url) => (string) $url->loc);
         $this->assertContains(url('/'), $locations);
         $this->assertContains(route('impressum'), $locations);
-        $this->assertContains(route('products.show', $product), $locations);
+        $this->assertContains($product->url(), $locations);
+        $this->assertContains(url('/ultraschallsysteme'), $locations);
+        $this->assertContains(url('/zubehoer'), $locations);
+        $this->assertNotContains(url('/products'), $locations, 'Es gibt keine Seite "Alle Produkte" mehr.');
+        $this->assertNotContains(url('/magazin'), $locations);
     }
 
     public function test_every_sitemap_url_is_reachable(): void

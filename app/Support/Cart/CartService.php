@@ -12,7 +12,7 @@ use Illuminate\Support\Collection;
  * Liest und schreibt den Warenkorb. In der Session liegt nur der schlanke
  * Rohzustand (CartState), cart() baut daraus das typisierte Cart-DTO.
  *
- * @phpstan-type CartState array{items: array<int|string, int>, shipping_method: string, payment_method: string, shipping_address: array<string, mixed>, billing_address: array<string, mixed>|null}
+ * @phpstan-type CartState array{items: array<int|string, int>, shipping_method: string, shipping_address: array<string, mixed>, billing_address: array<string, mixed>|null}
  */
 class CartService
 {
@@ -45,7 +45,6 @@ class CartService
             items: $items,
             vatRate: (int) config('shop.cart.vat_rate', 19),
             shippingMethods: $this->shippingMethods($state['shipping_method']),
-            paymentMethods: $this->paymentMethods($state['payment_method']),
             shippingAddress: CartAddress::fromArray($state['shipping_address']),
             billingAddress: $state['billing_address'] !== null ? CartAddress::fromArray($state['billing_address']) : null,
         );
@@ -105,14 +104,6 @@ class CartService
         $this->persist($state);
     }
 
-    public function setPaymentMethod(string $paymentMethod): void
-    {
-        $state = $this->state();
-        $state['payment_method'] = $paymentMethod;
-
-        $this->persist($state);
-    }
-
     /**
      * @param  array<string, mixed>  $data
      */
@@ -142,7 +133,6 @@ class CartService
         $this->persist([
             'items' => [],
             'shipping_method' => (string) ($this->shippingMethodModels()->first()->id ?? ''),
-            'payment_method' => $this->paymentMethods('')[0]->id ?? '',
             'shipping_address' => self::DEFAULT_ADDRESS,
             'billing_address' => null,
         ]);
@@ -216,7 +206,7 @@ class CartService
                     quantity: $quantity,
                     unitPriceCents: $unitPriceCents,
                     imageUrl: $product?->images->first()?->url,
-                    productUrl: $product ? route('products.show', $product) : route('products.index'),
+                    productUrl: $product?->url() ?? route('home'),
                     isAvailable: $product !== null && $product->is_available && ! $variantMissing && ! $variantRequiredButMissing,
                 );
             })
@@ -262,37 +252,6 @@ class CartService
             ->all());
     }
 
-    /**
-     * @return list<PaymentOption>
-     */
-    private function paymentMethods(string $selectedId): array
-    {
-        $methods = [];
-        $index = 0;
-
-        // Fixed line-up: invoice + PayPal (order and labels from config/shop.php).
-        /** @var array<string, array{methods?: list<array{id: string, label: string, description?: string|null}>}> $providers */
-        $providers = config('shop.cart.providers', []);
-
-        foreach ($providers as $provider => $config) {
-            foreach ($config['methods'] ?? [] as $method) {
-                $methodId = (string) $method['id'];
-
-                $methods[] = new PaymentOption(
-                    id: $methodId,
-                    provider: $provider,
-                    label: $method['label'],
-                    description: $method['description'] ?? null,
-                    selected: $methodId === $selectedId || ($selectedId === '' && $index === 0),
-                );
-
-                $index++;
-            }
-        }
-
-        return $methods;
-    }
-
     public function hasUnavailableItems(): bool
     {
         foreach ($this->items($this->state()['items']) as $item) {
@@ -318,7 +277,6 @@ class CartService
     {
         $rawState = $this->store->get();
         $shippingMethodIds = $this->shippingMethodModels()->pluck('id')->map(fn ($id) => (string) $id)->all();
-        $paymentMethodIds = array_map(fn (PaymentOption $method): string => $method->id, $this->paymentMethods(''));
 
         $items = [];
         $rawItems = is_array($rawState['items'] ?? null) ? $rawState['items'] : [];
@@ -341,9 +299,6 @@ class CartService
             'shipping_method' => in_array(($rawState['shipping_method'] ?? null), $shippingMethodIds, true)
                 ? (string) $rawState['shipping_method']
                 : (string) ($shippingMethodIds[0] ?? ''),
-            'payment_method' => in_array(($rawState['payment_method'] ?? null), $paymentMethodIds, true)
-                ? (string) $rawState['payment_method']
-                : (string) ($paymentMethodIds[0] ?? ''),
             'shipping_address' => array_merge(
                 self::DEFAULT_ADDRESS,
                 $rawState['shipping_address'] ?? []

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
-use App\Support\Cart\PaymentOption;
 use App\Support\Orders\OrderStatus;
 use App\Support\Orders\OrderSummary;
 use Illuminate\Http\JsonResponse;
@@ -47,15 +46,12 @@ class CustomerOrderController extends Controller
         };
 
         $summary = OrderSummary::fromOrder($order);
-        $paymentLabels = PaymentOption::configuredLabels();
 
         $payload = [
             'id' => $order->id,
             'status' => $order->status,
             'payment_method' => $order->payment_method,
-            'payment_method_label' => $order->payment_method
-                ? ($paymentLabels[$order->payment_method->value] ?? $order->payment_method->value)
-                : null,
+            'payment_method_label' => $order->payment_method?->label(),
             'created_at' => $order->created_at?->toIso8601String(),
             'updated_at' => $order->updated_at?->toIso8601String(),
             'shipping_address' => $order->shipping_address,

@@ -163,7 +163,7 @@ class OrderManager
     {
         return Order::query()
             ->where('customer_id', $customer->id)
-            ->where('payment_method', PaymentMethod::Paypal)
+            ->whereIn('payment_method', PaymentMethod::payPalFunded())
             ->whereIn('status', OrderStatus::Cancelled->reachableFrom())
             ->whereDoesntHave('payments', fn ($query) => $query->whereIn('status', [
                 PaymentStatus::Completed,

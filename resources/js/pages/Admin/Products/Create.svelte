@@ -98,6 +98,10 @@
         <div class="flex flex-col gap-2">
             <Label for="name">Name</Label>
             <Input id="name" bind:value={form.name} placeholder="Produktname" />
+            <p class="text-xs text-muted-foreground">
+                Der Name kann später nicht mehr geändert werden: Er bildet die
+                Shop-Adresse (Kleinschreibung, Bindestriche statt Leerzeichen).
+            </p>
             {#if form.errors.name}
                 <p class="text-sm text-destructive">{form.errors.name}</p>
             {/if}

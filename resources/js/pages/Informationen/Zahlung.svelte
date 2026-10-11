@@ -6,7 +6,7 @@
 
 <AppHead
     title="Zahlungsarten"
-    description="Akzeptierte Zahlungsmethoden im dormed24-Shop: PayPal, Kreditkarte und Kauf auf Rechnung."
+    description="Akzeptierte Zahlungsmethoden im dormed24-Shop: PayPal, Lastschrift, Kreditkarte und Kauf auf Rechnung."
 />
 
 <div class="flex min-h-screen flex-col bg-white">

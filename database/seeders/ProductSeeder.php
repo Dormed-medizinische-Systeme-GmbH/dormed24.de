@@ -51,11 +51,14 @@ class ProductSeeder extends Seeder
         foreach ($rows as $row) {
             $manufacturer = $this->resolveManufacturer($row['manufacturer_name'] ?? null);
 
+            $name = trim((string) ($row['name'] ?? ''));
+
             $product = Product::create([
                 'manufacturer_id' => $manufacturer?->id,
                 // Slugs aus config/categories.php
                 'category_slug' => 'zubehoer',
-                'name' => trim((string) ($row['name'] ?? '')),
+                'name' => $name,
+                'slug' => Product::generateSlug($name),
                 'description' => $this->nullableString($row['description'] ?? null),
                 'price' => $this->decimal($row['price_gross'] ?? null),
                 'is_available' => (bool) ((int) ($row['active'] ?? 0)),
@@ -171,6 +174,7 @@ class ProductSeeder extends Seeder
             'manufacturer_id' => $mindrayManufacturer->id,
             'category_slug' => 'ultraschallsysteme',
             'name' => 'Tragbares Ultraschallsystem MU7',
+            'slug' => Product::generateSlug('Tragbares Ultraschallsystem MU7'),
             'description' => "Mindray MU7 - leichtes Sonographiesystem fuer mobile Einsaetze mit starker Bildgebung und ausdauerndem Akkubetrieb\n\nDas mindray MU7 ist ein portables Ultraschallgeraet fuer Praxen und mobile Einsatzbereiche, in denen Flexibilitaet, Zuverlaessigkeit und einfache Bedienung entscheidend sind. Mit einem Gewicht von nur rund 2 kg, einer Akkulaufzeit von mehr als 4 Stunden und einer robusten, stossfesten Bauweise eignet sich dieses Sonographiegeraet besonders fuer wechselnde Untersuchungsorte und den taeglichen Einsatz im Praxisalltag. Die nano ZST+ Plattform unterstuetzt eine leistungsfaehige Bildverarbeitung, waehrend Funktionen wie iTouch, iWorks und Smart Track den Workflow spuergbar erleichtern. Das 13,3-Zoll-Touchdisplay, das versiegelte Bedienfeld und die integrierte WLAN-Funktion machen das MU7 zu einem durchdachten Ultraschallgeraet fuer Anwender, die mobil arbeiten und dabei nicht auf Komfort verzichten moechten.\n\nWas zeichnet das MU7 Ultraschallgeraet besonders aus?\n\nBesonders mobil im Praxisalltag: Mit nur rund 2 kg laesst sich das Ultraschallgeraet bequem transportieren und flexibel an verschiedenen Einsatzorten nutzen.\n\nMehr Unabhaengigkeit im Arbeitsablauf: Der Li-Ionen-Akku ermoeglicht einen netzunabhaengigen Betrieb von bis zu 4 Stunden. Das ist ideal fuer Hausbesuche, flexible Raumwechsel oder kurze Untersuchungen ohne festen Geraeteplatz.\n\nEinfach und effizient zu bedienen: Das MU7 kombiniert Touchdisplay, physische Tasten und Tastatur. Individuell anpassbare Kurzbefehle helfen dabei, Untersuchungen schneller und strukturierter durchzufuehren.\n\nZuverlaessige Bildqualitaet im Alltag: Die nano ZST+ Plattform sowie Funktionen wie iTouch, PSH, iBeam und iClear unterstuetzen eine klare Bilddarstellung und eine schnelle Bildoptimierung.\n\nPraxisgerecht und hygienisch: Das versiegelte Bedienfeld erleichtert Reinigung und Desinfektion und unterstuetzt damit einen sicheren Einsatz im medizinischen Alltag.\n\nGut in bestehende Ablaeufe integrierbar: Mit DICOM, WLAN, Netzwerkanschluss, HDMI und 3 USB 3.0 Ports laesst sich das Sonographiegeraet gut in bestehende Praxisstrukturen einbinden.\n\nKV-anmeldefaehig\n\nDas mindray MU7 Ultraschallgeraet erfuellt die wichtigen Voraussetzungen fuer die Anmeldung im KV-Umfeld und ist damit auch fuer niedergelassene Praxen eine interessante mobile Loesung. Die konkrete Genehmigung erfolgt durch die jeweils zustaendige KV.",
             'price' => $this->decimal(4390),
             'is_available' => true,
@@ -199,6 +203,7 @@ class ProductSeeder extends Seeder
             'manufacturer_id' => $mindrayManufacturer->id,
             'category_slug' => 'ultraschallsysteme',
             'name' => 'TE Air e5M',
+            'slug' => Product::generateSlug('TE Air e5M'),
             'description' => "Das Mindray TE Air e5M ist ein kabelloses Premium-Handheld-Ultraschallsystem, welches modernste Technologie mit herausragender Bildqualitaet und maximaler Flexibilitaet in einem kompakten Design vereint.\n\nDank der innovativen Free Band Technology ermoeglicht es nahtlose Frequenzwechsel zwischen 2,5 MHz und 12 MHz, sodass eine einzige Sonde fuer vielfaeltige Anwendungen genutzt werden kann - von der Abdomen- und Gefaessdiagnostik bis hin zur Schilddruesen- und Muskuloskelettalen Sonographie.\n\nDie iTouch+ Funktion passt automatisch die Presets an die jeweilige Untersuchung an und optimiert die Einstellungen in Sekundenbruchteilen. Zusaetzliche Technologien wie Acoustic Boost sorgen fuer gestochen scharfe Bilder, waehrend das wasserdichte Gehaeuse (IP68) eine einfache Desinfektion ermoeglicht.\n\nDas Mindray TE Air e5M ist unteranderem ideal fuer Allgemeinmediziner, Notfallmediziner, Orthopaedengeeignet und alle Sonographie-Liebhaber - ein perfekter Begleiter fuer die moderne, mobile Diagnostik.",
             'price' => $this->decimal(4163.81),
             'is_available' => true,
@@ -240,6 +245,7 @@ class ProductSeeder extends Seeder
             'manufacturer_id' => $manufacturer->id,
             'category_slug' => $categorySlug,
             'name' => $name,
+            'slug' => Product::generateSlug($name),
             'description' => $description,
             'price' => $this->decimal(10),
             'is_available' => true,

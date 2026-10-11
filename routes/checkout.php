@@ -13,7 +13,6 @@ Route::delete('/cart/items/{product}/{variant?}', [CartController::class, 'destr
 Route::patch('/cart/shipping', [CartController::class, 'updateShipping'])->name('cart.shipping.update');
 // Bestellungen setzen eine bestätigte E-Mail-Adresse voraus ("verified").
 Route::get('/checkout/confirm', [CheckoutController::class, 'confirm'])->middleware(['auth', 'verified'])->name('checkout.confirm');
-Route::patch('/checkout/payment', [CheckoutController::class, 'updatePayment'])->middleware('auth')->name('checkout.payment.update');
 Route::patch('/checkout/address', [CheckoutController::class, 'updateAddress'])->middleware(['auth', 'verified'])->name('checkout.address.update');
 Route::post('/checkout/submit', [CheckoutController::class, 'submit'])->middleware(['auth', 'verified'])->name('checkout.submit');
 Route::get('/checkout/success', [CheckoutController::class, 'success'])->middleware('auth')->name('checkout.success');
