@@ -83,22 +83,30 @@
             return;
         }
 
-        // Nur Zahlarten anzeigen, die PayPal für diesen Käufer anbietet; die
-        // Container müssen dafür erst im DOM stehen.
-        const buttons = FUNDING_SOURCES.map((source) => ({
-            source,
-            instance: paypal!.Buttons(buttonConfig(source)),
-        })).filter(({ instance }) => instance.isEligible());
+        try {
+            // Nur Zahlarten anzeigen, die PayPal für diesen Käufer anbietet; die
+            // Container müssen dafür erst im DOM stehen.
+            const buttons = FUNDING_SOURCES.map((source) => ({
+                source,
+                instance: paypal!.Buttons(buttonConfig(source)),
+            })).filter(({ instance }) => instance.isEligible());
 
-        eligibleSources = buttons.map(({ source }) => source.id);
-        await tick();
+            eligibleSources = buttons.map(({ source }) => source.id);
+            await tick();
 
-        for (const { source, instance } of buttons) {
-            const container = document.getElementById(containerId(source.id));
+            for (const { source, instance } of buttons) {
+                const container = document.getElementById(
+                    containerId(source.id),
+                );
 
-            if (container) {
-                instance.render(container);
+                if (container) {
+                    instance.render(container);
+                }
             }
+        } catch (err) {
+            errorMessage =
+                'PayPal-Buttons konnten nicht angezeigt werden. Bitte laden Sie die Seite neu.';
+            console.error('PayPal render error:', err);
         }
     }
 
@@ -109,7 +117,8 @@
                 layout: 'vertical',
                 color: source.color,
                 shape: 'rect',
-                height: '45',
+                // Das SDK verlangt eine Zahl (25-55) und wirft sonst beim Rendern.
+                height: 45,
             },
             // Button erst freigeben, wenn AGB und Adresse passen (graut ihn
             // sonst aus); onClick fängt den Rest ab.

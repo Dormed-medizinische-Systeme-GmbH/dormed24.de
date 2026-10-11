@@ -13,6 +13,7 @@ vi.mock('@inertiajs/svelte', () => ({ router: { visit: routerVisitMock } }));
 
 type ButtonsConfig = {
     fundingSource: string;
+    style: Record<string, unknown>;
     onInit: (
         data: unknown,
         actions: { enable: () => void; disable: () => void },
@@ -123,6 +124,38 @@ describe('PayPalButtons', () => {
         expect(document.head.querySelector('script')?.src).toContain(
             'enable-funding=sepa,card',
         );
+    });
+
+    it('passes a numeric style.height within the SDK range (a string makes the SDK throw)', async () => {
+        const { configs } = await renderAndLoadSdk();
+
+        for (const config of Object.values(configs)) {
+            expect(typeof config.style.height).toBe('number');
+            expect(config.style.height as number).toBeGreaterThanOrEqual(25);
+            expect(config.style.height as number).toBeLessThanOrEqual(55);
+        }
+    });
+
+    it('shows an error instead of failing silently when the SDK throws while rendering', async () => {
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        vi.stubGlobal('paypal', {
+            Buttons: vi.fn(() => {
+                throw new TypeError('Expected style.height to be a number');
+            }),
+        });
+
+        render(PayPalButtons, {
+            props: { clientId: 'sb-client-id-1234567890' },
+        });
+        (document.head.querySelector('script') as HTMLScriptElement).onload?.(
+            new Event('load'),
+        );
+        await tick();
+        await tick();
+
+        expect(
+            screen.getByText(/Buttons konnten nicht angezeigt werden/),
+        ).toBeInTheDocument();
     });
 
     describe('createOrder', () => {
