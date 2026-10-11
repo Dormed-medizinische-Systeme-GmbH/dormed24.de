@@ -32,6 +32,12 @@
 
     const navCategories = $derived(page.props.navCategories as NavCategory[]);
 
+    // Aktiv ist die Kategorie der Seite, auch für deren Produktseiten
+    // (/{kategorie}/{produkt}).
+    const activeCategorySlug = $derived(
+        page.url.split(/[?#]/)[0].split('/')[1] ?? '',
+    );
+
     let mobileMenuOpen = $state(false);
 
     const auth = $derived(page.props.auth);
@@ -292,7 +298,11 @@
                             {#each navCategories as cat (cat.slug)}
                                 <Link
                                     href={`/${cat.slug}`}
-                                    class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-brand-secondary"
+                                    class={`rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-brand-secondary ${cat.slug === activeCategorySlug ? 'text-brand-secondary' : 'text-muted-foreground'}`}
+                                    aria-current={cat.slug ===
+                                    activeCategorySlug
+                                        ? 'page'
+                                        : undefined}
                                 >
                                     {cat.name}
                                 </Link>
@@ -404,7 +414,10 @@
                 {#each navCategories as cat (cat.slug)}
                     <Link
                         href={`/${cat.slug}`}
-                        class="border-b-2 border-transparent px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:border-brand-accent hover:text-brand-secondary"
+                        class={`border-b-2 border-transparent px-4 py-3 text-sm font-medium transition-colors hover:border-brand-accent hover:text-brand-secondary ${cat.slug === activeCategorySlug ? 'text-brand-secondary' : 'text-muted-foreground'}`}
+                        aria-current={cat.slug === activeCategorySlug
+                            ? 'page'
+                            : undefined}
                     >
                         {cat.name}
                     </Link>
