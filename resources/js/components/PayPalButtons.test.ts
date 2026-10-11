@@ -13,6 +13,7 @@ vi.mock('@inertiajs/svelte', () => ({ router: { visit: routerVisitMock } }));
 
 type ButtonsConfig = {
     fundingSource: string;
+    style: Record<string, unknown>;
     onInit: (
         data: unknown,
         actions: { enable: () => void; disable: () => void },
@@ -39,6 +40,11 @@ async function renderAndLoadSdk(
 }> {
     const configs: Record<string, ButtonsConfig> = {};
     const renderMock = vi.fn();
+    render(PayPalButtons, {
+        props: { clientId: 'sb-client-id-1234567890', ...props },
+    });
+
+    // Erst nach dem Rendern: bei bereits geladenem SDK wird kein Skript angehängt.
     vi.stubGlobal('paypal', {
         Buttons: vi.fn((c: ButtonsConfig) => {
             configs[c.fundingSource] = c;
@@ -48,10 +54,6 @@ async function renderAndLoadSdk(
                 render: renderMock,
             };
         }),
-    });
-
-    render(PayPalButtons, {
-        props: { clientId: 'sb-client-id-1234567890', ...props },
     });
 
     const script = document.head.querySelector('script') as HTMLScriptElement;
@@ -67,6 +69,7 @@ describe('PayPalButtons', () => {
         fetchJsonMock.mockReset();
         routerVisitMock.mockReset();
         document.head.innerHTML = '';
+        vi.unstubAllGlobals();
     });
 
     it('shows a configuration error and loads no SDK script when clientId is missing', () => {
@@ -123,6 +126,57 @@ describe('PayPalButtons', () => {
         expect(document.head.querySelector('script')?.src).toContain(
             'enable-funding=sepa,card',
         );
+    });
+
+    it('passes a numeric style.height within the SDK range (a string makes the SDK throw)', async () => {
+        const { configs } = await renderAndLoadSdk();
+
+        for (const config of Object.values(configs)) {
+            expect(typeof config.style.height).toBe('number');
+            expect(config.style.height as number).toBeGreaterThanOrEqual(25);
+            expect(config.style.height as number).toBeLessThanOrEqual(55);
+        }
+    });
+
+    it('shows an error instead of failing silently when the SDK throws while rendering', async () => {
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        render(PayPalButtons, {
+            props: { clientId: 'sb-client-id-1234567890' },
+        });
+        vi.stubGlobal('paypal', {
+            Buttons: vi.fn(() => {
+                throw new TypeError('Expected style.height to be a number');
+            }),
+        });
+        (document.head.querySelector('script') as HTMLScriptElement).onload?.(
+            new Event('load'),
+        );
+        await tick();
+        await tick();
+
+        expect(
+            screen.getByText(/Buttons konnten nicht angezeigt werden/),
+        ).toBeInTheDocument();
+    });
+
+    it('renders directly without a second script when the SDK is already loaded', async () => {
+        const renderMock = vi.fn();
+        vi.stubGlobal('paypal', {
+            Buttons: vi.fn(() => ({
+                isEligible: () => true,
+                render: renderMock,
+            })),
+        });
+
+        render(PayPalButtons, {
+            props: { clientId: 'sb-client-id-1234567890' },
+        });
+        await tick();
+        await tick();
+
+        expect(document.head.querySelector('script')).toBeNull();
+        expect(renderMock).toHaveBeenCalledTimes(3);
     });
 
     describe('createOrder', () => {

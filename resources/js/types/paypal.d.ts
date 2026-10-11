@@ -15,7 +15,7 @@ type PayPalClickActions = {
 
 type PayPalButtonsConfig = {
     fundingSource?: string;
-    style?: Record<string, string>;
+    style?: Record<string, string | number>;
     onInit?: (data: unknown, actions: PayPalButtonActions) => void;
     onClick?: (data: unknown, actions: PayPalClickActions) => Promise<void>;
     createOrder?: () => Promise<string>;

@@ -8,9 +8,12 @@
     let {
         clientId = '',
         disabled = false,
+        row = false,
     }: {
         clientId?: string;
         disabled?: boolean;
+        /** Buttons nebeneinander statt untereinander. */
+        row?: boolean;
     } = $props();
 
     // Ein eigener PayPal-Button je Zahlart, in dieser Reihenfolge. Der Wert ist
@@ -61,6 +64,13 @@
             return;
         }
 
+        // Schon geladen (z. B. nach einem Layout-Wechsel): direkt rendern.
+        if (typeof paypal !== 'undefined') {
+            renderButtons();
+
+            return;
+        }
+
         const script = document.createElement('script');
         script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=EUR&locale=de_DE&components=buttons&enable-funding=sepa,card`;
         script.async = true;
@@ -83,22 +93,30 @@
             return;
         }
 
-        // Nur Zahlarten anzeigen, die PayPal für diesen Käufer anbietet; die
-        // Container müssen dafür erst im DOM stehen.
-        const buttons = FUNDING_SOURCES.map((source) => ({
-            source,
-            instance: paypal!.Buttons(buttonConfig(source)),
-        })).filter(({ instance }) => instance.isEligible());
+        try {
+            // Nur Zahlarten anzeigen, die PayPal für diesen Käufer anbietet; die
+            // Container müssen dafür erst im DOM stehen.
+            const buttons = FUNDING_SOURCES.map((source) => ({
+                source,
+                instance: paypal!.Buttons(buttonConfig(source)),
+            })).filter(({ instance }) => instance.isEligible());
 
-        eligibleSources = buttons.map(({ source }) => source.id);
-        await tick();
+            eligibleSources = buttons.map(({ source }) => source.id);
+            await tick();
 
-        for (const { source, instance } of buttons) {
-            const container = document.getElementById(containerId(source.id));
+            for (const { source, instance } of buttons) {
+                const container = document.getElementById(
+                    containerId(source.id),
+                );
 
-            if (container) {
-                instance.render(container);
+                if (container) {
+                    instance.render(container);
+                }
             }
+        } catch (err) {
+            errorMessage =
+                'PayPal-Buttons konnten nicht angezeigt werden. Bitte laden Sie die Seite neu.';
+            console.error('PayPal render error:', err);
         }
     }
 
@@ -109,7 +127,8 @@
                 layout: 'vertical',
                 color: source.color,
                 shape: 'rect',
-                height: '45',
+                // Das SDK verlangt eine Zahl (25-55) und wirft sonst beim Rendern.
+                height: 45,
             },
             // Button erst freigeben, wenn AGB und Adresse passen (graut ihn
             // sonst aus); onClick fängt den Rest ab.
@@ -216,7 +235,11 @@
     {/if}
 
     <div class="relative">
-        <div class="flex flex-col gap-3">
+        <div
+            class={row
+                ? 'grid gap-3 sm:grid-cols-[repeat(auto-fit,minmax(11rem,1fr))]'
+                : 'flex flex-col gap-3'}
+        >
             {#each eligibleSources as source (source)}
                 <div id={containerId(source)} class="min-h-[45px]"></div>
             {/each}

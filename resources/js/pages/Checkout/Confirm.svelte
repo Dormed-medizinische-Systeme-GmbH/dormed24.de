@@ -3,20 +3,37 @@
     import ChevronLeft from '@lucide/svelte/icons/chevron-left';
     import AddressForm from '@/components/AddressForm.svelte';
     import AppHead from '@/components/AppHead.svelte';
+    import ConfirmLayoutBar from '@/components/checkout-confirm/ConfirmLayoutBar.svelte';
+    import ConfirmLayoutCollapsible from '@/components/checkout-confirm/ConfirmLayoutCollapsible.svelte';
+    import ConfirmLayoutStacked from '@/components/checkout-confirm/ConfirmLayoutStacked.svelte';
+    import ConfirmLayoutStandard from '@/components/checkout-confirm/ConfirmLayoutStandard.svelte';
+    import ConfirmLayoutSteps from '@/components/checkout-confirm/ConfirmLayoutSteps.svelte';
+    import ConfirmLayoutTabs from '@/components/checkout-confirm/ConfirmLayoutTabs.svelte';
     import PayPalButtons from '@/components/PayPalButtons.svelte';
     import ShopHeader from '@/components/ShopHeader.svelte';
     import { Button } from '@/components/ui/button';
     import { Checkbox } from '@/components/ui/checkbox';
     import { Separator } from '@/components/ui/separator';
+    import VariantSwitcher from '@/components/VariantSwitcher.svelte';
+    import { CHECKOUT_CONFIRM_VARIANTS } from '@/lib/checkoutConfirm';
     import { formatPrice } from '@/lib/currency';
+    import { useLayoutVariant } from '@/lib/useLayoutVariant.svelte';
     import { login } from '@/routes';
     import checkout from '@/routes/checkout';
-    import type { AddressData, Cart, Customer } from '@/types';
+    import type {
+        AddressData,
+        Cart,
+        CheckoutConfirmFields,
+        Customer,
+    } from '@/types';
 
     let {
         cart,
         paypal_client_id,
     }: { cart: Cart; paypal_client_id?: string | null } = $props();
+
+    // Layout-Variante: Auswahl steht in der URL (?variant=B); ohne Parameter gilt A.
+    const layoutVariant = useLayoutVariant(CHECKOUT_CONFIRM_VARIANTS);
 
     let agreedToTerms = $state(false);
     // svelte-ignore state_referenced_locally
@@ -146,7 +163,199 @@
             { preserveScroll: true },
         );
     }
+
+    function addressLine(address: AddressData | null): string {
+        if (!address || address.last_name === '') {
+            return 'Noch keine Adresse hinterlegt.';
+        }
+
+        return [
+            `${address.first_name} ${address.last_name}`.trim(),
+            `${address.street} ${address.house_number}`.trim(),
+            `${address.zip} ${address.city}`.trim(),
+        ]
+            .filter((part) => part !== '')
+            .join(', ');
+    }
+
+    // Die Snippets werden erst beim Rendern ausgewertet, nicht beim Initialisieren.
+    const fields: CheckoutConfirmFields = $derived({
+        terms: termsField,
+        shippingAddress: shippingAddressField,
+        billingAddress: billingAddressField,
+        totals: totalsField,
+        pay: payField,
+        shippingSummary: shippingSummaryField,
+        billingSummary: billingSummaryField,
+        note: noteField,
+    });
 </script>
+
+{#snippet termsField()}
+    <h2 class="mb-2 font-bold text-foreground">AGB und Widerrufsbelehrung</h2>
+    <Separator class="mb-4" />
+    <p class="mb-3 text-sm text-muted-foreground">
+        Bitte beachten Sie die
+        <Link
+            href="/informationen/widerrufsbelehrung"
+            class="text-brand-accent hover:underline"
+        >
+            Widerrufsbelehrung
+        </Link>.
+    </p>
+    <label class="flex cursor-pointer items-start gap-3">
+        <Checkbox bind:checked={agreedToTerms} class="mt-0.5" />
+        <span class="text-sm text-muted-foreground">
+            Ich habe die
+            <Link
+                href="/unternehmen/agb"
+                class="text-brand-accent hover:underline">AGB</Link
+            >
+            gelesen und bin mit ihnen einverstanden.
+        </span>
+    </label>
+{/snippet}
+
+{#snippet shippingAddressField()}
+    <div class="mb-2 flex items-center justify-between">
+        <h2 class="font-bold text-foreground">Lieferadresse</h2>
+        <Button
+            variant="outline"
+            size="sm"
+            disabled={isSavingAddress || !addressComplete}
+            onclick={saveAddress}
+        >
+            {isSavingAddress ? 'Speichere...' : 'Adresse speichern'}
+        </Button>
+    </div>
+    <Separator class="mb-4" />
+    <AddressForm
+        data={shippingAddress}
+        errors={addressErrors}
+        prefix="shipping"
+        legend=""
+        onUpdate={handleAddressUpdate}
+    />
+{/snippet}
+
+{#snippet billingAddressField()}
+    <h2 class="mb-2 font-bold text-foreground">Rechnungsadresse</h2>
+    <Separator class="mb-4" />
+    {#if billingSameAsShipping}
+        <p class="text-sm text-muted-foreground">
+            Identisch mit Lieferadresse.
+        </p>
+        <button
+            onclick={enableBillingAddress}
+            class="mt-2 text-sm text-brand-accent hover:underline"
+        >
+            Abweichende Rechnungsadresse eingeben
+        </button>
+    {:else}
+        <AddressForm
+            data={billingAddress ?? defaultBillingAddress()}
+            errors={addressErrors}
+            prefix="billing"
+            legend=""
+            onUpdate={handleAddressUpdate}
+        />
+        <button
+            onclick={disableBillingAddress}
+            class="mt-2 text-sm text-brand-accent hover:underline"
+        >
+            Wie Lieferadresse verwenden
+        </button>
+    {/if}
+{/snippet}
+
+{#snippet shippingSummaryField()}
+    {addressLine(shippingAddress)}
+{/snippet}
+
+{#snippet billingSummaryField()}
+    {billingSameAsShipping
+        ? 'Identisch mit Lieferadresse.'
+        : addressLine(billingAddress)}
+{/snippet}
+
+{#snippet totalsField()}
+    <h2 class="mb-4 text-xl font-bold text-foreground">Zusammenfassung</h2>
+
+    <div class="flex flex-col gap-2 text-sm">
+        <div class="flex justify-between">
+            <span class="text-muted-foreground">Zwischensumme</span>
+            <span class="font-medium">{formatPrice(cart.subtotal)}*</span>
+        </div>
+        <div class="flex justify-between">
+            <span class="text-muted-foreground">Versandkosten</span>
+            <span class="font-medium">{formatPrice(cart.shipping_total)}*</span>
+        </div>
+        <div class="my-2 border-t pt-2">
+            <div class="flex justify-between">
+                <span class="font-bold text-foreground">Gesamtsumme</span>
+                <span class="font-bold text-foreground"
+                    >{formatPrice(cart.total)}*</span
+                >
+            </div>
+        </div>
+        <div class="flex justify-between text-muted-foreground">
+            <span>Gesamtnettosumme</span>
+            <span>{formatPrice(cart.net_total)}</span>
+        </div>
+        <div class="flex justify-between text-muted-foreground">
+            <span>zzgl. {cart.vat_rate} % MwSt.</span>
+            <span>{formatPrice(cart.vat_amount)}</span>
+        </div>
+    </div>
+{/snippet}
+
+{#snippet payField(sideBySide: boolean = false)}
+    {#if customer}
+        <div class="flex flex-col gap-3">
+            <PayPalButtons
+                clientId={paypal_client_id ?? ''}
+                disabled={!canOrder}
+                row={sideBySide}
+            />
+            <Button
+                class="h-11 w-full"
+                disabled={!canOrder}
+                onclick={submitOrder}
+            >
+                Kaufen auf Rechnung
+            </Button>
+        </div>
+        <p class="mt-3 text-sm text-muted-foreground">
+            Bei Kauf auf Rechnung erhalten Sie eine Bestätigungsmail mit
+            Bankverbindung.
+        </p>
+    {:else}
+        <Button
+            asChild
+            class="w-full bg-primary text-white hover:bg-primary/90"
+        >
+            {#snippet children(props)}
+                <Link
+                    href={login.url({
+                        query: { redirect: checkout.confirm.url() },
+                    })}
+                    class={props.class}
+                >
+                    Zum Login
+                </Link>
+            {/snippet}
+        </Button>
+        <p class="mt-3 text-sm text-muted-foreground">
+            Für den Bestellabschluss ist aktuell ein Kundenkonto erforderlich.
+        </p>
+    {/if}
+{/snippet}
+
+{#snippet noteField()}
+    <p class="text-center text-xs text-muted-foreground">
+        * Preise inkl. MwSt. zzgl. Versandkosten
+    </p>
+{/snippet}
 
 <AppHead title="Bestellung abschließen" />
 
@@ -167,196 +376,25 @@
                 Bestellung abschließen
             </h1>
 
-            <div class="flex flex-col gap-6 lg:flex-row lg:items-start">
-                <div class="flex flex-1 flex-col gap-6">
-                    <!-- Lieferadresse -->
-                    <div class="rounded-lg border bg-white p-5">
-                        <div class="mb-2 flex items-center justify-between">
-                            <h2 class="font-bold text-foreground">
-                                Lieferadresse
-                            </h2>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                disabled={isSavingAddress || !addressComplete}
-                                onclick={saveAddress}
-                            >
-                                {isSavingAddress
-                                    ? 'Speichere...'
-                                    : 'Adresse speichern'}
-                            </Button>
-                        </div>
-                        <Separator class="mb-4" />
-                        <AddressForm
-                            data={shippingAddress}
-                            errors={addressErrors}
-                            prefix="shipping"
-                            legend=""
-                            onUpdate={handleAddressUpdate}
-                        />
-                    </div>
-
-                    <!-- Rechnungsadresse -->
-                    <div class="rounded-lg border bg-white p-5">
-                        <h2 class="mb-2 font-bold text-foreground">
-                            Rechnungsadresse
-                        </h2>
-                        <Separator class="mb-4" />
-                        {#if billingSameAsShipping}
-                            <p class="text-sm text-muted-foreground">
-                                Identisch mit Lieferadresse.
-                            </p>
-                            <button
-                                onclick={enableBillingAddress}
-                                class="mt-2 text-sm text-brand-accent hover:underline"
-                            >
-                                Abweichende Rechnungsadresse eingeben
-                            </button>
-                        {:else}
-                            <AddressForm
-                                data={billingAddress ?? defaultBillingAddress()}
-                                errors={addressErrors}
-                                prefix="billing"
-                                legend=""
-                                onUpdate={handleAddressUpdate}
-                            />
-                            <button
-                                onclick={disableBillingAddress}
-                                class="mt-2 text-sm text-brand-accent hover:underline"
-                            >
-                                Wie Lieferadresse verwenden
-                            </button>
-                        {/if}
-                    </div>
-                </div>
-
-                <div class="flex w-full flex-col gap-6 lg:w-80 xl:w-88">
-                    <!-- AGB -->
-                    <div class="rounded-lg border bg-white p-5">
-                        <h2 class="mb-2 font-bold text-foreground">
-                            AGB und Widerrufsbelehrung
-                        </h2>
-                        <Separator class="mb-4" />
-                        <p class="mb-3 text-sm text-muted-foreground">
-                            Bitte beachten Sie die
-                            <Link
-                                href="/informationen/widerrufsbelehrung"
-                                class="text-brand-accent hover:underline"
-                            >
-                                Widerrufsbelehrung
-                            </Link>.
-                        </p>
-                        <label class="flex cursor-pointer items-start gap-3">
-                            <Checkbox
-                                bind:checked={agreedToTerms}
-                                class="mt-0.5"
-                            />
-                            <span class="text-sm text-muted-foreground">
-                                Ich habe die
-                                <Link
-                                    href="/unternehmen/agb"
-                                    class="text-brand-accent hover:underline"
-                                    >AGB</Link
-                                >
-                                gelesen und bin mit ihnen einverstanden.
-                            </span>
-                        </label>
-                    </div>
-                    <div class="rounded-lg border bg-white p-5">
-                        <h2 class="mb-4 text-xl font-bold text-foreground">
-                            Zusammenfassung
-                        </h2>
-
-                        <div class="flex flex-col gap-2 text-sm">
-                            <div class="flex justify-between">
-                                <span class="text-muted-foreground"
-                                    >Zwischensumme</span
-                                >
-                                <span class="font-medium"
-                                    >{formatPrice(cart.subtotal)}*</span
-                                >
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-muted-foreground"
-                                    >Versandkosten</span
-                                >
-                                <span class="font-medium"
-                                    >{formatPrice(cart.shipping_total)}*</span
-                                >
-                            </div>
-                            <div class="my-2 border-t pt-2">
-                                <div class="flex justify-between">
-                                    <span class="font-bold text-foreground"
-                                        >Gesamtsumme</span
-                                    >
-                                    <span class="font-bold text-foreground"
-                                        >{formatPrice(cart.total)}*</span
-                                    >
-                                </div>
-                            </div>
-                            <div
-                                class="flex justify-between text-muted-foreground"
-                            >
-                                <span>Gesamtnettosumme</span>
-                                <span>{formatPrice(cart.net_total)}</span>
-                            </div>
-                            <div
-                                class="flex justify-between text-muted-foreground"
-                            >
-                                <span>zzgl. {cart.vat_rate} % MwSt.</span>
-                                <span>{formatPrice(cart.vat_amount)}</span>
-                            </div>
-                        </div>
-
-                        {#if customer}
-                            <div class="mt-6 flex flex-col gap-3">
-                                <PayPalButtons
-                                    clientId={paypal_client_id ?? ''}
-                                    disabled={!canOrder}
-                                />
-                                <Button
-                                    class="h-11 w-full"
-                                    disabled={!canOrder}
-                                    onclick={submitOrder}
-                                >
-                                    Kaufen auf Rechnung
-                                </Button>
-                            </div>
-                            <p class="mt-3 text-sm text-muted-foreground">
-                                Bei Kauf auf Rechnung erhalten Sie eine
-                                Bestätigungsmail mit Bankverbindung.
-                            </p>
-                        {:else}
-                            <Button
-                                asChild
-                                class="mt-6 w-full bg-primary text-white hover:bg-primary/90"
-                            >
-                                {#snippet children(props)}
-                                    <Link
-                                        href={login.url({
-                                            query: {
-                                                redirect:
-                                                    checkout.confirm.url(),
-                                            },
-                                        })}
-                                        class={props.class}
-                                    >
-                                        Zum Login
-                                    </Link>
-                                {/snippet}
-                            </Button>
-                            <p class="mt-3 text-sm text-muted-foreground">
-                                Für den Bestellabschluss ist aktuell ein
-                                Kundenkonto erforderlich.
-                            </p>
-                        {/if}
-                    </div>
-
-                    <p class="-mt-3 text-center text-xs text-muted-foreground">
-                        * Preise inkl. MwSt. zzgl. Versandkosten
-                    </p>
-                </div>
-            </div>
+            {#if layoutVariant.current === 'B'}
+                <ConfirmLayoutStacked {fields} />
+            {:else if layoutVariant.current === 'C'}
+                <ConfirmLayoutTabs {fields} />
+            {:else if layoutVariant.current === 'D'}
+                <ConfirmLayoutSteps {fields} />
+            {:else if layoutVariant.current === 'E'}
+                <ConfirmLayoutBar {fields} />
+            {:else if layoutVariant.current === 'F'}
+                <ConfirmLayoutCollapsible {fields} />
+            {:else}
+                <ConfirmLayoutStandard {fields} />
+            {/if}
         </div>
     </main>
 </div>
+
+<VariantSwitcher
+    options={CHECKOUT_CONFIRM_VARIANTS}
+    current={layoutVariant.current}
+    onselect={layoutVariant.select}
+/>
