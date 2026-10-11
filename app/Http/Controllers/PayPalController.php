@@ -2,12 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\Checkout\PlaceOrderRequest;
+use App\Http\Requests\Checkout\CreatePayPalOrderRequest;
 use App\Models\Payment;
 use App\Support\Cart\CartService;
 use App\Support\Orders\Gateway\PaymentGateway;
 use App\Support\Orders\OrderManager;
-use App\Support\Orders\PaymentMethod;
 use App\Support\Orders\PaymentReconciliation;
 use App\Support\Orders\PaymentStatus;
 use Illuminate\Http\JsonResponse;
@@ -34,9 +33,9 @@ class PayPalController extends Controller
 
     /**
      * Schritt 1: Bestellung anlegen und die Zahlung bei PayPal eröffnen.
-     * Der PayPal-Button startet mit der gelieferten ID die Freigabe.
+     * Welcher der PayPal-Buttons geklickt wurde, steht in "funding_source". Der Button startet mit der gelieferten ID die Freigabe.
      */
-    public function createOrder(PlaceOrderRequest $request): JsonResponse
+    public function createOrder(CreatePayPalOrderRequest $request): JsonResponse
     {
         $cart = $this->cartService->cart();
 
@@ -57,7 +56,7 @@ class PayPalController extends Controller
         // verwaisten Bestellungen ansammeln.
         $this->orderManager->cancelAbandonedPayPalOrders($request->user());
 
-        $order = $this->orderManager->createFromCart($request->user(), $cart, PaymentMethod::Paypal);
+        $order = $this->orderManager->createFromCart($request->user(), $cart, $request->paymentMethod());
 
         // Der Warenkorb bleibt bewusst bis zum Capture bestehen, damit eine
         // abgebrochene Freigabe ihn nicht leert.

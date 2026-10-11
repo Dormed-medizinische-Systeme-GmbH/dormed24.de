@@ -107,7 +107,6 @@ class CheckoutFlowTest extends TestCase
                         ],
                     ],
                     'shipping_method' => (string) $shipping->id,
-                    'payment_method' => 'invoice',
                     'shipping_address' => $this->completeAddress(),
                 ],
             ])
@@ -143,7 +142,6 @@ class CheckoutFlowTest extends TestCase
                         ],
                     ],
                     'shipping_method' => (string) $shipping->id,
-                    'payment_method' => 'invoice',
                     'shipping_address' => $this->completeAddress(),
                 ],
             ])
@@ -153,31 +151,7 @@ class CheckoutFlowTest extends TestCase
         $this->assertSame(0, Order::query()->count());
     }
 
-    public function test_payment_update_switches_selected_method(): void
-    {
-        $customer = Customer::factory()->create();
-
-        $this->actingAs($customer)
-            ->withSession([
-                'cart' => [
-                    'payment_method' => 'invoice',
-                ],
-            ])
-            ->patch(route('checkout.payment.update'), ['payment_method' => 'paypal'])
-            ->assertRedirect()
-            ->assertSessionHas('cart.payment_method', 'paypal');
-    }
-
-    public function test_payment_update_rejects_unknown_method(): void
-    {
-        $customer = Customer::factory()->create();
-
-        $this->actingAs($customer)
-            ->patch(route('checkout.payment.update'), ['payment_method' => 'bitcoin'])
-            ->assertSessionHasErrors('payment_method');
-    }
-
-    public function test_confirm_exposes_paypal_client_id_when_paypal_selected(): void
+    public function test_confirm_exposes_paypal_client_id(): void
     {
         $customer = Customer::factory()->create();
         $shipping = ShippingMethod::factory()->create(['price' => '0.00']);
@@ -197,7 +171,6 @@ class CheckoutFlowTest extends TestCase
                         ],
                     ],
                     'shipping_method' => (string) $shipping->id,
-                    'payment_method' => 'paypal',
                     'shipping_address' => $this->completeAddress(),
                 ],
             ])
@@ -208,34 +181,6 @@ class CheckoutFlowTest extends TestCase
                     ->component('Checkout/Confirm')
                     ->where('paypal_client_id', 'sandbox-client-id')
             );
-    }
-
-    public function test_submit_rejects_non_invoice_payment_methods(): void
-    {
-        $customer = Customer::factory()->create();
-        $shipping = ShippingMethod::factory()->create(['price' => '0.00']);
-        $product = Product::factory()->create(['price' => '10.00']);
-
-        $this->actingAs($customer)
-            ->withSession([
-                'cart' => [
-                    'items' => [
-                        $product->id => [
-                            'quantity' => 1,
-                            'unit_price' => '10.00',
-                            'name' => $product->name,
-                            'product_number' => (string) $product->id,
-                        ],
-                    ],
-                    'shipping_method' => (string) $shipping->id,
-                    'payment_method' => 'paypal',
-                    'shipping_address' => $this->completeAddress(),
-                ],
-            ])
-            ->post(route('checkout.submit'), ['agreed_to_terms' => true])
-            ->assertSessionHasErrors('payment_method');
-
-        $this->assertSame(0, Order::query()->count());
     }
 
     public function test_success_page_renders_for_own_order(): void

@@ -107,7 +107,7 @@ resources/js/
 ├── components/
 │   ├── ShopHeader.svelte           # Logo, Suche (+Empty-State), User-Dropdown, Cart-Trigger
 │   ├── CartSheet.svelte            # Slide-in Warenkorb (rechts)
-│   ├── PayPalButton.svelte         # PayPal-JS-SDK-Integration (fetchJson)
+│   ├── PayPalButtons.svelte        # PayPal-JS-SDK: je ein Button für PayPal, Lastschrift, Kreditkarte (fetchJson)
 │   ├── AddressForm.svelte          # Wiederverwendetes Adressformular (prefix-basiert)
 │   ├── AdminDataTable.svelte       # Admin-Listen: Auswahl, Sortierung, Suche, Spalten, Leer-Zustand
 │   ├── RowActions.svelte           # Aktionsmenü: Bearbeiten, weitere Links, Löschen mit Rückfrage

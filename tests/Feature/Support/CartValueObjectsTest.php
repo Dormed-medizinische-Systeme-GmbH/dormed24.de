@@ -6,7 +6,6 @@ use App\Support\Cart\Cart;
 use App\Support\Cart\CartAddress;
 use App\Support\Cart\CartItem;
 use App\Support\Cart\Money;
-use App\Support\Cart\PaymentOption;
 use App\Support\Cart\ShippingOption;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -77,13 +76,11 @@ class CartValueObjectsTest extends TestCase
             items: [$this->item(quantity: 3, unitPriceCents: 1000, isAvailable: false)],
             vatRate: 19,
             shippingMethods: [new ShippingOption('1', 'Standard', null, 490, false)],
-            paymentMethods: [new PaymentOption('invoice', 'invoice', 'Rechnung', null, false)],
             shippingAddress: CartAddress::fromArray([]),
             billingAddress: null,
         );
 
         $this->assertNull($cart->selectedShippingMethod());
-        $this->assertNull($cart->selectedPaymentMethod());
         $this->assertSame(0, $cart->shippingCents());
         $this->assertSame(3000, $cart->totalCents());
         $this->assertSame(3, $cart->count());

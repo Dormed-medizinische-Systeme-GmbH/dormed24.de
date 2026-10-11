@@ -38,7 +38,6 @@ class CheckoutVerificationTest extends TestCase
             ->withSession([
                 'cart' => [
                     'items' => [(string) $product->id => 1],
-                    'payment_method' => 'invoice',
                 ],
             ])
             ->post(route('checkout.submit'), ['agreed_to_terms' => true])
@@ -52,7 +51,7 @@ class CheckoutVerificationTest extends TestCase
         $customer = Customer::factory()->unverified()->create();
 
         $this->actingAs($customer)
-            ->postJson(route('paypal.order.create'), ['agreed_to_terms' => true])
+            ->postJson(route('paypal.order.create'), ['agreed_to_terms' => true, 'funding_source' => 'paypal'])
             ->assertForbidden();
 
         $this->assertSame(0, Order::query()->count());
@@ -86,7 +85,6 @@ class CheckoutVerificationTest extends TestCase
             ->withSession([
                 'cart' => [
                     'items' => [(string) $product->id => 1],
-                    'payment_method' => 'invoice',
                 ],
             ])
             ->get(route('checkout.confirm'))

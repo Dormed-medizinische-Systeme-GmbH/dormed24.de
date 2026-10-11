@@ -44,9 +44,7 @@ export type Cart = {
     is_empty: boolean;
     vat_rate: number;
     shipping_methods: CartMethod[];
-    payment_methods: CartMethod[];
     selected_shipping_method: CartMethod | null;
-    selected_payment_method: CartMethod | null;
     subtotal: string;
     shipping_total: string;
     total: string;

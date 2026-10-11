@@ -119,7 +119,7 @@ class PayPalPaymentLifecycleTest extends TestCase
                     'country' => 'DE',
                 ],
             ]])
-            ->postJson(route('paypal.order.create'), ['agreed_to_terms' => true])
+            ->postJson(route('paypal.order.create'), ['agreed_to_terms' => true, 'funding_source' => 'paypal'])
             ->assertOk()
             ->assertJson(['id' => '5R197099C6919743A', 'status' => 'CREATED']);
 

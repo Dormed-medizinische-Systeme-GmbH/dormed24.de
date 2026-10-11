@@ -1,9 +1,10 @@
 /**
  * Minimal ambient typing for the PayPal JS SDK, which attaches a global
  * `paypal` object once the SDK script has loaded at runtime
- * (see components/PayPalButton.svelte).
+ * (see components/PayPalButtons.svelte).
  */
 type PayPalButtonsConfig = {
+    fundingSource?: string;
     style?: Record<string, string>;
     createOrder?: () => Promise<string>;
     onApprove?: (data: { orderID: string }) => Promise<void> | void;
@@ -12,6 +13,7 @@ type PayPalButtonsConfig = {
 };
 
 type PayPalButtonsInstance = {
+    isEligible: () => boolean;
     render: (container: string | HTMLElement) => void;
 };
 
