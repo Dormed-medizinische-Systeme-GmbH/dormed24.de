@@ -45,6 +45,12 @@
             shippingAddress.city !== '',
     );
 
+    // Eine Bedingung für alle Zahlarten: die PayPal-Buttons und der Rechnungs-
+    // Button werden dadurch immer gemeinsam gesperrt und freigegeben.
+    const canOrder = $derived(
+        agreedToTerms && !cart.is_empty && addressComplete,
+    );
+
     function handleAddressUpdate(update: {
         prefix: string;
         key: string;
@@ -307,14 +313,11 @@
                             <div class="mt-6 flex flex-col gap-3">
                                 <PayPalButtons
                                     clientId={paypal_client_id ?? ''}
-                                    disabled={!agreedToTerms ||
-                                        !addressComplete}
+                                    disabled={!canOrder}
                                 />
                                 <Button
                                     class="h-11 w-full"
-                                    disabled={!agreedToTerms ||
-                                        cart.is_empty ||
-                                        !addressComplete}
+                                    disabled={!canOrder}
                                     onclick={submitOrder}
                                 >
                                     Kaufen auf Rechnung
