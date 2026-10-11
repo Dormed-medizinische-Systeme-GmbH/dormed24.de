@@ -8,9 +8,12 @@
     let {
         clientId = '',
         disabled = false,
+        row = false,
     }: {
         clientId?: string;
         disabled?: boolean;
+        /** Buttons nebeneinander statt untereinander. */
+        row?: boolean;
     } = $props();
 
     // Ein eigener PayPal-Button je Zahlart, in dieser Reihenfolge. Der Wert ist
@@ -57,6 +60,13 @@
         if (!clientId || clientId.length < 10) {
             errorMessage =
                 'PayPal ist nicht konfiguriert. Bitte hinterlegen Sie eine gültige Client-ID in den Einstellungen.';
+
+            return;
+        }
+
+        // Schon geladen (z. B. nach einem Layout-Wechsel): direkt rendern.
+        if (typeof paypal !== 'undefined') {
+            renderButtons();
 
             return;
         }
@@ -225,7 +235,11 @@
     {/if}
 
     <div class="relative">
-        <div class="flex flex-col gap-3">
+        <div
+            class={row
+                ? 'grid gap-3 sm:grid-cols-[repeat(auto-fit,minmax(11rem,1fr))]'
+                : 'flex flex-col gap-3'}
+        >
             {#each eligibleSources as source (source)}
                 <div id={containerId(source)} class="min-h-[45px]"></div>
             {/each}

@@ -8,3 +8,4 @@ export * from './magazine';
 export * from './articleEdit';
 export * from './socialPostEdit';
 export * from './customer';
+export * from './checkoutPages';
