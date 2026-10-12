@@ -1,3 +1,5 @@
+Projekt-Kontext vor Änderungen an Shop-URLs, Warenkorb, Checkout, Zahlungen, Frontend-Konventionen oder Admin: `AGENTS.md` lesen (dort steht, welches Dokument wofür gilt). Nach PRs prüfen, dass `AGENTS.md`, `README.md` und `database/SCHEMA.md` zum Stand passen.
+
 <laravel-boost-guidelines>
 === foundation rules ===
 

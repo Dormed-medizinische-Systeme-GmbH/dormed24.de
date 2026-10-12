@@ -1,190 +1,88 @@
 # dormed-shop — Agent Context
 
-## IDENTITY
+Medizintechnik-Shop dormed 24 (Ablösung für Shopware): Laravel 13, Inertia v3, Svelte 5. Antworten auf Deutsch.
 
-- **Name:** Dormed Shop Bot
-- **Creature:** Assistent und DevOps-Ingenieur
-- **Language:** Deutsch
+## Wohin für was
 
-> **Datenbankschema:** [`database/SCHEMA.md`](database/SCHEMA.md) — vollständige Tabellenstruktur, Spalten, Indizes und Fremdschlüssel. Muss bei jeder Schemaänderung aktualisiert werden. Immer lesen bevor Migrationen oder Modelle erstellt werden.
->
-> **Projekt-Landkarte:** [`README.md`](README.md) — übergreifende Flows (Checkout, PayPal, Verifikation, Varianten, Settings), Betrieb & Launch-Checkliste. Bei Flow-Änderungen mitpflegen.
+Das Dokument zum Thema vor der Änderung lesen, danach nachziehen.
 
-Ablösung für Shopware. Medical equipment online shop für dormed 24 (Medizintechnik). Gebaut mit Laravel 13 + Inertia v3 + Svelte 5.
+| Wenn du … | dann lies |
+| --- | --- |
+| eine Migration oder ein Model änderst | `database/SCHEMA.md` (jede Schemaänderung dort mitpflegen) |
+| einen Flow änderst (Warenkorb, Checkout, PayPal, Verifikation, Varianten) | `README.md`, Kern-Flows (Änderung dort mitpflegen) |
+| einen Fachbegriff brauchst oder benennst | `GLOSSARY.md` |
+| eine Architekturfrage entscheidest | `.docs/adr/` (Namespaces, kein Fulfillment-Status, später Capture, keine Admin-Konfiguration); Umbauplan `.todo/architektur-plan.md` |
+| Workflows, Deploy, Server, SSR oder Sandbox-Reset anfasst | `.docs/deployment.md` |
+| Offenes suchst | `TODO.md`, `ANALYSE.md` |
 
-## Was diese App ist
+## Prüfen vor dem Push
 
-B2B/B2C-Shop für Medizintechnik (Ultraschallsysteme, Zubehör, Verbrauchsmaterialien). Zwei eigenständige Bereiche:
+PHP läuft nur in der CI (PR gegen `main` öffnen, Ergebnis lesen). Lokal laufen Prettier, ESLint und `svelte-check` (`npm run types:check`) auch nach dem Schreiben von Tests, weil Testdateien mitgeprüft werden. Vitest braucht die generierten Wayfinder-Dateien (`@/actions`, `@/routes`, gitignored) und scheitert ohne sie an fehlenden Modulen. Ein PR wird erst nach grüner CI gemergt: der Deploy auf `main` hängt an denselben Gates.
 
-- **Shop-Frontend** — öffentlich, kein persistentes Layout, eigener `ShopHeader`
-- **Admin-Panel** — intern, Sidebar-`AppLayout`, eigener Auth-Guard
+## Bereiche und Auth
 
----
+Zwei getrennte Bereiche mit zwei Guards:
 
-## Auth: Zwei unabhängige Guards
+| Guard | Model | Login | Middleware |
+| --- | --- | --- | --- |
+| `web` | `Customer` (Tabelle `customers`, Fortify, Passkeys, 2FA, `MustVerifyEmail`) | `/login` | `auth` |
+| `admin` | `EnvAdmin` (aus `ADMIN_EMAIL`/`ADMIN_PASSWORD`, bcrypt-Hash; keine Tabelle, kein Fortify) | `/admin/login` | `ensure.admin` |
 
-| Guard   | Model      | Tabelle     | Login-Route    | Middleware       |
-| ------- | ---------- | ----------- | -------------- | ---------------- |
-| `web`   | `Customer` | `customers` | `/login`       | `auth` (Fortify) |
-| `admin` | `EnvAdmin` | — (Env)     | `/admin/login` | `ensure.admin`   |
+- Bestellen setzt eine bestätigte E-Mail voraus: `verified` auf `checkout.confirm/address/submit` und `paypal.order.create/capture`.
+- In Svelte ist `page.props.auth.user` der aktuelle `Customer` (Typ aus `@/types`).
+- Layouts löst `resources/js/app.ts` nach Seitenmuster auf: `Admin/*` → `AppLayout`, `Admin/Login` und `auth/*` → `AuthLayout`, `settings/*` → `CustomerLayout` + `SettingsLayout`. Alle Shop-Seiten sind standalone und binden `<ShopHeader>` und `<AppFooter>` selbst ein.
 
-- `Customer` — Shop-Kunden; Passkeys + 2FA via Fortify, implementiert `MustVerifyEmail`
-- **Bestell-Hebel:** `verified`-Middleware auf `checkout.confirm/address/submit` und `paypal.order.create/capture` — ohne bestätigte E-Mail keine Bestellung
-- `EnvAdmin` — genau ein Admin aus `ADMIN_EMAIL`/`ADMIN_PASSWORD` (bcrypt-Hash, z. B. `Hash::make()` per Tinker), Provider `env-admin`; eigener `LoginController`, kein Fortify, keine Admin-Tabelle
-- In Svelte: `page.props.auth.user` ist immer der aktuelle `Customer`
-- TypeScript-Typ: `Customer` aus `@/types`
+## Shop-URLs
 
----
+Die vier Kategorien aus `config/categories.php` sind die Einstiegsseiten; es gibt keine „Alle Produkte“-Seite.
 
-## Layout-Auflösung (`resources/js/app.ts`)
+- Kategorie: `/{kategorie}`. Produkt: `/{kategorie}/{produkt-slug}`. Suche: `/search` (JSON für den Header-Dropdown, sonst Ergebnisseite mit `noindex`).
+- Der Slug entsteht einmal beim Anlegen aus dem Namen (Kleinbuchstaben, Umlaute ausgeschrieben, Bindestriche), ist global eindeutig und ändert sich nie; der Produktname ist nach dem Anlegen unveränderlich. `Product::url()` liefert die URL, ohne Kategorie oder Slug `null`. Links über `Product::url()` oder Wayfinder (`ProductController.show.url({category, product})`) bauen.
+- Die Kategorie ist Pflicht; `Product::available()` liefert nur Produkte mit Kategorie. Alte `/products*`-URLs gibt es nicht (404, keine Weiterleitung).
+- `routes/categories.php` (Catch-all auf ein und zwei Segmente) steht in `routes/web.php` zuletzt, sonst verschluckt es feste Seiten.
+- Rating-POSTs bleiben unter `/products/{id}/ratings` (`routes/public/rating.php`).
+- Sitemap: Startseite, Info- und Unternehmensseiten, Kategorien, Produkte mit Kategorie.
 
-| Seitenmuster                  | Layout                              |
-| ----------------------------- | ----------------------------------- |
-| `Admin/*` (außer Login)       | `AppLayout` (Admin-Sidebar)         |
-| `Admin/Login`, `auth/*`       | `AuthLayout`                        |
-| `settings/*`                  | `CustomerLayout` + `SettingsLayout` |
-| alles andere (Shop-Frontend)  | keins (standalone)                  |
+## Warenkorb
 
-Standalone-Seiten (Welcome, Products/*, Checkout/*, statische Seiten) binden `<ShopHeader>` + `<AppFooter>` selbst ein.
+`App\Support\Cart\CartService` liest und schreibt den Warenkorb über den `CartStore`-Contract; `CartService::cart()` liefert das `Cart`-DTO (Positionen, Versandarten, Adressen, Summen), geteilt als Prop `cart`.
 
----
+- Session-State: `items[lineKey => quantity]`. Line-Key = `productId` oder `productId:variantId`; jede Variante ist eine eigene Zeile, das Frontend adressiert sie über `item.line_key` und `/cart/items/{product}/{variant?}`.
+- Preise und Namen kommen bei jedem Aufruf live aus der DB; der Snapshot entsteht erst in `OrderManager::createFromCart`.
+- Varianten haben einen absoluten Endpreis (`product_variants.price`); Produkte mit Varianten sind nur als Variante bestellbar, das Label wird Teil des Zeilennamens.
+- Die Zahlart gehört nicht zum Warenkorb: der Klick auf einen Zahlungs-Button bestimmt sie.
 
-## Routen-Überblick
+## Layout-Varianten
 
-| Datei                      | Routen                                    |
-| -------------------------- | ----------------------------------------- |
-| `routes/web.php`           | Home (`/`), statische Seiten (AGB, FAQ, …), Sitemap; lädt die anderen Routedateien |
-| `routes/products.php`      | `GET /products`, `/products/search`, `/products/{product}` |
-| `routes/categories.php`    | `GET /{category}` (Catch-all, ein Segment; Slugs aus `config/categories.php`) |
-| `routes/public/rating.php` | `POST /products/{product}/ratings` (anonym — siehe TODO) |
-| `routes/checkout.php`      | Cart (`/cart/items/{product}/{variant?}`), Checkout (`confirm`/`address`/`submit` mit `auth`+`verified`), Success, Kundenbestellungen |
-| `routes/paypal.php`        | `order/create` + `order/capture` (`auth`+`verified`), `after-payment`, `webhook` (signaturverifiziert, ohne CSRF) |
-| `routes/admin.php`         | Admin-CRUD (Produkte inkl. Bilder/Varianten, Hersteller, Kunden), Bestell-Aktionen (`orders.confirm-payment`, `orders.refund`), Versandarten |
-| `routes/settings.php`      | Profil, Adressen, Sicherheit (Kunde)      |
+Zum Ausprobieren mehrerer Designs einer Seite gilt das Schema aus den Admin-Masken und dem Checkout (`lib/layoutVariants.ts`, `lib/useLayoutVariant.svelte.ts`, `components/VariantSwitcher.svelte`):
 
----
+- Die Seite (Container) hält Zustand und Aktionen und gibt Bausteine als Snippets weiter; die Layout-Komponenten ordnen sie nur an und platzieren jeden Baustein genau einmal.
+- Optionen stehen in `lib/<seite>.ts` (`key`, `label`; die erste Option ist der Standard und das heutige Layout). Die Auswahl steht in `?variant=B`.
+- Pro Layout ein Test „jeder Baustein genau einmal“, pro Seite ein Rendertest je Variante.
+- Auf öffentlichen Seiten sieht jeder Besucher die Pille. Nach der Entscheidung bleibt eine Variante, die übrigen Layouts und die Pille entfallen.
 
-## Modelle & Datenbank
+## Frontend
 
-| Model            | Tabelle            | Hinweise                          |
-| ---------------- | ------------------ | --------------------------------- |
-| `Customer`       | `customers`        | Shop-Auth, Fortify, Passkeys, 2FA, `MustVerifyEmail` |
-| `Product`        | `products`         | `manufacturer_id` FK, `category_slug` + `specialties` (Slugs aus der Config), `technical_specs` (JSON), `is_available`, `available()`-Scope |
-| `ProductVariant` | `product_variants` | Absoluter Endpreis (`price`), `is_default`, `sort_order` |
-| `ProductImage`   | `product_images`   | public-Disk, `sort_order` (0 = Hauptbild) |
-| `Manufacturer`   | `manufacturers`    |                                   |
-| — (`config/categories.php`) | — | Feste Kategorien, Produkte speichern `category_slug` |
-| — (`config/specialties.php`) | — | Feste Fachrichtungen (nur Kategorien mit `has_specialties`), Produkte speichern die Slugs |
-| `Order`          | `orders`           | FK zu `customers` **nullable, ON DELETE SET NULL** (Historie überlebt Kontolöschung); Adress-Snapshots als JSON |
-| `OrderItem`      | `order_items`      | Snapshot: `product_name` (inkl. Varianten-Label), `unit_price` |
-| `Payment`        | `payments`         | PayPal-Transaktionen (order_id, capture_id, response_data) |
-| `Rating`         | `ratings`          | Anonym (Stand jetzt), FK `products` |
-| `Address`        | `addresses`        | Kunden-Stammadressen (shipping/billing, `is_default`) |
-| `ShippingMethod` | `shipping_methods` | Versandarten inkl. Preis          |
+### Svelte 5 Runes
 
----
+`$props()`, `$state()`, `$derived()`, `$effect()`, `onclick=`, `{#snippet}` + `{@render}`.
 
-## Frontend-Struktur
+### shadcn-svelte
 
-```
-resources/js/
-├── pages/
-│   ├── Welcome.svelte              # Startseite (Hero + Trust-Bar)
-│   ├── AGB/Datenschutz/FAQ/...     # Statische Seiten
-│   ├── Checkout/
-│   │   ├── Index.svelte            # Warenkorb-Review mit Tabelle
-│   │   ├── Confirm.svelte          # Bestellabschluss (Adresse, AGB, Zahlart, PayPal-Button)
-│   │   ├── Success.svelte          # Bestellbestätigung
-│   │   └── Error.svelte
-│   ├── Products/
-│   │   ├── Index.svelte            # Produktliste (InfiniteScroll, Sortierung)
-│   │   ├── ByCategory.svelte       # Kategorie-Listing
-│   │   └── Show.svelte             # Detailseite (Varianten, Zoom, Ratings, JSON-LD)
-│   ├── Admin/                      # Dashboard, Products, Orders, Customers,
-│   │                               # Manufacturers, Settings, Login
-│   ├── auth/                       # Fortify-Auth-Seiten (inkl. VerifyEmail)
-│   └── settings/                   # Profil, Adressen, Sicherheit, Bestellungen (+ Show)
-├── components/
-│   ├── ShopHeader.svelte           # Logo, Suche (+Empty-State), User-Dropdown, Cart-Trigger
-│   ├── CartSheet.svelte            # Slide-in Warenkorb (rechts)
-│   ├── PayPalButtons.svelte        # PayPal-JS-SDK: je ein Button für PayPal, Lastschrift, Kreditkarte (fetchJson)
-│   ├── AddressForm.svelte          # Wiederverwendetes Adressformular (prefix-basiert)
-│   ├── AdminDataTable.svelte       # Admin-Listen: Auswahl, Sortierung, Suche, Spalten, Leer-Zustand
-│   ├── RowActions.svelte           # Aktionsmenü: Bearbeiten, weitere Links, Löschen mit Rückfrage
-│   ├── StatusBadge.svelte          # Status-Badge aus einer StatusMap (Label + Ton, `lib/status.ts`)
-│   └── ui/                         # shadcn-svelte Komponentenbibliothek
-├── lib/
-│   ├── http.ts                     # fetchJson() — CSRF-sicherer Fetch für Nicht-Inertia-Endpoints
-│   └── currency.ts / utils.ts / …
-├── layouts/
-│   ├── AppLayout.svelte            # Admin-Sidebar-Layout
-│   ├── CustomerLayout.svelte       # Kunden-Settings-Rahmen
-│   ├── AuthLayout.svelte           # Auth-Seiten
-│   └── settings/Layout.svelte      # Settings-Sub-Layout
-├── actions/                        # Wayfinder (Controller-Routen als TS-Funktionen)
-├── routes/                         # Wayfinder (Named Routes als TS-Funktionen)
-└── types/                          # auth.ts, cart.ts (CartItem inkl. line_key/variant_*), …
-```
+- `gap-*` statt `space-*`; `size-*` bei gleicher Breite und Höhe; `cn()` aus `@/lib/utils` für bedingte Klassen.
+- `Sheet`, `Dialog`, `Drawer` bekommen immer einen `Title` (ggf. `class="sr-only"`); Overlays erhalten keine manuellen `z-index`-Werte.
+- Farben über Theme-Tokens (`primary`, `brand-accent`, `brand-secondary`), keine Hex-Werte.
 
-**Admin-Listen:** Neue Index-Seiten beschreiben nur Spalten, Suchfelder und Texte und nutzen `AdminDataTable`, `RowActions` und `StatusBadge`. Keine eigene tanstack-Verdrahtung, keine kopierten Badges oder Aktionsmenüs pro Seite. Farben für Status gibt es nur als Ton (`neutral`, `info`, `success`, `warning`, `danger`) in `lib/status.ts`.
+### Navigation und Routen
 
-**Status-Labels kommen aus PHP:** Status-Enums nutzen den Trait `App\Support\HasStatusBadge` (`label()`, `tone()`) und gehen per `Enum::badges()` als Prop an die Seite (`statuses`); Bestellstatus liegen als geteilte Prop `orderStatuses` vor (`orderStatusLabel()`/`orderStatusBadgeClass()` aus `lib/status.ts`). Keine Label- oder Farblisten im Frontend pflegen.
+- Interne Links über `<Link>` aus `@inertiajs/svelte`; `<a>` nur für externe Ziele und `tel:`, `mailto:`, `#anker`.
+- Routen über Wayfinder: Controller `@/actions/App/Http/Controllers/…`, benannte Routen `@/routes`, URL über `toUrl()` aus `@/lib/utils`.
+- **`php artisan wayfinder:generate` nur mit `--with-form`.** `vite.config.ts` generiert mit `.form()`-Helpern (die Fortify-Auth-Seiten nutzen `store.form()`); ein Aufruf ohne das Flag überschreibt sie, und die Seite bleibt clientseitig leer (`store.form is not a function`, nur in der Browser-Konsole).
+- Rohe `fetch()`-Aufrufe laufen über `fetchJson()` aus `@/lib/http` (CSRF; sonst 419). `router.*` sendet das XSRF-Token selbst.
 
-**Wichtig — CSRF:** Inertias `router.*` sendet den XSRF-Token automatisch.
-Rohe `fetch()`-Aufrufe **müssen** über `fetchJson()` aus `@/lib/http` laufen
-(sonst 419; es gibt kein csrf-Meta-Tag im Blade-Template).
+### Muster
 
----
-
-## Cart/Checkout-Daten
-
-Der Cart läuft server-seitig über **`App\Support\Cart\CartService`** (Store via `CartStore`-Contract). `CartService::cart()` liefert das vollständige Cart-Array (Items, Versand-/Zahlungsarten, Adressen, Summen) und wird in `HandleInertiaRequests` als shared Prop `cart` verteilt.
-
-- **Session-State:** `items[lineKey => quantity]`; Line-Key = `productId` oder `productId:variantId` (Varianten = eigene Zeilen).
-- **Preise live:** Namen/Preise werden bei jedem Aufruf aus der DB gelesen; der Snapshot entsteht erst in der Order (`OrderManager::createFromCart`, transaktional).
-- **Varianten:** absolutes Preismodell (`product_variants.price` = Endpreis); Produkte mit Varianten nur als Variante bestellbar; Label wird Teil des Zeilennamens.
-- Frontend adressiert Cart-Zeilen über `item.line_key` (each-Key) und `/cart/items/{product}/{variant?}`.
-
----
-
-## Frontend-Konventionen
-
-### Svelte 5 Runes (zwingend)
-
-- `let { prop } = $props()` statt `export let prop`
-- `$state()`, `$derived()`, `$effect()` statt `$:`
-- `onclick=` statt `on:click`
-- `{#snippet name(args)}` + `{@render name()}` statt `slot`
-
-### shadcn-svelte Regeln
-
-- `gap-*` nicht `space-y-*` / `space-x-*`
-- `size-*` wenn Breite = Höhe (z.B. `size-4` statt `w-4 h-4`)
-- `Sheet`, `Dialog`, `Drawer` brauchen immer einen `Title` (ggf. `class="sr-only"`)
-- Keine manuellen `z-index`-Werte auf Overlay-Komponenten
-- `cn()` aus `@/lib/utils` für bedingte Klassen
-
-### Navigation
-
-- Interne Links immer mit `<Link>` aus `@inertiajs/svelte`, nie `<a>`
-- Ausnahme: externe Links oder reine Anker (`tel:`, `mailto:`, `#section`)
-
-### Wayfinder
-
-- Controller-Routen: `import * as ProductController from '@/actions/App/Http/Controllers/ProductController'`
-- Named Routes: `import { logout } from '@/routes'`
-- URL auflösen: `toUrl(editProfile())` aus `@/lib/utils`
-- **`php artisan wayfinder:generate` manuell nur mit `--with-form`!** `vite.config.ts` hat `wayfinder({ formVariants: true })` — der Vite-Dev-Plugin generiert automatisch mit `.form()`-Helpern (von `<Form {...store.form()}>` in allen Fortify-Auth-Seiten benötigt, z.B. `auth/Login.svelte`). Ein manueller Aufruf **ohne** `--with-form` überschreibt diese Dateien mit einer Version ohne `.form()` → `store.form is not a function`, Seite crasht clientseitig komplett (leere Seite, kein Fehler im Server-Log, nur in der Browser-Konsole). Schon einmal passiert, siehe Git-Historie.
-
-### Brand-Farben (Shop-Frontend)
-
-| Name      | Wert      | Verwendung                    |
-| --------- | --------- | ----------------------------- |
-| Navy      | `#0d1f44` | Primäre CTAs, Hintergrundtext |
-| Blue      | `#1a6bbf` | Links, Icons, Akzente         |
-| Dark blue | `#1a3a5c` | Sekundärtext, Nav-Hover       |
-
-### Button-as-Link Muster (asChild)
+Button als Link (`asChild`):
 
 ```svelte
 <Button asChild class="...">
@@ -194,165 +92,50 @@ Der Cart läuft server-seitig über **`App\Support\Cart\CartService`** (Store vi
 </Button>
 ```
 
-### SheetClose + Link (Sheet schließen + navigieren)
+Sheet schließen und navigieren: `<SheetClose asChild>` mit `closeProps.onClick as () => void` am `Link`. `SheetTrigger asChild` reicht `props.onclick` (klein) weiter.
 
-```svelte
-<SheetClose asChild>
-    {#snippet children(closeProps)}
-        <Button asChild class="...">
-            {#snippet children(btnProps)}
-                <Link href="/pfad" class={btnProps.class} onclick={closeProps.onClick as () => void}>
-                    Label
-                </Link>
-            {/snippet}
-        </Button>
-    {/snippet}
-</SheetClose>
-```
+### Admin-Listen und Status
 
-**Wichtig:** `SheetTrigger asChild` reicht `props.onclick` (Kleinbuchstaben) weiter, nicht `props.onClick`.
+- Neue Index-Seiten beschreiben Spalten, Suchfelder und Texte und nutzen `AdminDataTable`, `RowActions` und `StatusBadge`; keine eigene tanstack-Verdrahtung, keine kopierten Badges.
+- Status-Labels und -Töne kommen aus PHP: Enums nutzen `App\Support\HasStatusBadge` (`label()`, `tone()`) und gehen per `Enum::badges()` als Prop (`statuses`) an die Seite; Bestellstatus als geteilte Prop `orderStatuses` (`lib/status.ts`). Töne: `neutral`, `info`, `success`, `warning`, `danger`.
 
----
+### PayPal-SDK
 
-## Backup-Dateien (nicht aktiv)
+`components/PayPalButtons.svelte` rendert pro Zahlart einen SDK-Button (`fundingSource`). Das SDK prüft Werte streng: `style.height` ist eine Zahl (25–55); ein falscher Typ wirft beim Rendern, und es erscheint kein Button. Sperren geht über `actions.disable()`/`actions.enable()` (`onInit`), nicht über ein Attribut. Änderungen an der Konfiguration brauchen einen Test in `PayPalButtons.test.ts`.
 
-- `ShopHeader-with-hover.svelte` — Mega-Menü-Variante
+## Zahlungen
 
-Nicht importiert. **Entscheidung Linus (07/2026): die Hover-Variante bleibt
-erhalten und darf nicht gelöscht werden.** (Die frühere left-align-Variante
-wurde 07/2026 entfernt.)
+Vier Bezahlarten (`PaymentMethod`): Rechnung (`invoice`) sowie PayPal, Lastschrift und Kreditkarte (`paypal`, `sepa`, `card`; alle drei laufen über PayPal und kommen als `funding_source` an `paypal.order.create`). Auf `Checkout/Confirm` steht je Zahlart ein eigener Button; Rechnung ist ein normaler Klick (`CheckoutController::submit`). Alle teilen eine Bedingung (AGB, Adresse, nicht leerer Warenkorb) und werden gemeinsam gesperrt. Bezahlarten, Status und Zahlungsstatus sind Enums (`PaymentMethod`, `OrderStatus`, `PaymentStatus`), keine Strings; Labels über `PaymentMethod::label()`.
 
----
-
-## Architektur-Entscheidungen und Begriffe
-
-- Fachbegriffe: `GLOSSARY.md` (Repo-Root). Entscheidungen (ADRs): `.docs/adr/`. Plan für den Umbau: `.todo/architektur-plan.md`.
-- Neue Geschäftslogik nach Fachgebiet unter `app/Support/<Fachgebiet>` (`.docs/adr/0001-…`), kein Modul-Paket.
-
-## Zahlungen (Payments)
-
-Zwei Bezahlarten — mehr gibt es nicht —, ein gemeinsamer Order-/Mail-Pfad über **`App\Support\Orders\OrderManager`**.
-
-| Bezahlart | Flow | Order-Status nach Abschluss |
-| --------- | ---- | --------------------------- |
-| Rechnung (`invoice`) | `CheckoutController::submit` | bleibt `pending` (Zahlung per Überweisung) |
-| PayPal (`paypal`) | `PayPalController` (JS-SDK, createOrder/captureOrder) + Return-URL `paypal/after-payment` → `PaymentReconciliation` | `paid` (nach Capture) |
+| Bezahlart | Flow | Status nach Abschluss |
+| --- | --- | --- |
+| Rechnung | `CheckoutController::submit` | `pending` (Zahlung per Überweisung) |
+| PayPal, Lastschrift, Kreditkarte | `PayPalController` (SDK createOrder/captureOrder) und Return-URL `paypal/after-payment` → `PaymentReconciliation` | `paid` nach Capture |
 
 Regeln:
 
-- **`OrderManager` ist die einzige Stelle**, die aus dem Cart eine Order baut (`createFromCart`, in DB-Transaktion) und den **Bestellstatus ändert** (`transitionTo`, atomar → keine Doppel-Mails; `markPaid`, `confirmInvoicePayment`, `cancelAbandonedPayPalOrders`). Welche Übergänge erlaubt sind, steht in `App\Support\Orders\OrderStatus::reachableFrom()` (Tabelle in `.todo/architektur-plan.md`, Phase 1.2). Status, Zahlungsstatus und Bezahlart sind Enums (`OrderStatus`, `PaymentStatus`, `PaymentMethod`), keine Strings. Neue Gateways andocken über einen weiteren Adapter für `App\Support\Orders\Gateway\PaymentGateway`, nicht in den Controllern duplizieren. Kein `$order->update(['status' => …])` außerhalb des OrderManagers. **Zwei getrennte Mail-Pfade, nicht austauschbar:**
-  - `sendConfirmations()` / `markPaid()` — „Bestellung ist eingegangen und bezahlt": `OrderConfirmationMail` (Kunde, inkl. Bankdaten-Block falls noch unbezahlt) **+** `NewOrderMail` (Betreiber). Für Rechnung bei `submit()` direkt (Bank-Hinweis), für PayPal einmalig bei `markPaid()` nach Capture/Webhook (einziger Zeitpunkt, an dem der Betreiber informiert wird).
-  - `confirmInvoicePayment()` — manuelle Zahlungseingangs-Bestätigung bei Rechnung (Admin-Button): **eigenes** `PaymentConfirmationMail`/`payment-confirmation.blade.php` (kein Bankdaten-Block, andere Formulierung), **nur an den Kunden**, nie an den Betreiber (der bestätigt es ja gerade selbst). Absichtlich kein `if/else` innerhalb eines gemeinsamen Templates — die beiden Zustände „bitte zahlen" und „danke, bezahlt" sind komplett getrennte Mailables/Views.
-- **Bestellen nur mit bestätigter E-Mail** (`verified`-Middleware, siehe Auth-Abschnitt).
-- **Angebotene Zahlarten sind fest verdrahtet**: Kauf auf Rechnung + PayPal (kein Admin-Setting, kein Provider-Umschalter). Labels/Reihenfolge in `config/shop.php`, Auswahl-UI: Radio auf `Checkout/Confirm`.
-- **Keine Konfiguration im Admin** (`.docs/adr/0004-…`): Kontakt und Bankverbindung in `config/shop.php`, gelesen nur über `App\Support\ShopContact`; Zugangsdaten in der Env; Shopname = `APP_NAME`. Keine Einstellungsseite und keine `settings`-Tabelle wieder einführen.
-- **Sandbox/Live** = `App\Support\PaymentMode`: live nur bei `APP_ENV=production` **und** `APP_DEBUG=false`, sonst sandbox. Kein Admin-Override, kein Setting.
-- **Zugangsdaten nur aus der Env:** PayPal (`PAYPAL_SANDBOX_*`/`PAYPAL_LIVE_*`, `config/paypal.php`) und SMTP (`MAIL_SANDBOX_*`/`MAIL_LIVE_*`, `config/mail.php` → `modes`, angewendet durch `ModeMailConfiguration`); der Modus wählt das Set. Nichts davon im Admin-UI.
-- **PayPal als Adapter (Phase 2):** Der `PaymentGateway`-Seam trennt drei Schichten, und nur so:
+- **`App\Support\Orders\OrderManager` ist die einzige Stelle**, die aus dem Cart eine Order baut (`createFromCart`, transaktional) und den Bestellstatus ändert (`transitionTo` atomar, `markPaid`, `confirmInvoicePayment`, `cancelAbandonedPayPalOrders` für alle PayPal-Zahlarten). Erlaubte Übergänge: `OrderStatus::reachableFrom()`. Kein `$order->update(['status' => …])` außerhalb.
+- Neue Gateways docken über einen Adapter für `App\Support\Orders\Gateway\PaymentGateway` an; Controller bleiben frei von Gateway-Logik.
+- **Zwei getrennte Mail-Pfade:**
+  - `sendConfirmations()` / `markPaid()` → `OrderConfirmationMail` (Kunde, mit Bankdaten falls unbezahlt) und `NewOrderMail` (Betreiber). Rechnung direkt bei `submit()`, PayPal einmalig bei `markPaid()`.
+  - `confirmInvoicePayment()` (Admin-Button) → eigenes `PaymentConfirmationMail`, nur an den Kunden, eigenes Template. Kein `if/else` in einem gemeinsamen Template.
+- **PayPal in drei Schichten:**
   - `PayPalService` spricht über das SDK mit der API und gibt rohes JSON zurück.
-  - `PayPalGateway` übersetzt es in neutrale Ergebnisse (`CreatedPayment`, `CaptureResult`, `RefundResult`, `WebhookEvent`). **Nur hier wird PayPal-JSON gelesen**, und hier wird kein Model geschrieben.
-  - `PaymentReconciliation` (Zahlungsabgleich) entscheidet: Betrag/Währung prüfen, Abweichung + Betreiber-Mail, Payment-Status setzen, Bestell-Übergänge über den `OrderManager`. JS-Capture, Return-URL, Webhooks und Admin-Erstattung laufen alle hier durch.
-  - Der `PayPalController` macht nur HTTP (Eigentum prüfen, Antwort bauen, Warenkorb leeren). Tests für Abgleich-Regeln gegen `Tests\Support\FakePaymentGateway`, Tests für PayPal-JSON gegen die Fixtures (`PayPalGatewayTest`).
-- **Webhooks** (`/paypal/webhook`): signaturverifiziert; `CAPTURE.COMPLETED` → `markPaid`; `CAPTURE.REFUNDED`/`DENIED`/`REVERSED` setzen Payment **und** Order (Achtung: beim Refund ist `resource.id` die Refund-ID, die Capture-ID steckt im `up`-Link; das löst `PayPalGateway`).
-- **Benachrichtigungs-Empfänger** = fest `config('shop.contact.email')` über `App\Support\ShopContact` (dieselbe Kontakt-Mail-Adresse wie im Shop-Frontend), kein separates Feld, kein Fallback. Beide Bestellmails laufen **synchron** im Request (kein Queue-Worker nötig; bei ~5 Mails/Tag ist der Overhead vernachlässigbar).
-- **Admin-Bestellaktionen** unter `Admin/Orders/Show`: `orders.confirm-payment` (einzige manuelle Status-Änderung, s.u.) + PayPal-Refund (`orders.refund`).
+  - `PayPalGateway` übersetzt es in `CreatedPayment`, `CaptureResult`, `RefundResult`, `WebhookEvent`; nur hier wird PayPal-JSON gelesen, hier wird nichts gespeichert.
+  - `PaymentReconciliation` prüft Betrag und Währung, setzt den Payment-Status, mailt bei Abweichung und löst Bestell-Übergänge über den `OrderManager` aus. JS-Capture, Return-URL, Webhooks und Admin-Erstattung laufen alle hier durch.
+  - `PayPalController` macht nur HTTP (Eigentum prüfen, Antwort bauen, Warenkorb leeren). Tests für Abgleich-Regeln nutzen `Tests\Support\FakePaymentGateway`, Tests für PayPal-JSON die Fixtures (`PayPalGatewayTest`).
+- **Webhooks** (`/paypal/webhook`, signaturverifiziert): `CAPTURE.COMPLETED` → `markPaid`; `REFUNDED`/`DENIED`/`REVERSED` setzen Payment und Order. Beim Refund ist `resource.id` die Refund-ID, die Capture-ID steckt im `up`-Link (löst `PayPalGateway`).
+- **Modus:** `App\Support\PaymentMode` — live nur bei `APP_ENV=production` und `APP_DEBUG=false`, sonst sandbox; kein Admin-Override. Zugangsdaten nur aus der Env (`PAYPAL_SANDBOX_*`/`PAYPAL_LIVE_*`, `MAIL_SANDBOX_*`/`MAIL_LIVE_*`, angewendet durch `ModeMailConfiguration`).
+- **Keine Konfiguration im Admin** (`.docs/adr/0004`): Kontakt und Bankverbindung stehen in `config/shop.php` und werden nur über `App\Support\ShopContact` gelesen; Shopname = `APP_NAME`. Empfänger der Betreibermails ist `config('shop.contact.email')`; beide Bestellmails laufen synchron im Request.
 
-### Betriebsmodell — wo hört die Automatisierung auf?
+### Betriebsmodell
 
-Der Shop deckt **ausschließlich** Bestellannahme + Zahlungsabwicklungsschicht ab. Alles danach (Rechnungsstellung, DPD-Versand, Buchhaltung) läuft **außerhalb** des Systems, manuell im Rechnungswesen — das ist bewusst so und keine offene Baustelle:
+Der Shop deckt Bestellannahme und Zahlungsabwicklung ab; Rechnungsstellung, DPD-Versand und Buchhaltung laufen bewusst außerhalb im Rechnungswesen.
 
-- **PayPal-Bestellungen sind vollautomatisch und darf der Admin nicht manuell anfassen.** Status (`pending`/`paid`/`failed`/`refunded`/`cancelled`) wird ausschließlich vom Capture-Flow bzw. Webhook ausgelöst (`PayPalController` → `PaymentReconciliation` → `OrderManager`). Ein verspäteter Capture macht eine `failed`/`cancelled`-Bestellung bezahlt, `refunded` ist endgültig (`.docs/adr/0003-…`). Es gibt **kein** Status-Dropdown im Admin.
-- **Rechnungsbestellungen (`invoice`)**: einzige manuelle Aktion ist „Zahlungseingang bestätigen" (`OrderController::confirmPayment`, Route `orders.confirm-payment`) — setzt `pending` → `paid`, wenn eine Überweisung/Lastschrift eingegangen ist. Nur möglich, wenn `payment_method === 'invoice'` **und** Status `pending` ist; sonst 422. Kein anderer Statuswert ist über die UI erreichbar.
-- **Es gibt keinen Fulfillment-Status im System** (kein „in Bearbeitung"/„versendet"/„abgeschlossen" — bewusst entfernt, siehe Git-Historie). `paid` ist der finale Erfolgszustand; Versand/Rechnung/DPD-Tracking passiert in der externen Rechnungssoftware.
-- Storno (`cancelled`) über den Admin ist aktuell **nicht** vorgesehen — nur PayPal selbst (Abbruch/Timeout) oder eine zukünftige bilaterale PayPal-Storno-Anbindung dürfen das setzen.
+- PayPal-Bestellungen steuert allein der Capture-Flow bzw. Webhook (`PayPalController` → `PaymentReconciliation` → `OrderManager`); der Admin ändert sie nicht. Ein verspäteter Capture macht eine `failed`/`cancelled`-Bestellung bezahlt, `refunded` ist endgültig (`.docs/adr/0003`). Es gibt kein Status-Dropdown im Admin.
+- Rechnungsbestellungen: einzige manuelle Aktion ist „Zahlungseingang bestätigen“ (`orders.confirm-payment`, `pending` → `paid`; nur bei `payment_method === 'invoice'` und Status `pending`, sonst 422). Zusätzlich gibt es PayPal-Refund (`orders.refund`).
+- Es gibt keinen Fulfillment-Status (`.docs/adr/0002`); `paid` ist der finale Erfolgszustand. Storno über den Admin ist nicht vorgesehen.
 
----
+## Entscheidung Linus
 
-## CI/CD & Deployment
-
-**Ziel:** Auf den Server muss man **nur noch für einen Sandbox-Reset** (`migrate:fresh --seed`). Alles andere macht der Deploy automatisch beim Push auf `main`.
-
-### Die drei Workflows (`.github/workflows/`)
-
-| Workflow | Läuft bei | Inhalt |
-| --- | --- | --- |
-| `tests.yml` | Push (develop/master/workos), PR, **+ `workflow_call`** | PHPStan + PHPUnit + Build, **PHP 8.4** |
-| `lint.yml` | Push (develop/master/workos), PR, **+ `workflow_call`** | Pint + ESLint + Prettier |
-| `deploy.yml` | **Push auf `main`** + manuell (`workflow_dispatch`) | ruft beide Gates auf, deployt danach per SSH |
-
-**Das „depends on":** `deploy.yml` ruft `tests.yml` und `lint.yml` als *reusable workflows* (`uses:`) auf und wartet per **`needs: [tests, lint]`**. Der Deploy-Job startet nur, wenn **beide grün** sind. Deshalb fehlt `main` bewusst in den `push`-Triggern von tests/lint — sonst liefen sie doppelt.
-
-**PHP-Matrix:** nur `8.4`. `composer.json` verlangt `"php": "^8.4"` — **8.3 kann strukturell nicht funktionieren** und schlug deshalb immer fehl (früher fälschlich in der Matrix).
-
-### Deploy-Modell (Server)
-
-- **SSH-User: `deploy`** — niemals `root`, niemals `www-data`. Kein `sudo -u www-data`.
-- **Webserver läuft weiter als `www-data`**; der braucht nur Lese-/Ausführrechte auf die App und **Schreibrechte auf `storage/`, `bootstrap/cache/` + `database/`**. Das `database/`-Verzeichnis ist kein Versehen: `SESSION_DRIVER=database` + `CACHE_STORE=database` heißt, **jeder einzelne Request schreibt in die SQLite-Datei** — fehlt hier Schreibrecht, gibt's einen sofortigen HTTP 500 auf jeder Seite (schon einmal passiert). `deploy.yml` erzwingt das bei jedem Lauf per `chmod -R g+w storage bootstrap/cache database` — läuft als `deploy` (Dateibesitzer), kein `sudo` nötig.
-- **App-Pfad:** `/var/www/test.dormed24.de`
-- Der Deploy führt aus: `git pull --ff-only` → `composer install --no-dev` → `npm ci` → **`npm run build:ssr`** → `optimize:clear` → **`migrate --force`** → `optimize` → **`inertia:stop-ssr`** (SSR-Reload).
-- **`migrate --force` spielt nur NEUE Migrationen ein und löscht nie Daten.** Ein **`migrate:fresh --seed` (Sandbox-Reset) passiert ausschließlich manuell auf dem Server** — bewusst nie im Deploy.
-- `git pull --ff-only` bricht ab statt zu mergen, falls der Server divergiert (lieber roter Deploy als Merge-Chaos).
-
-### SSR läuft auf dem Server dauerhaft
-
-- Server-`.env`: **`INERTIA_SSR_ENABLED=true`** (der Schalter lebt in der `.env` — die ist **gitignored**, wird also **nie** gepusht. Ein Push schaltet SSR nirgends ein, er liefert nur die Fähigkeit.)
-- Der Deploy baut deshalb **`npm run build:ssr`** (Client **+** `bootstrap/ssr/app.js`).
-- Ein **systemd-Dienst** (`inertia-ssr-test.service`, `Restart=always`) hält `php artisan inertia:start-ssr` dauerhaft am Laufen.
-- **Reload nach dem Deploy:** `php artisan inertia:stop-ssr` fährt den Prozess per HTTP herunter, systemd startet ihn dank `Restart=always` sofort mit dem **neuen Bundle** neu. Kein `sudo` nötig. Ohne diesen Schritt würde SSR nach dem Deploy weiter den **alten** Code ausliefern.
-- Die systemd-Unit läuft als **`deploy`**, nicht `www-data`: Node liegt unter `/home/deploy/.local/node-v22/` (Symlink `/usr/local/bin/node`), `www-data` kommt in ein Home mit Modus `750` typischerweise nicht hinein — mit `User=www-data` stirbt der Dienst mit „node not found" in einer Restart-Schleife (schon einmal passiert). Nebeneffekt: least privilege, der SSR-Prozess braucht ohnehin keine Webserver-Rechte.
-
-### GitHub-Konfiguration
-
-**Secret** (Settings → Secrets → Actions) — nur der private Key ist geheim:
-
-| Name | Inhalt |
-| --- | --- |
-| `DEPLOY_SSH_KEY` | **privater** SSH-Key (der öffentliche liegt in `/home/deploy/.ssh/authorized_keys`) |
-
-**Variables** (Settings → Variables → Actions) — nicht geheim, deshalb bewusst *keine* Secrets:
-
-| Name | Wert |
-| --- | --- |
-| `DEPLOY_HOST` | `test.dormed24.de` |
-| `DEPLOY_USER` | `deploy` |
-| `DEPLOY_PATH` | `/var/www/test.dormed24.de` |
-| `SSH_KNOWN_HOSTS` | Ausgabe von `ssh-keyscan test.dormed24.de` (öffentlicher Host-Key → verhindert MITM) |
-
-**Kein `DEPLOY_PORT`** — Port 22 ist Default, ein Secret dafür wäre sinnlos.
-
-### Server-Anforderungen (sonst bricht der Deploy)
-
-- **PHP 8.4** (Projekt-Constraint).
-- **Node ≥ 20.19** — Vite 8 crasht auf Node 18 (`CustomEvent is not defined`). Node muss im **PATH des `deploy`-Users bei nicht-interaktiver SSH-Session** liegen (nvm in `~/.bashrc` reicht dafür oft **nicht**!). Der Workflow prüft das explizit und bricht mit klarer Meldung ab.
-- **Node muss auch für den SSR-Dienst auffindbar sein** — Node **systemweit** installieren bzw. per Symlink in `/usr/local/bin/node` erreichbar machen (nicht ausschließlich per nvm im Home eines einzelnen Users), sonst findet die systemd-Unit ihn nicht.
-- **SSR-Dienst muss laufen** (`inertia-ssr-test.service`) — sonst läuft `INERTIA_SSR_ENABLED=true` ins Leere. Siehe SSR-Abschnitt oben.
-
-### ⚠️ `lint.yml` ist derzeit ein weiches Gate
-
-`lint.yml` ruft `npm run format` (`prettier --write`) und `npm run lint` (`eslint --fix`) — **mutierende** Varianten. Es scheitert nur an *nicht* auto-fixbaren Fehlern, nicht an Formatierungs-Drift. Das echte Gate ist damit `tests.yml` (PHPStan + PHPUnit).
-**Um es scharf zu machen:** einmal `npm run format` + `vendor/bin/pint` laufen lassen und committen (räumt ~29 Dateien Prettier-Drift + Pint-Drift auf), dann in `lint.yml` auf `composer lint:check`, `npm run lint:check`, `npm run format:check` umstellen. `composer ci:check` bündelt bereits das komplette Gate.
-
-### Sandbox-Reset — kein Skript, nur die nackten Befehle
-
-Kein `update.sh` mehr: `deploy.yml` hält Code/Dependencies/Assets bei jedem Push
-aktuell, ein Wrapper-Skript für die restlichen paar Befehle wäre unnötige
-Abstraktion für eine seltene, bewusste Handaktion. Der Sandbox-Reset (Katalog auf
-sauberen Demo-Stand zurücksetzen) läuft manuell auf dem Server:
-
-```bash
-php artisan optimize:clear
-php artisan migrate:fresh --seed --force
-php artisan optimize
-php artisan inertia:stop-ssr   # systemd startet den SSR-Prozess per Restart=always neu
-```
-
-**`migrate:fresh --seed` passiert ausschließlich hier, manuell** — `deploy.yml`
-macht das nie (nutzt `migrate --force`, das nur neue Migrationen einspielt und
-nie Daten löscht).
-
----
-
-## Noch nicht gebaut
-
-- Wartungsmodus, Produktfilter, Bulk-Aktionen, Bestell-/Kunden-Filter im Admin (siehe `TODO.md`)
-- Bestellbasierte Bewertungen (Route + Formular bis dahin deaktiviert, siehe `ANALYSE.md`)
+`ShopHeader-with-hover.svelte` (Mega-Menü-Variante) sollte laut Entscheidung 07/2026 erhalten bleiben. PR #40 hat die Datei gelöscht (sie referenzierte die entfernte Route `ProductController.index`); ob sie wiederhergestellt wird, ist offen.

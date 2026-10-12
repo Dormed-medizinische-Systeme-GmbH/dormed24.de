@@ -28,7 +28,7 @@ mitnehmen.
 
 `CheckoutController::submit()` ist nicht idempotent. Zwei parallele Requests
 lesen beide einen gefüllten Warenkorb und legen zwei Orders an. Der
-Hold-to-confirm-Button macht das unwahrscheinlich. Abhilfe bei Bedarf:
+Der Button „Kaufen auf Rechnung“ sperrt sich nicht gegen einen zweiten Klick, solange die Anfrage läuft. Abhilfe:
 `Cache::lock` um den Submit oder ein Idempotency-Key aus der Session.
 
 ## 🔍 SEO

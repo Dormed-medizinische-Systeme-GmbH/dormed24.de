@@ -49,7 +49,6 @@ const filledCart: Cart = {
             quantity: 2,
             unit_price: '10.00',
             line_total: '20.00',
-            line_total_cents: 2000,
             image_url: null,
             product_url: '/zubehoer/blutdruckmessgeraet',
             is_available: true,
@@ -58,10 +57,10 @@ const filledCart: Cart = {
     shipping_methods: [
         {
             id: '1',
+            provider: 'shipping',
             label: 'Standard',
             description: 'DHL',
             price: '4.90',
-            price_cents: 490,
             selected: true,
         },
     ],
