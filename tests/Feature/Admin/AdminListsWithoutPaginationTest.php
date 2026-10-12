@@ -91,4 +91,14 @@ class AdminListsWithoutPaginationTest extends TestCase
                     ->where('filters.search', 'praxis-mueller')
             );
     }
+
+    public function test_customer_search_ignores_case(): void
+    {
+        $match = Customer::factory()->create(['name' => 'Praxis Müller', 'email' => 'mueller@example.com']);
+        Customer::factory()->create(['name' => 'Dr. Schmidt', 'email' => 'schmidt@example.com']);
+
+        $this->actingAsAdmin()
+            ->get(route('admin.customers.index', ['search' => 'PRAXIS']))
+            ->assertInertia(fn ($page) => $page->has('customers', 1)->where('customers.0.id', $match->id));
+    }
 }

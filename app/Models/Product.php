@@ -140,7 +140,9 @@ class Product extends Model
      */
     public function ratings(): HasMany
     {
-        return $this->hasMany(Rating::class)->latest();
+        // id als zweites Kriterium: bei gleichem Zeitstempel sonst je nach
+        // Datenbank unterschiedliche Reihenfolge.
+        return $this->hasMany(Rating::class)->latest()->latest('id');
     }
 
     /**
@@ -164,15 +166,18 @@ class Product extends Model
     /**
      * Name-Teilstringsuche mit escapten LIKE-Wildcards: `%` und `_` im
      * Suchbegriff werden literal gematcht, nicht als Platzhalter (verhindert,
-     * dass z. B. "%" alle Produkte zieht). ESCAPE-Klausel für Portabilität
-     * MySQL/SQLite.
+     * dass z. B. "%" alle Produkte zieht). Groß-/Kleinschreibung zählt nicht:
+     * Postgres braucht dafür ILIKE, SQLite vergleicht mit LIKE ohnehin so.
+     * ESCAPE-Klausel, weil SQLite kein Standard-Escape-Zeichen hat.
      *
      * @param  Builder<Product>  $query
      * @return Builder<Product>
      */
     public function scopeNameLike(Builder $query, string $term): Builder
     {
-        return $query->whereRaw('name LIKE ? ESCAPE ?', [
+        $operator = $query->getModel()->getConnection()->getDriverName() === 'pgsql' ? 'ILIKE' : 'LIKE';
+
+        return $query->whereRaw("name {$operator} ? ESCAPE ?", [
             '%'.addcslashes($term, '%_\\').'%',
             '\\',
         ]);

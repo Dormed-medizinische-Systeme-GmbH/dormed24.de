@@ -1,0 +1,145 @@
+# Stack für dev.dormed24.de, deployt von Coolify (Ressource „Docker Compose“).
+#
+# Dieselben Services wie compose.yaml, aber ohne Build: Coolify zieht die
+# fertigen Images, die `deploy.yml` nach grünen Tests nach GHCR schiebt. So
+# baut der Server nichts selbst. Die Env-Variablen pflegt Coolify (UI);
+# was den Stack selbst betrifft, steht unten unter `environment`.
+#
+# Ablauf bei jedem Deploy: Images ziehen → `migrate` läuft einmal durch →
+# erst danach starten app, queue und scheduler mit dem neuen Code.
+#
+# Coolify hat keine Domain und keinen Proxy (Server-Proxy „None“). Die App
+# hört nur auf 127.0.0.1:${APP_PORT:-8081}; TLS und Domain macht der Nginx
+# auf dem Host (proxy_pass, siehe .docs/deployment.md).
+
+x-app: &app
+    image: ${APP_IMAGE:-ghcr.io/dormed-medizinische-systeme-gmbh/dormed24-app:dev}
+    pull_policy: always
+    restart: unless-stopped
+    # Coolify schreibt die Variablen aus der UI in .env neben diese Datei.
+    env_file:
+        - path: .env
+          required: false
+    environment: &app-environment
+        DB_CONNECTION: pgsql
+        DB_HOST: postgres
+        DB_PORT: 5432
+        DB_DATABASE: ${DB_DATABASE:-dormed24}
+        DB_USERNAME: ${DB_USERNAME:-dormed24}
+        DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD in Coolify setzen}
+        REDIS_HOST: redis
+        REDIS_PORT: 6379
+        QUEUE_CONNECTION: redis
+        CACHE_STORE: redis
+        SESSION_DRIVER: redis
+        LOG_CHANNEL: stderr
+        INERTIA_SSR_ENABLED: "true"
+        INERTIA_SSR_URL: http://ssr:13714
+        TRUSTED_PROXIES: "*"
+    volumes:
+        - storage:/app/storage
+    depends_on:
+        postgres:
+            condition: service_healthy
+        redis:
+            condition: service_healthy
+        migrate:
+            condition: service_completed_successfully
+
+services:
+    # Release-Schritt: läuft bei jedem Deploy einmal und beendet sich. Schlägt
+    # er fehl, starten app, queue und scheduler nicht mit dem neuen Image.
+    migrate:
+        image: ${APP_IMAGE:-ghcr.io/dormed-medizinische-systeme-gmbh/dormed24-app:dev}
+        pull_policy: always
+        restart: "no"
+        command: ["php", "artisan", "migrate", "--force"]
+        env_file:
+            - path: .env
+              required: false
+        environment: *app-environment
+        volumes:
+            - storage:/app/storage
+        depends_on:
+            postgres:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+        healthcheck:
+            disable: true
+
+    app:
+        <<: *app
+        ports:
+            - "127.0.0.1:${APP_PORT:-8081}:80"
+        depends_on:
+            postgres:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+            migrate:
+                condition: service_completed_successfully
+            ssr:
+                condition: service_healthy
+        mem_limit: 512m
+
+    queue:
+        <<: *app
+        command: ["php", "artisan", "queue:work", "redis", "--sleep=3", "--tries=3", "--max-time=3600"]
+        stop_grace_period: 60s
+        healthcheck:
+            test: ["CMD-SHELL", "grep -q queue:work /proc/1/cmdline"]
+            interval: 30s
+            timeout: 3s
+            start_period: 10s
+        mem_limit: 256m
+
+    scheduler:
+        <<: *app
+        command: ["php", "artisan", "schedule:work"]
+        healthcheck:
+            test: ["CMD-SHELL", "grep -q schedule:work /proc/1/cmdline"]
+            interval: 30s
+            timeout: 3s
+            start_period: 10s
+        mem_limit: 192m
+
+    ssr:
+        image: ${SSR_IMAGE:-ghcr.io/dormed-medizinische-systeme-gmbh/dormed24-ssr:dev}
+        pull_policy: always
+        restart: unless-stopped
+        mem_limit: 384m
+
+    postgres:
+        image: postgres:17-alpine
+        restart: unless-stopped
+        environment:
+            POSTGRES_DB: ${DB_DATABASE:-dormed24}
+            POSTGRES_USER: ${DB_USERNAME:-dormed24}
+            POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD in Coolify setzen}
+        volumes:
+            - postgres:/var/lib/postgresql/data
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+            interval: 5s
+            timeout: 3s
+            retries: 20
+        mem_limit: 512m
+
+    redis:
+        image: redis:7-alpine
+        restart: unless-stopped
+        command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+        volumes:
+            - redis:/data
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 5s
+            timeout: 3s
+            retries: 20
+        mem_limit: 128m
+
+volumes:
+    storage:
+    postgres:
+    redis:

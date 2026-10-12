@@ -29,6 +29,42 @@ jobs:
         # (schlug bisher immer fehl). 8.4 ist auch die Produktionsversion.
         php-version: ['8.4']
 
+    # Tests laufen gegen dieselbe Datenbank wie Produktion (Postgres);
+    # Redis steht für Tests bereit, die Queue oder Cache wirklich brauchen.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: testing
+          POSTGRES_USER: testing
+          POSTGRES_PASSWORD: testing
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U testing -d testing"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+
+    # Überschreibt die SQLite-Vorgabe aus phpunit.xml (dort nicht "force").
+    env:
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: testing
+      DB_USERNAME: testing
+      DB_PASSWORD: testing
+      REDIS_HOST: 127.0.0.1
+
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
@@ -40,6 +76,7 @@ jobs:
         with:
           php-version: ${{ matrix.php-version }}
           tools: composer:v2
+          extensions: pdo_pgsql, pdo_sqlite, redis
           coverage: xdebug
 
       - name: Setup Node
