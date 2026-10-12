@@ -73,15 +73,22 @@ services:
         command: ["php", "artisan", "queue:work", "redis", "--sleep=3", "--tries=3", "--max-time=3600"]
         # Zeit, den laufenden Job bei SIGTERM zu Ende zu bringen.
         stop_grace_period: 60s
+        # Kein HTTP: gesund, solange der Worker der Hauptprozess ist.
         healthcheck:
-            disable: true
+            test: ["CMD-SHELL", "grep -q queue:work /proc/1/cmdline"]
+            interval: 30s
+            timeout: 3s
+            start_period: 10s
         mem_limit: 256m
 
     scheduler:
         <<: *app
         command: ["php", "artisan", "schedule:work"]
         healthcheck:
-            disable: true
+            test: ["CMD-SHELL", "grep -q schedule:work /proc/1/cmdline"]
+            interval: 30s
+            timeout: 3s
+            start_period: 10s
         mem_limit: 192m
 
     ssr:
