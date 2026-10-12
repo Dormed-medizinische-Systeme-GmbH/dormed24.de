@@ -18,12 +18,10 @@ Engine: **SQLite** (Entwicklung) — Produktionsumgebung: MySQL/MariaDB-kompatib
 | `shipping_methods`    | Versandarten mit Bezeichnung und Preis     |
 | `addresses`           | Adressen (Customer-Profil)                 |
 | `manufacturers`       | Hersteller (FK von `products`)             |
-| `categories`          | Produktkategorien                          |
 | `payments`            | PayPal-Transaktionen (FK zu `orders`)      |
 | `orders`              | Bestellungen (FK zu `customers`)           |
 | `order_items`         | Bestellpositionen                          |
 | `ratings`             | Produktbewertungen (FK zu `products`)      |
-| `settings`            | Key-Value-Konfiguration                    |
 | `passkeys`            | WebAuthn-Passkeys (FK zu `customers`)      |
 | `sessions`            | Laravel-Session-Store                      |
 | `cache`               | Laravel-Cache                              |
@@ -127,9 +125,12 @@ Indexe:
 |-------------------|----------|----------|---------|----------------------------------|
 | `id`              | integer  | NO       | —       | PK, autoincrement                |
 | `manufacturer_id` | integer  | YES      | —       | FK → `manufacturers.id` CASCADE  |
-| `category_id`     | integer  | YES      | —       | FK → `categories.id` SET NULL    |
-| `name`            | varchar  | NO       | —       |                                  |
+| `category_slug`   | varchar  | YES      | —       | INDEX; Slug aus `config/categories.php` (im Shop Pflicht) |
+| `name`            | varchar  | NO       | —       | nach dem Anlegen unveränderlich  |
+| `slug`            | varchar  | YES      | —       | UNIQUE; einmal beim Anlegen aus dem Namen erzeugt, Teil der Shop-URL |
 | `description`     | text     | YES      | —       |                                  |
+| `technical_specs` | json     | YES      | —       | Technische Daten (geordnete Liste) |
+| `specialties`     | json     | YES      | —       | Fachrichtungs-Slugs aus `config/specialties.php` |
 | `price`           | numeric  | NO       | —       | decimal(10,2)                    |
 | `is_available`    | boolean  | NO       | `true`  | Shop-Verfügbarkeit               |
 | `created_at`      | datetime | YES      | —       |                                  |
@@ -188,19 +189,6 @@ Versandarten für den Shop. Preis nullable = "auf Anfrage".
 
 ---
 
-## categories
-
-| Spalte        | Typ      | Nullable | Default | Hinweis           |
-|---------------|----------|----------|---------|-------------------|
-| `id`          | integer  | NO       | —       | PK, autoincrement |
-| `name`        | varchar  | NO       | —       |                   |
-| `slug`        | varchar  | NO       | —       | UNIQUE            |
-| `description` | text     | YES      | —       |                   |
-| `created_at`  | datetime | YES      | —       |                   |
-| `updated_at`  | datetime | YES      | —       |                   |
-
----
-
 ## orders
 
 Bestellungen mit JSON-Adress-Snapshots (immutable zum Zeitpunkt der Bestellung).
@@ -210,7 +198,7 @@ Bestellungen mit JSON-Adress-Snapshots (immutable zum Zeitpunkt der Bestellung).
 | `id`                        | integer  | NO       | —           | PK, autoincrement                   |
 | `customer_id`               | integer  | **YES**  | —           | FK → `customers.id` **SET NULL** — Historie überlebt Kontolöschung (GoBD) |
 | `status`                    | varchar  | NO       | `'pending'` | pending/paid/cancelled/failed/refunded |
-| `payment_method`            | varchar  | YES      | —           | invoice / paypal                    |
+| `payment_method`            | varchar  | YES      | —           | invoice / paypal / sepa / card      |
 | `is_test`                   | boolean  | NO       | `false`     | true = Sandbox-/Testbestellung      |
 | `total_amount`              | numeric  | NO       | —           | decimal(10,2)                       |
 | `shipping_amount`           | numeric  | NO       | `0.00`      | decimal(10,2), Versandkosten        |
@@ -300,19 +288,6 @@ Indexe:
 
 Indexe:
 - `ratings_product_id_created_at_index` auf (`product_id`, `created_at`)
-
----
-
-## settings
-
-Key-Value-Store für Systemkonfiguration (SMTP, Shop-Name, etc.).
-
-| Spalte       | Typ      | Nullable | Default | Hinweis      |
-|--------------|----------|----------|---------|--------------|
-| `key`        | varchar  | NO       | —       | PK (string)  |
-| `value`      | text     | YES      | —       |              |
-| `created_at` | datetime | YES      | —       |              |
-| `updated_at` | datetime | YES      | —       |              |
 
 ---
 
@@ -460,7 +435,6 @@ Laravel-Migrationsstatus.
 | Tabelle       | Spalte              | Ziel                   | ON DELETE |
 |---------------|---------------------|------------------------|-----------|
 | `products`    | `manufacturer_id`   | `manufacturers.id`     | CASCADE   |
-| `products`    | `category_id`       | `categories.id`        | SET NULL  |
 | `product_variants` | `product_id`    | `products.id`          | CASCADE   |
 | `addresses`   | `customer_id`       | `customers.id`         | CASCADE   |
 | `orders`      | `customer_id`       | `customers.id`         | SET NULL  |

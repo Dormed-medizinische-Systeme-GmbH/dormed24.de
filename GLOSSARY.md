@@ -13,7 +13,7 @@ Der Stand einer Bestellung aus Sicht des Shops: offen, bezahlt, fehlgeschlagen, 
 _Avoid_: Fulfillment-Status, Auftragsstatus
 
 **Bezahlart**:
-Der Weg, auf dem eine Bestellung bezahlt wird: Rechnung oder PayPal.
+Der Weg, auf dem eine Bestellung bezahlt wird: Rechnung, PayPal, Lastschrift oder Kreditkarte (die letzten drei laufen über PayPal).
 _Avoid_: Zahlungsmethode, Zahlungsanbieter
 
 **Zahlung**:

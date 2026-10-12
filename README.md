@@ -14,7 +14,8 @@ zieht dieses Dokument nach.**
 | Dokument | Zweck |
 | --- | --- |
 | `README.md` | Diese Übersicht — Flows, Architektur, Betrieb |
-| `AGENTS.md` | Detail-Kontext für KI-Agenten (Layouts, Frontend-Konventionen, Routen) |
+| `AGENTS.md` | Kontext für KI-Agenten: Konventionen, Shop-URLs, Zahlungs-Regeln; verweist auf die übrigen Dokumente |
+| `.docs/deployment.md` | CI-Gates, Deploy, Server, SSR, Sandbox-Reset |
 | `database/SCHEMA.md` | Vollständiges DB-Schema — bei jeder Migration aktualisieren |
 | `ANALYSE.md` | Offene Audit-Punkte + bewusste Entscheidungen (erledigte Punkte werden entfernt) |
 | `TODO.md` | Offener Backlog (Sicherheit, UI/UX, Ideen) |
@@ -34,7 +35,7 @@ Zentrale Klassen (die „Geschäftslogik-Ecke"):
 
 | Klasse | Verantwortung |
 | --- | --- |
-| `app/Support/Cart/CartService.php` | Warenkorb: Session-State, Live-Preise, Varianten, Versand-/Zahlarten; liefert das `Cart`-DTO (Summen in Cents, `toArray()` fürs Frontend) |
+| `app/Support/Cart/CartService.php` | Warenkorb: Session-State, Live-Preise, Varianten, Versandarten; liefert das `Cart`-DTO (Summen in Cents, `toArray()` fürs Frontend) |
 | `app/Support/Orders/OrderManager.php` | Cart → Order (transaktional), alle Statusübergänge (`transitionTo`, `markPaid()` idempotent), Bestätigungsmails |
 | `app/Support/Orders/OrderStatus.php` | Bestellstatus + erlaubte Übergänge (`PaymentStatus`, `PaymentMethod` daneben) |
 | `app/Support/Orders/OrderSummary.php` | Positionen und Summen einer Bestellung (MwSt. über `Money::netCents`) |
@@ -83,8 +84,8 @@ Zentrale Klassen (die „Geschäftslogik-Ecke"):
 ### 3. Checkout „Kauf auf Rechnung" (invoice)
 
 ```
-/checkout (Cart) → /checkout/confirm (Adresse, AGB, Zahlart)
-  → POST /checkout/submit (Hold-to-confirm-Button)
+/checkout (Cart) → /checkout/confirm (Adresse, AGB, Buttons je Zahlart)
+  → POST /checkout/submit (Button „Kaufen auf Rechnung“, normaler Klick)
   → Order status=pending + Items (Snapshot, DB-Transaktion)
   → Bestätigungsmail an Kunde (inkl. Bankverbindung) + Admin-Benachrichtigung
   → Cart wird geleert → /checkout/success
@@ -98,9 +99,10 @@ Zentrale Klassen (die „Geschäftslogik-Ecke"):
 ### 4. Checkout PayPal
 
 ```
-Confirm-Seite (Zahlart PayPal) → PayPal-JS-SDK-Button
-  → POST /paypal/order/create   (Order pending + Payment CREATED; storniert
-                                 eigene alte pending-PayPal-Orders)
+Confirm-Seite → PayPal-JS-SDK-Button (PayPal, Lastschrift oder Kreditkarte)
+  → POST /paypal/order/create   (funding_source = geklickte Zahlart; Order
+                                 pending + Payment CREATED; storniert eigene
+                                 alte pending-PayPal-Orders aller drei Zahlarten)
   → Kunde bestätigt bei PayPal
   → POST /paypal/order/capture  (Ownership-Check, Betragsabgleich!)
   → Payment COMPLETED + OrderManager::markPaid() → Mails → Cart leer
