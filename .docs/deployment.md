@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | `tests.yml` | Push (develop/master/workos), PR, **+ `workflow_call`** | PHPStan + svelte-check + Vitest + PHPUnit (gegen **Postgres** + Redis als Service-Container) + Build, **PHP 8.4** |
 | `lint.yml` | Push (develop/master/workos), PR, **+ `workflow_call`** | Pint + ESLint + Prettier (`--test`/`--check`, ändert nichts) |
-| `deploy.yml` | **Push auf `main`** + manuell (`workflow_dispatch`) | ruft beide Gates auf, deployt danach per SSH |
+| `deploy.yml` | **Push auf `main`** + manuell (`workflow_dispatch`) | ruft beide Gates auf, deployt danach test.dormed24.de per SSH und baut die Images für dev.dormed24.de (GHCR) und stößt dort den Coolify-Deploy an |
 | `docker.yml` | PR mit Änderungen am Container-Setup (`Dockerfile.prod`, `compose.yaml`, `docker/**`, Lockfiles) | baut die Images (`app`, `ssr`), migriert als eigener Schritt, startet App, Queue, Scheduler, SSR, Postgres und Redis und prüft `/up`, SSR, Redis-Cache und Queue-Worker |
 
 **Das „depends on":** `deploy.yml` ruft `tests.yml` und `lint.yml` als *reusable workflows* (`uses:`) auf und wartet per **`needs: [tests, lint]`**. Der Deploy-Job startet nur, wenn **beide grün** sind. Deshalb fehlt `main` bewusst in den `push`-Triggern von tests/lint — sonst liefen sie doppelt.
@@ -79,3 +79,64 @@ php artisan inertia:stop-ssr   # systemd startet den SSR-Prozess per Restart=alw
 **`migrate:fresh --seed` passiert ausschließlich hier, manuell** — `deploy.yml`
 macht das nie (nutzt `migrate --force`, das nur neue Migrationen einspielt und
 nie Daten löscht).
+
+## dev.dormed24.de: Docker-Stack über Coolify
+
+Läuft parallel zu test.dormed24.de, mit eigenen Daten (Postgres, Redis). test bleibt unverändert (Host-PHP, SQLite, SSH-Deploy oben).
+
+### Ablauf
+
+1. Push auf `main` → `tests` + `lint` grün.
+2. Job `images` baut `Dockerfile.prod` (Targets `app` und `ssr`) und pusht nach GHCR:
+   - `ghcr.io/dormed-medizinische-systeme-gmbh/dormed24-app:dev` und `…:sha-<12 Zeichen>`
+   - `ghcr.io/dormed-medizinische-systeme-gmbh/dormed24-ssr:dev` und `…:sha-<12 Zeichen>`
+3. Job `deploy-dev` ruft die Coolify-API (`/api/v1/deploy`) auf. Coolify zieht die `:dev`-Images (`pull_policy: always`) und startet `compose.coolify.yaml`:
+   - `migrate` läuft einmal (`migrate --force`); schlägt er fehl, starten die neuen Container nicht.
+   - danach `ssr`, `app`, `queue`, `scheduler`.
+4. Host-Nginx leitet `dev.dormed24.de` auf `127.0.0.1:8081`.
+
+**Rollback:** In Coolify `APP_IMAGE`/`SSR_IMAGE` auf ein älteres `:sha-…`-Tag setzen und neu deployen. Migrationen werden dabei nicht zurückgedreht.
+
+Solange `COOLIFY_URL`, `COOLIFY_DEV_UUID` oder `COOLIFY_TOKEN` fehlen, endet `deploy-dev` mit einer Warnung, ohne Fehler.
+
+### Einmalige Einrichtung
+
+**Server (root):**
+
+- Coolify-Proxy auf „None“ (Coolify belegt sonst Port 80/443 neben dem Host-Nginx).
+- GHCR-Zugang für den Docker-Daemon, den Coolify nutzt: `docker login ghcr.io` mit einem Token, das nur `read:packages` darf. Alternativ die beiden Pakete in GitHub auf „public“ stellen.
+- Host-Nginx-vHost für `dev.dormed24.de`, TLS per Certbot:
+
+  ```nginx
+  server {
+      server_name dev.dormed24.de;
+      client_max_body_size 32m;
+
+      location / {
+          proxy_pass http://127.0.0.1:8081;
+          proxy_set_header Host $host;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+          proxy_set_header X-Forwarded-Host $host;
+          proxy_set_header X-Forwarded-Port $server_port;
+          proxy_read_timeout 60s;
+      }
+  }
+  ```
+
+**Coolify:**
+
+- Neue Ressource „Docker Compose“ aus diesem Repo, Branch `main`, Compose-Datei `compose.coolify.yaml`.
+- **Keine Domain** eintragen und den automatischen Deploy bei Git-Push **aus**schalten: deployt wird nur über die API, nachdem die Images gebaut sind.
+- Env-Variablen: `APP_KEY` (eigener), `APP_URL=https://dev.dormed24.de`, `APP_ENV`, `APP_DEBUG=false`, `DB_PASSWORD`, Mail- und PayPal-Zugangsdaten. Für dev empfohlen: `MAIL_MAILER=log`, damit keine echten Mails an kopierte Kundenadressen gehen. Hosts, Treiber, SSR und Proxy setzt `compose.coolify.yaml` selbst.
+- Unter „API Tokens“ ein Token mit Deploy-Recht anlegen.
+
+**GitHub** (Settings → Secrets and variables → Actions):
+
+| Art | Name | Inhalt |
+| --- | --- | --- |
+| Variable | `COOLIFY_URL` | Basis-URL der Coolify-Instanz, von GitHub aus erreichbar |
+| Variable | `COOLIFY_DEV_UUID` | UUID der Compose-Ressource in Coolify |
+| Secret | `COOLIFY_TOKEN` | API-Token aus Coolify |
+
+**Daten (einmalig, nach dem ersten Deploy):** SQLite von test per `db:import-sqlite` nach Postgres, Bilder aus `storage/app/public` ins Volume `storage` (Befehle im README, Abschnitt „Docker-Stack“; in Coolify per „Execute Command“ im `app`-Container).

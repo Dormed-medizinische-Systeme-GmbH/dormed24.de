@@ -1,6 +1,7 @@
 name: deploy
 
-# Deploy nach test.dormed24.de — laeuft NUR, wenn tests + linter gruen sind.
+# Deploy nach test.dormed24.de (SSH, Host-PHP) und dev.dormed24.de (Images
+# nach GHCR, Coolify) — laeuft NUR, wenn tests + linter gruen sind.
 # Die beiden Gates werden hier per `uses:` (reusable workflow) aufgerufen und
 # via `needs:` abgewartet — das ist das GitHub-Aequivalent zu "depends_on".
 on:
@@ -150,3 +151,66 @@ jobs:
       - name: SSH-Key entfernen
         if: always()
         run: rm -f ~/.ssh/deploy_key
+
+  # --- dev.dormed24.de: Images nach GHCR, Deploy über Coolify ---------------
+  # Nur nach denselben grünen Gates. Der Server baut nichts selbst: Coolify
+  # zieht die fertigen Images (compose.coolify.yaml) und migriert vor dem Start.
+  images:
+    needs: [tests, lint]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
+        with:
+          persist-credentials: false
+
+      - name: Images bauen und nach GHCR pushen
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # GHCR verlangt Kleinbuchstaben im Namen.
+          registry="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}"
+          printf '%s' "${GHCR_TOKEN}" | docker login ghcr.io -u "${GITHUB_ACTOR}" --password-stdin
+          docker buildx create --use --name dormed24
+          for target in app ssr; do
+            image="${registry}/dormed24-${target}"
+            # :dev ist das, was Coolify zieht; :sha-… bleibt für Rollbacks.
+            docker buildx build \
+              --file Dockerfile.prod \
+              --target "${target}" \
+              --tag "${image}:dev" \
+              --tag "${image}:sha-${GITHUB_SHA::12}" \
+              --cache-from "type=registry,ref=${registry}/dormed24-buildcache:${target}" \
+              --cache-to "type=registry,ref=${registry}/dormed24-buildcache:${target},mode=max" \
+              --push \
+              .
+          done
+          docker logout ghcr.io
+
+  deploy-dev:
+    needs: [images]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Coolify-Deploy auslösen
+        env:
+          COOLIFY_URL: ${{ vars.COOLIFY_URL }}
+          COOLIFY_DEV_UUID: ${{ vars.COOLIFY_DEV_UUID }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${COOLIFY_URL}" ] || [ -z "${COOLIFY_DEV_UUID}" ] || [ -z "${COOLIFY_TOKEN}" ]; then
+            echo "::warning::Coolify ist nicht eingerichtet (COOLIFY_URL, COOLIFY_DEV_UUID, COOLIFY_TOKEN) — dev.dormed24.de wird nicht deployt."
+            exit 0
+          fi
+          # Startet den Deploy in Coolify; den Fortschritt zeigt Coolify selbst.
+          curl -fsS --max-time 60 \
+            -H "Authorization: Bearer ${COOLIFY_TOKEN}" \
+            "${COOLIFY_URL%/}/api/v1/deploy?uuid=${COOLIFY_DEV_UUID}&force=false"
