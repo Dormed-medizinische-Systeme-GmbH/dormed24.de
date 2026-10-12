@@ -214,6 +214,7 @@ Entscheidung: `.docs/adr/0005-postgres-und-redis-im-docker-stack.md`.
   4. `docker compose up -d --wait`
 
   Beim Start baut jeder App-Container seine Caches (`optimize` bzw. `config:cache`); Queue, Scheduler und Artisan-Befehle laufen als `www-data`.
+- **dev.dormed24.de** läuft mit diesem Stack über Coolify (`compose.coolify.yaml`, fertige Images aus GHCR, Migration als eigener `migrate`-Service). Einrichtung und Ablauf: `.docs/deployment.md`, Abschnitt „dev.dormed24.de“.
 - **Umzug der SQLite-Daten (einmalig):**
   1. Stack wie oben starten (Schritt 3 legt das leere Postgres-Schema an).
   2. Alte App stoppen (keine neuen Bestellungen mehr in SQLite).
