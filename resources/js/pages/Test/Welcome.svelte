@@ -75,7 +75,13 @@
         category_slug: string;
         price: string;
         manufacturer: { id: number; name: string } | null;
-        images: { id: number; url: string; sort_order: number }[];
+        images: {
+            id: number;
+            url: string;
+            sort_order: number;
+            width?: number | null;
+            height?: number | null;
+        }[];
     };
 
     let {

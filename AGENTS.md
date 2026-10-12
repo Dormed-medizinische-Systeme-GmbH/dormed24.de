@@ -52,6 +52,17 @@ Die vier Kategorien aus `config/categories.php` sind die Einstiegsseiten; es gib
 - Varianten haben einen absoluten Endpreis (`product_variants.price`); Produkte mit Varianten sind nur als Variante bestellbar, das Label wird Teil des Zeilennamens.
 - Die Zahlart gehört nicht zum Warenkorb: der Klick auf einen Zahlungs-Button bestimmt sie.
 
+## Bilder
+
+Produktbilder liegen ausschließlich als **WebP und AVIF** im public-Disk: gleicher Name, nur die Endung unterscheidet sich (`products/7/abc.webp` + `abc.avif`). Das Upload-Format ist egal (JPEG, PNG, GIF, BMP, WebP, AVIF); das Original wird nicht aufbewahrt.
+
+- **Alles läuft über `App\Support\Images\ImageStore`** (`store`, `convertExisting`, `delete`); `ImageConverter` (GD) wandelt um. Kein `->store()`/`Storage::put()` für Produktbilder daneben, sonst fehlt das zweite Format.
+- `product_images.path` zeigt auf die WebP-Datei, `width`/`height` sind die Maße des gespeicherten Bildes. `ProductImage::url` = WebP (Fallback-`src`, `og:image`), `avif_url` = AVIF.
+- Das Konvertieren läuft synchron im Upload-Request (Bild wird auf 2400 px Kantenlänge begrenzt, über 24 Megapixel wird abgelehnt). Der Server braucht PHP `gd` mit WebP und AVIF sowie `exif` (`Dockerfile.prod`, CI).
+- **Im Frontend jedes Produktbild über `components/Picture.svelte`** (`<picture>` mit AVIF- und WebP-`source`, `<img>` mit `width`/`height`, `loading="lazy"`, `decoding="async"`); kein nacktes `<img src={…url}>`. `src` ist die WebP-URL, die AVIF-URL leitet `lib/picture.ts` daraus ab. Das Hauptbild der Produktseite lädt mit `loading="eager"`.
+- Bestandsbilder (JPEG/PNG) umwandeln: `php artisan product-images:convert` (idempotent, `--dry-run`). Bis dahin liefert `Picture` solche Bilder als schlichtes `<img>` ohne `source` aus.
+- Newsletter-Bilder (`Admin/NewsletterController`) bleiben bewusst JPEG/PNG: E-Mail-Clients (Outlook) können WebP/AVIF nicht zuverlässig darstellen.
+
 ## Layout-Varianten
 
 Zum Ausprobieren mehrerer Designs einer Seite gilt das Schema aus den Admin-Masken und dem Checkout (`lib/layoutVariants.ts`, `lib/useLayoutVariant.svelte.ts`, `components/VariantSwitcher.svelte`):

@@ -9,6 +9,7 @@
     import * as ProductController from '@/actions/App/Http/Controllers/ProductController';
     import AppFooter from '@/components/AppFooter.svelte';
     import AppHead from '@/components/AppHead.svelte';
+    import Picture from '@/components/Picture.svelte';
     import RatingForm from '@/components/RatingForm.svelte';
     import ShopBreadcrumbs from '@/components/ShopBreadcrumbs.svelte';
     import ShopHeader from '@/components/ShopHeader.svelte';
@@ -22,7 +23,13 @@
     import { cn } from '@/lib/utils';
     import cartRoutes from '@/routes/cart';
 
-    type ProductImage = { id: number; url: string; sort_order: number };
+    type ProductImage = {
+        id: number;
+        url: string;
+        sort_order: number;
+        width?: number | null;
+        height?: number | null;
+    };
     type ProductVariant = {
         id: number;
         label: string;
@@ -319,9 +326,18 @@
                                         <div
                                             class="aspect-square w-full overflow-hidden rounded-[1.75rem] border border-border bg-white"
                                         >
-                                            <img
+                                            <Picture
                                                 src={image.url}
                                                 alt={product.name}
+                                                width={image.width}
+                                                height={image.height}
+                                                loading={image.sort_order === 0
+                                                    ? 'eager'
+                                                    : 'lazy'}
+                                                fetchpriority={image.sort_order ===
+                                                0
+                                                    ? 'high'
+                                                    : 'auto'}
                                                 class="size-full object-contain"
                                             />
                                         </div>
@@ -344,9 +360,11 @@
                                         )}
                                         aria-label={`Bild ${i + 1}`}
                                     >
-                                        <img
+                                        <Picture
                                             src={image.url}
                                             alt=""
+                                            width={image.width}
+                                            height={image.height}
                                             class="size-full object-contain"
                                         />
                                     </button>

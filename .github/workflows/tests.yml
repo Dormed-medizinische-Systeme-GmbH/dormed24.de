@@ -76,7 +76,7 @@ jobs:
         with:
           php-version: ${{ matrix.php-version }}
           tools: composer:v2
-          extensions: pdo_pgsql, pdo_sqlite, redis
+          extensions: pdo_pgsql, pdo_sqlite, redis, gd, exif
           coverage: xdebug
 
       - name: Setup Node

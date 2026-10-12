@@ -1,6 +1,7 @@
 <script lang="ts">
     import AppHead from '@/components/AppHead.svelte';
     import Heading from '@/components/Heading.svelte';
+    import Picture from '@/components/Picture.svelte';
     import RateProductButton from '@/components/RateProductButton.svelte';
     import { formatPrice } from '@/lib/currency';
     import { orderStatusBadgeClass, orderStatusLabel } from '@/lib/status';
@@ -148,7 +149,7 @@
                         class="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gray-100"
                     >
                         {#if item.image_url}
-                            <img
+                            <Picture
                                 src={item.image_url}
                                 alt={item.product_name}
                                 class="size-full object-cover object-center"

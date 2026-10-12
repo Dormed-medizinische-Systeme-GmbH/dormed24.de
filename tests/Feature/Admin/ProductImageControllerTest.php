@@ -4,13 +4,16 @@ namespace Tests\Feature\Admin;
 
 use App\Models\Product;
 use App\Models\ProductImage;
+use App\Support\Images\ImageStore;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Tests\Support\MakesImages;
 use Tests\TestCase;
 
 class ProductImageControllerTest extends TestCase
 {
+    use MakesImages;
     use RefreshDatabase;
 
     protected function setUp(): void
@@ -22,8 +25,9 @@ class ProductImageControllerTest extends TestCase
 
     private function imageFor(Product $product, int $sortOrder): ProductImage
     {
-        $path = "products/{$product->id}/image-{$sortOrder}.png";
+        $path = "products/{$product->id}/image-{$sortOrder}.webp";
         Storage::disk('public')->put($path, 'fake-image');
+        Storage::disk('public')->put("products/{$product->id}/image-{$sortOrder}.avif", 'fake-image');
 
         return $product->images()->create(['path' => $path, 'sort_order' => $sortOrder]);
     }
@@ -44,16 +48,17 @@ class ProductImageControllerTest extends TestCase
             ->assertRedirect(route('admin.login'));
 
         $this->assertDatabaseHas('product_images', ['id' => $image->id]);
-        $this->assertCount(1, Storage::disk('public')->allFiles());
+        $this->assertCount(2, Storage::disk('public')->allFiles());
     }
 
     public function test_admin_can_upload_an_image(): void
     {
+        $this->requireImageEncoding();
         $product = Product::factory()->create();
 
         $this->actingAsAdmin()
             ->post(route('admin.products.images.store', $product), [
-                'image' => UploadedFile::fake()->image('cover.jpg'),
+                'image' => UploadedFile::fake()->image('cover.jpg', 64, 48),
             ])
             ->assertRedirect()
             ->assertSessionHas('success');
@@ -61,8 +66,36 @@ class ProductImageControllerTest extends TestCase
         $image = $product->images()->sole();
 
         $this->assertSame(0, $image->sort_order);
-        $this->assertStringStartsWith("products/{$product->id}/", $image->path);
-        Storage::disk('public')->assertExists($image->path);
+        $this->assertMatchesRegularExpression("#^products/{$product->id}/[A-Za-z0-9]{40}\\.webp$#", $image->path);
+        $this->assertSame([64, 48], [$image->width, $image->height]);
+        $this->assertEqualsCanonicalizing(
+            [$image->path, ImageStore::avifPath($image->path)],
+            Storage::disk('public')->allFiles(),
+        );
+    }
+
+    public function test_every_accepted_format_is_stored_only_as_webp_and_avif(): void
+    {
+        $this->requireImageEncoding();
+
+        foreach (['jpg', 'png', 'gif', 'bmp', 'webp', 'avif'] as $extension) {
+            $product = Product::factory()->create();
+            $format = $extension === 'jpg' ? 'jpeg' : $extension;
+
+            $this->actingAsAdmin()
+                ->post(route('admin.products.images.store', $product), [
+                    'image' => UploadedFile::fake()->createWithContent("bild.{$extension}", $this->imageBytes($format)),
+                ])
+                ->assertSessionHasNoErrors();
+
+            $image = $product->images()->sole();
+
+            $this->assertEqualsCanonicalizing(
+                [$image->path, ImageStore::avifPath($image->path)],
+                Storage::disk('public')->files("products/{$product->id}"),
+                "Format {$extension}",
+            );
+        }
     }
 
     public function test_further_uploads_are_appended_to_the_end(): void
@@ -86,7 +119,8 @@ class ProductImageControllerTest extends TestCase
         foreach ([
             UploadedFile::fake()->create('dokument.pdf', 10, 'application/pdf'),
             UploadedFile::fake()->create('skript.php', 1, 'text/x-php'),
-            UploadedFile::fake()->image('grafik.gif'),
+            UploadedFile::fake()->createWithContent('grafik.svg', '<svg xmlns="http://www.w3.org/2000/svg"/>'),
+            UploadedFile::fake()->createWithContent('kaputt.jpg', 'kein Bild'),
         ] as $file) {
             $this->actingAsAdmin()
                 ->post(route('admin.products.images.store', $product), ['image' => $file])
@@ -121,6 +155,7 @@ class ProductImageControllerTest extends TestCase
 
     public function test_upload_accepts_a_file_of_exactly_five_megabytes(): void
     {
+        $this->requireImageEncoding();
         $product = Product::factory()->create();
 
         $this->actingAsAdmin()
@@ -147,7 +182,7 @@ class ProductImageControllerTest extends TestCase
             ->assertSessionHasErrors(['image' => 'Maximal 5 Bilder pro Produkt erlaubt.']);
 
         $this->assertSame(5, $product->images()->count());
-        $this->assertCount(5, Storage::disk('public')->allFiles());
+        $this->assertCount(10, Storage::disk('public')->allFiles());
     }
 
     public function test_deleting_an_image_removes_file_and_row_and_closes_the_gap(): void
@@ -163,6 +198,7 @@ class ProductImageControllerTest extends TestCase
             ->assertSessionHas('success');
 
         Storage::disk('public')->assertMissing($second->path);
+        Storage::disk('public')->assertMissing('products/'.$product->id.'/image-1.avif');
         Storage::disk('public')->assertExists($first->path);
         Storage::disk('public')->assertExists($third->path);
         $this->assertDatabaseMissing('product_images', ['id' => $second->id]);
@@ -240,5 +276,16 @@ class ProductImageControllerTest extends TestCase
 
         $this->assertSame(Storage::disk('public')->url('products/7/cover.webp'), $image->url);
         $this->assertSame($image->url, $image->toArray()['url']);
+    }
+
+    public function test_avif_url_sits_next_to_the_webp_and_is_missing_for_legacy_files(): void
+    {
+        $product = Product::factory()->create();
+        $webp = $product->images()->create(['path' => 'products/7/cover.webp', 'sort_order' => 0]);
+        $legacy = $product->images()->create(['path' => 'products/7/alt.jpg', 'sort_order' => 1]);
+
+        $this->assertSame(Storage::disk('public')->url('products/7/cover.avif'), $webp->avif_url);
+        $this->assertSame($webp->avif_url, $webp->toArray()['avif_url']);
+        $this->assertNull($legacy->avif_url);
     }
 }

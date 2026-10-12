@@ -5,6 +5,8 @@ export type ProductImage = {
     path: string;
     sort_order: number;
     url: string;
+    width?: number | null;
+    height?: number | null;
 };
 
 export type ProductVariant = {

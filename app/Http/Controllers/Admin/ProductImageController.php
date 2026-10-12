@@ -5,27 +5,44 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\ProductImage;
+use App\Support\Images\ImageConversionException;
+use App\Support\Images\ImageStore;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class ProductImageController extends Controller
 {
+    public function __construct(private readonly ImageStore $images) {}
+
+    /**
+     * Nimmt JPEG, PNG, GIF, BMP, WebP und AVIF an und speichert das Bild als
+     * WebP und AVIF (siehe `ImageStore`). Die Umwandlung läuft im Request.
+     */
     public function store(Request $request, Product $product): RedirectResponse
     {
         $request->validate([
-            'image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'image' => ['required', 'file', 'mimes:jpg,jpeg,png,gif,bmp,webp,avif', 'max:5120'],
         ]);
 
         if ($product->images()->count() >= 5) {
             return back()->withErrors(['image' => 'Maximal 5 Bilder pro Produkt erlaubt.']);
         }
 
-        $path = $request->file('image')->store("products/{$product->id}", 'public');
+        try {
+            $stored = $this->images->store(
+                (string) $request->file('image')->get(),
+                "products/{$product->id}",
+            );
+        } catch (ImageConversionException $e) {
+            return back()->withErrors(['image' => $e->getMessage()]);
+        }
+
         $nextOrder = (int) $product->images()->max('sort_order') + 1;
 
         $product->images()->create([
-            'path' => $path,
+            'path' => $stored->path,
+            'width' => $stored->width,
+            'height' => $stored->height,
             'sort_order' => $product->images()->count() === 0 ? 0 : $nextOrder,
         ]);
 
@@ -36,7 +53,7 @@ class ProductImageController extends Controller
     {
         abort_unless($image->product_id === $product->id, 403);
 
-        Storage::disk('public')->delete($image->path);
+        $this->images->delete($image->path);
         $image->delete();
 
         $product->images()->orderBy('sort_order')->get()

@@ -14,6 +14,7 @@
     import * as ProductController from '@/actions/App/Http/Controllers/ProductController';
     import AppFooter from '@/components/AppFooter.svelte';
     import AppHead from '@/components/AppHead.svelte';
+    import Picture from '@/components/Picture.svelte';
     import ShopHeader from '@/components/ShopHeader.svelte';
     import { formatPrice } from '@/lib/currency';
 
@@ -430,7 +431,7 @@
                             class="relative grid aspect-square place-items-center overflow-hidden rounded-xl bg-[#e9e9e9]"
                         >
                             {#if activeProduct.image_url}
-                                <img
+                                <Picture
                                     src={activeProduct.image_url}
                                     alt={activeProduct.name}
                                     class="size-full object-cover object-center"
@@ -511,7 +512,7 @@
                                 class="relative grid aspect-square place-items-center overflow-hidden rounded-xl bg-[#e9e9e9]"
                             >
                                 {#if product.image_url}
-                                    <img
+                                    <Picture
                                         src={product.image_url}
                                         alt={product.name}
                                         class="size-full object-cover object-center transition duration-300 hover:scale-105"

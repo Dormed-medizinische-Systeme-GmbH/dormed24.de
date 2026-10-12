@@ -157,13 +157,15 @@ Produktvarianten. `price` ist ein absoluter Endpreis, kein Auf-/Abschlag zum Pro
 
 ## product_images
 
-Produktbilder. Mehrere pro Produkt, Reihenfolge via `sort_order` (0 = Hauptbild, max. 5 pro Produkt).
+Produktbilder. Mehrere pro Produkt, Reihenfolge via `sort_order` (0 = Hauptbild, max. 5 pro Produkt). Jedes Bild liegt als WebP (`path`) und AVIF (gleicher Pfad mit Endung `.avif`) im Storage.
 
 | Spalte       | Typ              | Nullable | Default | Hinweis                            |
 |--------------|------------------|----------|---------|------------------------------------|
 | `id`         | integer          | NO       | —       | PK, autoincrement                  |
 | `product_id` | integer          | NO       | —       | FK → `products.id` CASCADE         |
-| `path`       | varchar          | NO       | —       | Storage-Pfad auf Public-Disk       |
+| `path`       | varchar          | NO       | —       | Storage-Pfad der WebP-Datei (Public-Disk); AVIF liegt daneben |
+| `width`      | smallint unsigned| YES      | —       | Breite in Pixeln (NULL bis `product-images:convert`) |
+| `height`     | smallint unsigned| YES      | —       | Höhe in Pixeln (NULL bis `product-images:convert`)   |
 | `sort_order` | smallint unsigned| NO       | `0`     | 0 = Hauptbild                      |
 | `created_at` | datetime         | YES      | —       |                                    |
 | `updated_at` | datetime         | YES      | —       |                                    |

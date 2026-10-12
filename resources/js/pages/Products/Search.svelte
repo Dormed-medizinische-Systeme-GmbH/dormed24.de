@@ -6,7 +6,13 @@
     import ShopBreadcrumbs from '@/components/ShopBreadcrumbs.svelte';
     import ShopHeader from '@/components/ShopHeader.svelte';
 
-    type ProductImage = { id: number; url: string; sort_order: number };
+    type ProductImage = {
+        id: number;
+        url: string;
+        sort_order: number;
+        width?: number | null;
+        height?: number | null;
+    };
 
     type Product = {
         id: number;

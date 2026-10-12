@@ -1,6 +1,7 @@
 <script lang="ts">
     import { router } from '@inertiajs/svelte';
     import { GripVertical, Plus, Star, Trash2 } from '@lucide/svelte';
+    import Picture from '@/components/Picture.svelte';
     import { keepPageState } from '@/lib/productEdit';
     import { cn } from '@/lib/utils';
     import type { ProductImage } from '@/types';
@@ -121,11 +122,13 @@
                         'ring-2 ring-primary',
                 )}
             >
-                <img
+                <Picture
                     src={image.url}
                     alt=""
+                    width={image.width}
+                    height={image.height}
+                    draggable={false}
                     class="aspect-square w-full object-cover"
-                    draggable="false"
                 />
 
                 <div

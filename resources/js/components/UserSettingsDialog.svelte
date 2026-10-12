@@ -12,6 +12,7 @@
     import UserCog from '@lucide/svelte/icons/user-cog';
     import X from '@lucide/svelte/icons/x';
     import AddressForm from '@/components/AddressForm.svelte';
+    import Picture from '@/components/Picture.svelte';
     import RateProductButton from '@/components/RateProductButton.svelte';
     import { Button } from '@/components/ui/button';
     import { Checkbox } from '@/components/ui/checkbox';
@@ -505,7 +506,7 @@
                                                     class="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded bg-gray-100"
                                                 >
                                                     {#if item.image_url}
-                                                        <img
+                                                        <Picture
                                                             src={item.image_url}
                                                             alt={item.product_name}
                                                             class="size-full object-cover object-center"

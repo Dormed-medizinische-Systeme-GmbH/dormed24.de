@@ -1,5 +1,6 @@
 <script lang="ts">
     import Package from '@lucide/svelte/icons/package';
+    import Picture from '@/components/Picture.svelte';
     import { cn } from '@/lib/utils';
     import type { OrderItem } from '@/types';
 
@@ -16,7 +17,7 @@
     )}
 >
     {#if item.image_url}
-        <img
+        <Picture
             src={item.image_url}
             alt={item.product_name}
             class="size-full object-cover object-center"
