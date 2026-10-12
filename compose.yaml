@@ -1,37 +1,97 @@
-# Produktions-Stack: App (Nginx + PHP-FPM + Queue-Worker, siehe Dockerfile.prod),
-# Postgres und Redis. Zugangsdaten und App-Einstellungen kommen aus `.env`
-# neben dieser Datei (Vorlage: .env.example, Abschnitt "Docker").
+# Produktions-Stack, ein Prozess pro Container:
+#   app        Nginx + PHP-FPM (Dockerfile.prod, Target app)
+#   queue      dasselbe Image, `queue:work` gegen Redis
+#   scheduler  dasselbe Image, `schedule:work`
+#   ssr        Node, rendert Inertia-Seiten serverseitig (Target ssr)
+#   postgres, redis
 #
-#   docker compose up -d --build
+# Zugangsdaten und App-Einstellungen kommen aus `.env` neben dieser Datei
+# (Vorlage: .env.example). Was den Stack selbst betrifft (Hosts, Treiber,
+# SSR, Proxy), steht unten unter `environment` und gewinnt gegen `.env`.
 #
-# Daten liegen in benannten Volumes und überleben `docker compose down`;
-# erst `down -v` löscht sie.
+#   docker compose build
+#   docker compose up -d --wait postgres redis
+#   docker compose run --rm app php artisan migrate --force
+#   docker compose up -d --wait
+#
+# Migrationen laufen nicht beim Containerstart, sondern als eigener Schritt
+# vor dem Start der neuen Container. Daten liegen in benannten Volumes und
+# überleben `docker compose down`; erst `down -v` löscht sie.
 name: dormed24
+
+x-app: &app
+    build:
+        context: .
+        dockerfile: Dockerfile.prod
+        target: app
+    image: ${APP_IMAGE:-dormed24-app:local}
+    restart: unless-stopped
+    env_file:
+        - path: .env
+          required: false
+    environment:
+        DB_CONNECTION: pgsql
+        DB_HOST: postgres
+        DB_PORT: 5432
+        REDIS_HOST: redis
+        REDIS_PORT: 6379
+        QUEUE_CONNECTION: redis
+        CACHE_STORE: redis
+        SESSION_DRIVER: redis
+        LOG_CHANNEL: stderr
+        INERTIA_SSR_ENABLED: "true"
+        INERTIA_SSR_URL: http://ssr:13714
+        # Der Container ist nur über 127.0.0.1 erreichbar; davor steht der
+        # Nginx auf dem Host, dessen X-Forwarded-* (https, Client-IP) gelten.
+        TRUSTED_PROXIES: "*"
+    volumes:
+        # Hochgeladene Produkt- und Newsletterbilder bleiben bei neuen Images erhalten.
+        - storage:/app/storage
+    depends_on:
+        postgres:
+            condition: service_healthy
+        redis:
+            condition: service_healthy
 
 services:
     app:
-        build:
-            context: .
-            dockerfile: Dockerfile.prod
-        restart: unless-stopped
-        env_file: .env
-        environment:
-            DB_CONNECTION: pgsql
-            DB_HOST: postgres
-            DB_PORT: 5432
-            REDIS_HOST: redis
-            REDIS_PORT: 6379
+        <<: *app
         ports:
             # Nur lokal: TLS und Domain macht der Nginx auf dem Host (proxy_pass).
             - "127.0.0.1:${APP_PORT:-8080}:80"
-        volumes:
-            # Hochgeladene Produktbilder und Logs bleiben bei neuen Images erhalten.
-            - storage:/app/storage
         depends_on:
             postgres:
                 condition: service_healthy
             redis:
                 condition: service_healthy
+            ssr:
+                condition: service_healthy
+        mem_limit: 512m
+
+    queue:
+        <<: *app
+        command: ["php", "artisan", "queue:work", "redis", "--sleep=3", "--tries=3", "--max-time=3600"]
+        # Zeit, den laufenden Job bei SIGTERM zu Ende zu bringen.
+        stop_grace_period: 60s
+        healthcheck:
+            disable: true
+        mem_limit: 256m
+
+    scheduler:
+        <<: *app
+        command: ["php", "artisan", "schedule:work"]
+        healthcheck:
+            disable: true
+        mem_limit: 192m
+
+    ssr:
+        build:
+            context: .
+            dockerfile: Dockerfile.prod
+            target: ssr
+        image: ${SSR_IMAGE:-dormed24-ssr:local}
+        restart: unless-stopped
+        mem_limit: 384m
 
     postgres:
         image: postgres:17-alpine
@@ -47,12 +107,14 @@ services:
             interval: 5s
             timeout: 3s
             retries: 20
+        mem_limit: 512m
 
     redis:
         image: redis:7-alpine
         restart: unless-stopped
         # AOF: Jobs in der Queue überstehen einen Neustart von Redis.
-        command: ["redis-server", "--appendonly", "yes"]
+        # noeviction: Redis verwirft nie Queue-Jobs, auch wenn der Speicher knapp wird.
+        command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
         volumes:
             - redis:/data
         healthcheck:
@@ -60,6 +122,7 @@ services:
             interval: 5s
             timeout: 3s
             retries: 20
+        mem_limit: 128m
 
 volumes:
     storage:

@@ -9,7 +9,7 @@
 | `tests.yml` | Push (develop/master/workos), PR, **+ `workflow_call`** | PHPStan + svelte-check + Vitest + PHPUnit (gegen **Postgres** + Redis als Service-Container) + Build, **PHP 8.4** |
 | `lint.yml` | Push (develop/master/workos), PR, **+ `workflow_call`** | Pint + ESLint + Prettier (`--test`/`--check`, ändert nichts) |
 | `deploy.yml` | **Push auf `main`** + manuell (`workflow_dispatch`) | ruft beide Gates auf, deployt danach per SSH |
-| `docker.yml` | PR mit Änderungen am Container-Setup (`Dockerfile.prod`, `compose.yaml`, `docker/**`, Lockfiles) | baut das Image, startet App + Postgres + Redis und prüft `/up`, Migrationen und Redis |
+| `docker.yml` | PR mit Änderungen am Container-Setup (`Dockerfile.prod`, `compose.yaml`, `docker/**`, Lockfiles) | baut die Images (`app`, `ssr`), migriert als eigener Schritt, startet App, Queue, Scheduler, SSR, Postgres und Redis und prüft `/up`, SSR, Redis-Cache und Queue-Worker |
 
 **Das „depends on":** `deploy.yml` ruft `tests.yml` und `lint.yml` als *reusable workflows* (`uses:`) auf und wartet per **`needs: [tests, lint]`**. Der Deploy-Job startet nur, wenn **beide grün** sind. Deshalb fehlt `main` bewusst in den `push`-Triggern von tests/lint — sonst liefen sie doppelt.
 

@@ -201,14 +201,25 @@ npm run build:ssr                     # Client + SSR-Bundle (bootstrap/ssr/app.j
 Entscheidung: `.docs/adr/0005-postgres-und-redis-im-docker-stack.md`.
 
 - **Lokal:** `docker compose -f compose.dev.yaml up -d` startet Postgres und Redis auf `127.0.0.1`; die Werte in `.env.example` passen dazu. Die App läuft weiter mit `npm run dev`. PHP braucht lokal die Erweiterungen `pdo_pgsql` und `redis` (z. B. `php8.4-pgsql`, `php8.4-redis`).
-- **Server:** `compose.yaml` startet App (Nginx, PHP-FPM, Queue-Worker), Postgres und Redis. Daten liegen in benannten Volumes (`postgres`, `redis`, `storage`). Start: `.env` neben `compose.yaml` anlegen (mindestens `APP_KEY`, `DB_PASSWORD`, Zugangsdaten), dann `docker compose up -d --build`. Die App hört nur auf `127.0.0.1:APP_PORT` (Standard 8080); TLS und Domain bleiben beim Nginx auf dem Host, der per `proxy_pass` dorthin weiterleitet.
+- **Server:** `compose.yaml` startet sechs Container, ein Prozess pro Container:
+  - `app` (Nginx + PHP-FPM), `queue` (`queue:work redis`) und `scheduler` (`schedule:work`) aus demselben Image (`Dockerfile.prod`, Target `app`);
+  - `ssr` (Node, Target `ssr`) rendert die Inertia-Seiten serverseitig, die App spricht ihn über `INERTIA_SSR_URL=http://ssr:13714` an;
+  - `postgres` und `redis` (Redis mit `noeviction`, damit nie Queue-Jobs verloren gehen).
+
+  Daten liegen in benannten Volumes (`postgres`, `redis`, `storage`). Die App hört nur auf `127.0.0.1:APP_PORT` (Standard 8080); TLS und Domain bleiben beim Nginx auf dem Host, der per `proxy_pass` dorthin weiterleitet und `X-Forwarded-*` setzt (`TRUSTED_PROXIES=*` im Stack, siehe `config/trustedproxy.php`). Logs gehen nach stderr (`docker compose logs`).
+- **Release-Ablauf:** `.env` neben `compose.yaml` (mindestens `APP_KEY`, `DB_PASSWORD`, Zugangsdaten), dann:
+  1. `docker compose build` (oder fertige Images ziehen)
+  2. `docker compose up -d --wait postgres redis`
+  3. `docker compose run --rm app php artisan migrate --force` — Migrationen sind ein eigener Schritt, nicht Teil des Containerstarts.
+  4. `docker compose up -d --wait`
+
+  Beim Start baut jeder App-Container seine Caches (`optimize` bzw. `config:cache`); Queue, Scheduler und Artisan-Befehle laufen als `www-data`.
 - **Umzug der SQLite-Daten (einmalig):**
-  1. Stack starten; der App-Start legt das leere Postgres-Schema per `migrate` an.
+  1. Stack wie oben starten (Schritt 3 legt das leere Postgres-Schema an).
   2. Alte App stoppen (keine neuen Bestellungen mehr in SQLite).
   3. `docker compose run --rm -v /pfad/zur/database.sqlite:/import.sqlite:ro app php artisan db:import-sqlite /import.sqlite` kopiert alle Daten, setzt die Sequenzen und vergleicht die Zeilenzahlen. Er bricht ab, wenn Postgres schon Daten enthält; bei einem Fehler bleibt Postgres leer.
-  4. Produktbilder aus `storage/app/public` in das Volume `storage` kopieren (z. B. `docker compose cp storage/app/public/. app:/app/storage/app/public/`).
-  5. Proxy/Webserver auf den Container umstellen, danach `deploy.yml` auf den Docker-Stack umstellen.
-- **Offen beim Umstieg:** SSR läuft im Image noch nicht (es fehlen Node und `node_modules` zur Laufzeit), die Seiten rendern dort clientseitig. Bis das nachgezogen ist, bleibt `INERTIA_SSR_ENABLED=false`.
+  4. Produkt- und Newsletterbilder aus `storage/app/public` in das Volume `storage` kopieren (z. B. `docker compose cp storage/app/public/. app:/app/storage/app/public/`, danach `docker compose exec app chown -R www-data:www-data storage/app/public`).
+  5. Proxy/Webserver auf den Container umstellen.
 
 ## Betrieb / Launch-Checkliste
 
@@ -218,7 +229,7 @@ Entscheidung: `.docs/adr/0005-postgres-und-redis-im-docker-stack.md`.
 4. In `config/shop.php` Kontakt (`contact.email` ist auch die Bestell-Benachrichtigungsadresse) und Bankverbindung (`bank.iban`, `bank.bic`) prüfen; Änderungen per Commit und Deploy. Seeder mit Default-Passwörtern laufen nur außerhalb von Produktion.
 5. DB-Backup-Strategie klären (siehe `ANALYSE.md`).
 6. Scheduler-Cron aktuell **nicht nötig** (keine Scheduled Tasks).
-7. Queue-Worker läuft im Docker-Stack als Supervisor-Dienst im App-Container (`docker/supervisord.conf`). Mails laufen bisher trotzdem synchron (siehe Abschnitt „Mails" oben).
+7. Queue-Worker und Scheduler laufen im Docker-Stack als eigene Container (`queue`, `scheduler` in `compose.yaml`). Mails laufen bisher trotzdem synchron (siehe Abschnitt „Mails" oben).
 8. **SSR (Server-Side Rendering)** für Crawler/Link-Vorschauen (WhatsApp,
    Slack, LinkedIn …):
    - `npm run build:ssr` baut Client- **und** SSR-Bundle

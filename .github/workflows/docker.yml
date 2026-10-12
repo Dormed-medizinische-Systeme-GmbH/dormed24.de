@@ -1,8 +1,10 @@
 name: docker
 
-# Baut Dockerfile.prod und startet den kompletten Stack aus compose.yaml
-# (App, Postgres, Redis). Prüft, dass die App startet, migriert und
-# antwortet. Läuft nur, wenn sich am Container-Setup etwas ändert.
+# Baut Dockerfile.prod (Targets app und ssr) und startet den kompletten Stack
+# aus compose.yaml (App, Queue, Scheduler, SSR, Postgres, Redis), wie auf dem
+# Server: Migrationen als eigener Schritt vor dem Start. Prüft, dass die App
+# antwortet, Seiten serverseitig gerendert werden und die Queue Jobs abarbeitet.
+# Läuft nur, wenn sich am Container-Setup etwas ändert.
 on:
   pull_request:
     branches: [main]
@@ -10,6 +12,7 @@ on:
       - Dockerfile.prod
       - compose.yaml
       - docker/**
+      - vite.config.ts
       - composer.lock
       - package-lock.json
       - .github/workflows/docker.yml
@@ -34,25 +37,45 @@ jobs:
           sed -i "s|^APP_KEY=.*|APP_KEY=base64:$(openssl rand -base64 32)|" .env
           sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=ci-$(openssl rand -hex 8)|" .env
 
-      - name: Stack bauen und starten
-        run: docker compose up -d --build --wait --wait-timeout 300
+      - name: Images bauen
+        run: docker compose build
+
+      - name: Datenbank starten und migrieren
+        run: |
+          docker compose up -d --wait postgres redis
+          docker compose run --rm app php artisan migrate --force
+
+      - name: Stack starten
+        run: docker compose up -d --wait --wait-timeout 300
 
       - name: App antwortet
+        run: curl -fsS http://127.0.0.1:8080/up >/dev/null
+
+      - name: Seiten werden serverseitig gerendert
         run: |
+          docker compose exec -T app php artisan inertia:check-ssr
+          # Ohne SSR enthält das HTML nur den leeren App-Container; der Footer
+          # steht nur dann im Quelltext, wenn der SSR-Server gerendert hat.
+          curl -fsS http://127.0.0.1:8080/ | grep -q "<footer"
+
+      - name: Redis-Cache und Queue-Worker
+        run: |
+          docker compose exec -T app php artisan tinker --execute 'Cache::put("ci", "ok", 60); echo Cache::get("ci"), PHP_EOL;' | grep -x ok
+          # Closure aus einer Datei, damit sie serialisierbar ist; der Worker
+          # im queue-Container führt sie aus und schreibt in den Redis-Cache.
+          docker compose exec -T app sh -c 'printf "%s\n" "<?php" "dispatch(function () { cache()->put(\"queue-ci\", \"ok\", 60); });" > /tmp/dispatch.php && php artisan tinker --execute "require \"/tmp/dispatch.php\";"'
           for attempt in $(seq 1 30); do
-            if curl -fsS http://127.0.0.1:8080/up >/dev/null; then
-              echo "App erreichbar"
+            if docker compose exec -T app php artisan tinker --execute 'echo cache()->get("queue-ci"), PHP_EOL;' | grep -qx ok; then
+              echo "Job vom Worker abgearbeitet"
               exit 0
             fi
             sleep 2
           done
-          echo "App nicht erreichbar" >&2
+          echo "Queue-Worker hat den Job nicht abgearbeitet" >&2
           exit 1
 
-      - name: Datenbank und Redis aus Sicht der App
-        run: |
-          docker compose exec -T app php artisan migrate:status
-          docker compose exec -T app php artisan tinker --execute 'Cache::put("ci", "ok", 60); echo Cache::get("ci"), PHP_EOL;' | grep -x ok
+      - name: Scheduler läuft
+        run: test "$(docker compose ps --status running --services | grep -cx scheduler)" = 1
 
       - name: Logs bei Fehler
         if: failure()
