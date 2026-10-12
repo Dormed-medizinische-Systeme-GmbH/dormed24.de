@@ -10,7 +10,7 @@ FROM php:8.4-cli-bookworm AS build
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libzip-dev libpng-dev libonig-dev libxml2-dev libicu-dev libcurl4-openssl-dev \
     unzip ca-certificates curl git \
-    && docker-php-ext-install -j$(nproc) pdo pdo_sqlite mbstring zip xml bcmath intl \
+    && docker-php-ext-install -j$(nproc) zip bcmath intl \
     && rm -rf /var/lib/apt/lists/*
 
 # Node.js 22 (nur Build)
@@ -44,12 +44,13 @@ RUN mkdir -p database && touch database/database.sqlite \
 FROM php:8.4-fpm-bookworm AS production
 
 # Runtime: Nginx + Supervisor, PHP mit Postgres (pdo_pgsql) und Redis
-# (phpredis für Queue, Cache und Sessions). pdo_sqlite bleibt nur für den
-# einmaligen Datenumzug (docker/migrate-sqlite-to-postgres.sh).
+# (phpredis für Queue, Cache und Sessions). PDO, pdo_sqlite, mbstring und xml
+# bringt das Basis-Image schon mit; pdo_sqlite braucht nur noch der einmalige
+# Datenumzug (php artisan db:import-sqlite).
 RUN apt-get update && apt-get install -y --no-install-recommends \
     nginx supervisor curl \
     libzip-dev libonig-dev libxml2-dev libicu-dev libpq-dev \
-    && docker-php-ext-install -j$(nproc) pdo pdo_pgsql pdo_sqlite mbstring zip xml bcmath intl \
+    && docker-php-ext-install -j$(nproc) pdo_pgsql zip bcmath intl \
     && pecl install redis \
     && docker-php-ext-enable redis \
     && rm -rf /var/lib/apt/lists/* /tmp/pear
