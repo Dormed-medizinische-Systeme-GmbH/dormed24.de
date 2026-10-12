@@ -11,17 +11,19 @@ export type CartItem = {
     quantity: number;
     unit_price: string;
     line_total: string;
+    line_total_cents: number;
     product_url: string;
     is_available: boolean;
 };
 
+/** Versandart, wie sie `App\Support\Cart\ShippingOption::toArray()` liefert. */
 export type CartMethod = {
     id: string;
-    provider: string;
     label: string;
     description: string | null;
+    price: string;
+    price_cents: number;
     selected: boolean;
-    price?: string;
 };
 
 export type AddressData = {
