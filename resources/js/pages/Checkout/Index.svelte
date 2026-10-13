@@ -11,6 +11,7 @@
     import CartLayoutShippingFirst from '@/components/cart-page/CartLayoutShippingFirst.svelte';
     import CartLayoutStacked from '@/components/cart-page/CartLayoutStacked.svelte';
     import CartLayoutStandard from '@/components/cart-page/CartLayoutStandard.svelte';
+    import Picture from '@/components/Picture.svelte';
     import ShopHeader from '@/components/ShopHeader.svelte';
     import { Button } from '@/components/ui/button';
     import * as Empty from '@/components/ui/empty';
@@ -121,7 +122,7 @@
         class="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded border bg-muted"
     >
         {#if item.image_url}
-            <img
+            <Picture
                 src={item.image_url}
                 alt={item.name}
                 class="size-full object-cover object-center"

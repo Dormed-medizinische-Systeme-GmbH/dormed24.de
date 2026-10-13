@@ -1,4 +1,5 @@
 <script lang="ts">
+    import Picture from '@/components/Picture.svelte';
     import ProductImagesEditor from '@/components/product-edit/ProductImagesEditor.svelte';
     import ProductRatingsList from '@/components/product-edit/ProductRatingsList.svelte';
     import ProductVariantsEditor from '@/components/product-edit/ProductVariantsEditor.svelte';
@@ -29,9 +30,11 @@
                 class="flex aspect-square items-center justify-center overflow-hidden rounded-xl border bg-muted"
             >
                 {#if mainImage}
-                    <img
+                    <Picture
                         src={mainImage.url}
                         alt=""
+                        width={mainImage.width}
+                        height={mainImage.height}
                         class="size-full object-contain"
                     />
                 {:else}

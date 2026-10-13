@@ -37,6 +37,8 @@ class ProductController extends Controller
                 'images' => $product->images->map(fn ($img) => [
                     'id' => $img->id,
                     'url' => $img->url,
+                    'width' => $img->width,
+                    'height' => $img->height,
                     'sort_order' => $img->sort_order,
                 ])->values(),
                 'variants' => $product->variants->map(fn ($v) => [

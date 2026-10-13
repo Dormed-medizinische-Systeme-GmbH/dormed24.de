@@ -2,9 +2,16 @@
     import { Link } from '@inertiajs/svelte';
     import { Percent, ShoppingBag } from '@lucide/svelte';
     import * as ProductController from '@/actions/App/Http/Controllers/ProductController';
+    import Picture from '@/components/Picture.svelte';
     import { formatPrice } from '@/lib/currency';
 
-    type ProductImage = { id: number; url: string; sort_order: number };
+    type ProductImage = {
+        id: number;
+        url: string;
+        sort_order: number;
+        width?: number | null;
+        height?: number | null;
+    };
 
     type ProductCardProduct = {
         id: number;
@@ -46,9 +53,11 @@
     {/if}
     <div class="aspect-square w-full overflow-hidden">
         {#if product.images[0]}
-            <img
+            <Picture
                 src={product.images[0].url}
                 alt={product.name}
+                width={product.images[0].width}
+                height={product.images[0].height}
                 class="block size-full object-contain transition-transform duration-500 ease-[ease] group-hover:scale-105"
             />
         {/if}

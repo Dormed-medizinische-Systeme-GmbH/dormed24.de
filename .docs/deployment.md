@@ -139,4 +139,4 @@ Solange `COOLIFY_URL`, `COOLIFY_DEV_UUID` oder `COOLIFY_TOKEN` fehlen, endet `de
 | Variable | `COOLIFY_DEV_UUID` | UUID der Compose-Ressource in Coolify |
 | Secret | `COOLIFY_TOKEN` | API-Token aus Coolify |
 
-**Daten (einmalig, nach dem ersten Deploy):** SQLite von test per `db:import-sqlite` nach Postgres, Bilder aus `storage/app/public` ins Volume `storage` (Befehle im README, Abschnitt „Docker-Stack“; in Coolify per „Execute Command“ im `app`-Container).
+**Daten (einmalig, nach dem ersten Deploy):** SQLite von test per `db:import-sqlite` nach Postgres, Bilder aus `storage/app/public` ins Volume `storage` (Befehle im README, Abschnitt „Docker-Stack“; in Coolify per „Execute Command“ im `app`-Container). Danach einmal `php artisan product-images:convert` ausführen: wandelt alle Produktbilder in WebP + AVIF um (idempotent). Auch der Release, der die Umstellung einführt, braucht diesen Schritt nach `migrate`; bis dahin laufen Altbilder ohne AVIF weiter. Hosts ohne Docker (test.dormed24.de) brauchen PHP `gd` mit WebP/AVIF und `exif`.

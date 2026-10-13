@@ -5,6 +5,7 @@
     import Plus from '@lucide/svelte/icons/plus';
     import ShoppingCart from '@lucide/svelte/icons/shopping-cart';
     import X from '@lucide/svelte/icons/x';
+    import Picture from '@/components/Picture.svelte';
     import { Button } from '@/components/ui/button';
     import {
         Sheet,
@@ -105,7 +106,7 @@
                                 class="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded border bg-muted"
                             >
                                 {#if item.image_url}
-                                    <img
+                                    <Picture
                                         src={item.image_url}
                                         alt={item.name}
                                         class="size-full object-cover object-center"

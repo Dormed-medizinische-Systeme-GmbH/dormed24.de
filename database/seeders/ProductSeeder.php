@@ -5,6 +5,8 @@ namespace Database\Seeders;
 use App\Models\Manufacturer;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Support\Images\ImageConversionException;
+use App\Support\Images\ImageStore;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Http;
@@ -290,15 +292,7 @@ class ProductSeeder extends Seeder
             return;
         }
 
-        $extension = $this->guessExtension($url, $response->header('Content-Type'));
-        $path = sprintf('products/%d/cover.%s', $product->id, $extension);
-
-        Storage::disk('public')->put($path, $response->body());
-
-        $product->images()->create([
-            'path' => $path,
-            'sort_order' => 0,
-        ]);
+        $this->storeImage($product, $response->body(), 'cover', 0);
     }
 
     /**
@@ -327,33 +321,29 @@ class ProductSeeder extends Seeder
                 continue;
             }
 
-            $extension = $this->guessExtension($url, $response->header('Content-Type'));
-            $path = sprintf('products/%d/image-%d.%s', $product->id, $index + 1, $extension);
-
-            Storage::disk('public')->put($path, $response->body());
-
-            $product->images()->create([
-                'path' => $path,
-                'sort_order' => $index,
-            ]);
+            $this->storeImage($product, $response->body(), 'image-'.($index + 1), $index);
         }
     }
 
-    private function guessExtension(string $url, ?string $contentType): string
+    /**
+     * Speichert das heruntergeladene Bild wie ein Upload: als WebP und AVIF.
+     */
+    private function storeImage(Product $product, string $contents, string $name, int $sortOrder): void
     {
-        $path = parse_url($url, PHP_URL_PATH) ?: '';
-        $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        try {
+            $stored = app(ImageStore::class)->store($contents, "products/{$product->id}", $name);
+        } catch (ImageConversionException $e) {
+            $this->command?->warn("Bild fuer {$product->name} nicht umgewandelt: {$e->getMessage()}");
 
-        if (in_array($extension, ['jpg', 'jpeg', 'png', 'webp', 'gif'], true)) {
-            return $extension === 'jpeg' ? 'jpg' : $extension;
+            return;
         }
 
-        return match ($contentType) {
-            'image/png' => 'png',
-            'image/webp' => 'webp',
-            'image/gif' => 'gif',
-            default => 'jpg',
-        };
+        $product->images()->create([
+            'path' => $stored->path,
+            'width' => $stored->width,
+            'height' => $stored->height,
+            'sort_order' => $sortOrder,
+        ]);
     }
 
     private function decimal(mixed $value): string

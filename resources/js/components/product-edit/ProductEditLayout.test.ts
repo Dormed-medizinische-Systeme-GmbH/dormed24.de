@@ -80,8 +80,9 @@ describe('ProductEditLayout', () => {
     it('shows the main image in a square frame, like in the shop', () => {
         const { container } = renderLayout();
 
-        const frame =
-            container.querySelector('img[src="/a.jpg"]')?.parentElement;
+        const frame = container
+            .querySelector('img[src="/a.jpg"]')
+            ?.closest('div');
 
         expect(frame?.className).toContain('aspect-square');
         expect(frame?.className).not.toContain('aspect-[4/3]');

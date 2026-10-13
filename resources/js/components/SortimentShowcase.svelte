@@ -4,7 +4,13 @@
     import ProductCard from '@/components/ProductCard.svelte';
     import * as Carousel from '@/components/ui/carousel';
 
-    type ProductImage = { id: number; url: string; sort_order: number };
+    type ProductImage = {
+        id: number;
+        url: string;
+        sort_order: number;
+        width?: number | null;
+        height?: number | null;
+    };
 
     type ShowcaseProduct = {
         id: number;

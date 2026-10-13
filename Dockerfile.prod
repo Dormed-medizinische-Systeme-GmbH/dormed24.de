@@ -69,13 +69,16 @@ FROM php:8.4-fpm-bookworm AS app
 
 # Runtime: Nginx + Supervisor, PHP mit Postgres (pdo_pgsql) und Redis
 # (phpredis für Queue, Cache und Sessions). pcntl, damit queue:work bei
-# SIGTERM den laufenden Job zu Ende bringt. PDO, pdo_sqlite, mbstring und xml
+# SIGTERM den laufenden Job zu Ende bringt. gd (mit WebP und AVIF) und exif
+# wandeln hochgeladene Produktbilder in WebP und AVIF um (App\Support\Images). PDO, pdo_sqlite, mbstring und xml
 # bringt das Basis-Image schon mit; pdo_sqlite braucht nur noch der einmalige
 # Datenumzug (php artisan db:import-sqlite).
 RUN apt-get update && apt-get install -y --no-install-recommends \
     nginx supervisor curl \
     libzip-dev libonig-dev libxml2-dev libicu-dev libpq-dev \
-    && docker-php-ext-install -j$(nproc) pdo_pgsql pcntl zip bcmath intl \
+    libpng-dev libjpeg-dev libwebp-dev libavif-dev \
+    && docker-php-ext-configure gd --with-jpeg --with-webp --with-avif \
+    && docker-php-ext-install -j$(nproc) pdo_pgsql pcntl zip bcmath intl gd exif \
     && pecl install redis \
     && docker-php-ext-enable redis \
     && rm -rf /var/lib/apt/lists/* /tmp/pear

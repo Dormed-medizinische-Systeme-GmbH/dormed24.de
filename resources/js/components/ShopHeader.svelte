@@ -12,6 +12,7 @@
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     import CartSheet from '@/components/CartSheet.svelte'; // benötigt für auskommentierte Sidebar-Variante unten
     import CookieBanner from '@/components/CookieBanner.svelte';
+    import Picture from '@/components/Picture.svelte';
     import TestModeBanner from '@/components/TestModeBanner.svelte';
     import { Button } from '@/components/ui/button';
     import { Input } from '@/components/ui/input';
@@ -230,7 +231,7 @@
                                                 class="size-9 shrink-0 overflow-hidden rounded bg-muted"
                                             >
                                                 {#if product.image_url}
-                                                    <img
+                                                    <Picture
                                                         src={product.image_url}
                                                         alt={product.name}
                                                         class="size-full object-cover object-center"

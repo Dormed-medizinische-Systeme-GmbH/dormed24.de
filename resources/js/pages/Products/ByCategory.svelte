@@ -14,7 +14,13 @@
         ProductListFilters,
     } from '@/lib/productFilters';
 
-    type ProductImage = { id: number; url: string; sort_order: number };
+    type ProductImage = {
+        id: number;
+        url: string;
+        sort_order: number;
+        width?: number | null;
+        height?: number | null;
+    };
 
     type Product = {
         id: number;

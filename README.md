@@ -219,12 +219,12 @@ Entscheidung: `.docs/adr/0005-postgres-und-redis-im-docker-stack.md`.
   1. Stack wie oben starten (Schritt 3 legt das leere Postgres-Schema an).
   2. Alte App stoppen (keine neuen Bestellungen mehr in SQLite).
   3. `docker compose run --rm -v /pfad/zur/database.sqlite:/import.sqlite:ro app php artisan db:import-sqlite /import.sqlite` kopiert alle Daten, setzt die Sequenzen und vergleicht die Zeilenzahlen. Er bricht ab, wenn Postgres schon Daten enthält; bei einem Fehler bleibt Postgres leer.
-  4. Produkt- und Newsletterbilder aus `storage/app/public` in das Volume `storage` kopieren (z. B. `docker compose cp storage/app/public/. app:/app/storage/app/public/`, danach `docker compose exec app chown -R www-data:www-data storage/app/public`).
+  4. Produkt- und Newsletterbilder aus `storage/app/public` in das Volume `storage` kopieren (z. B. `docker compose cp storage/app/public/. app:/app/storage/app/public/`, danach `docker compose exec app chown -R www-data:www-data storage/app/public`) und die Produktbilder mit `docker compose exec app php artisan product-images:convert` in WebP + AVIF umwandeln.
   5. Proxy/Webserver auf den Container umstellen.
 
 ## Betrieb / Launch-Checkliste
 
-1. `php artisan storage:link` — Produktbilder liegen auf dem public-Disk.
+1. `php artisan storage:link` — Produktbilder liegen auf dem public-Disk, ausschließlich als WebP + AVIF (`App\Support\Images`). Bilder, die noch als JPEG/PNG vorliegen (z. B. nach dem Datenumzug), einmalig mit `php artisan product-images:convert` umwandeln. Der Server braucht PHP `gd` mit WebP- und AVIF-Unterstützung sowie `exif`.
 2. `APP_ENV=production`, `APP_DEBUG=false`, `SESSION_SECURE_COOKIE=true`; `config:cache`/`route:cache` sind safe.
 3. Env setzen: `ADMIN_EMAIL`/`ADMIN_PASSWORD`, `PAYPAL_LIVE_*` inkl. **Webhook-ID** (ohne sie werden alle Webhooks abgelehnt — nur im Log sichtbar) und `MAIL_LIVE_*`; danach `php artisan optimize`. Details siehe Abschnitt 7.
 4. In `config/shop.php` Kontakt (`contact.email` ist auch die Bestell-Benachrichtigungsadresse) und Bankverbindung (`bank.iban`, `bank.bic`) prüfen; Änderungen per Commit und Deploy. Seeder mit Default-Passwörtern laufen nur außerhalb von Produktion.
