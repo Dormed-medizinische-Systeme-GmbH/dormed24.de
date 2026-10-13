@@ -3,7 +3,7 @@ import { wayfinder } from '@laravel/vite-plugin-wayfinder';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import tailwindcss from '@tailwindcss/vite';
 import laravel from 'laravel-vite-plugin';
-import { bunny } from 'laravel-vite-plugin/fonts';
+import { local } from 'laravel-vite-plugin/fonts';
 import { defineConfig } from 'vite';
 
 const isSvelteCheck = process.argv.some((argument) =>
@@ -25,9 +25,25 @@ export default defineConfig({
             // SSR-Entry nehmen. Ausgabe -> bootstrap/ssr/.
             ssr: 'resources/js/app.ts',
             refresh: true,
+            // Selbst gehostet (resources/fonts, SIL OFL): nur WOFF2, eine
+            // @font-face-Regel pro Schnitt. bunny() erzeugte zusätzlich
+            // WOFF-Regeln, die die vorgeladenen WOFF2-Dateien überdeckten.
             fonts: [
-                bunny('Instrument Sans', {
-                    weights: [400, 500, 600],
+                local('Instrument Sans', {
+                    variants: [
+                        {
+                            src: 'resources/fonts/instrument-sans/instrument-sans-latin-400-normal.woff2',
+                            weight: 400,
+                        },
+                        {
+                            src: 'resources/fonts/instrument-sans/instrument-sans-latin-500-normal.woff2',
+                            weight: 500,
+                        },
+                        {
+                            src: 'resources/fonts/instrument-sans/instrument-sans-latin-600-normal.woff2',
+                            weight: 600,
+                        },
+                    ],
                 }),
             ],
         }),
