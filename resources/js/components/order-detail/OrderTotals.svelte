@@ -14,7 +14,11 @@
         <dd class="font-medium">{formatPrice(summary.subtotal)}*</dd>
     </div>
     <div class="flex items-center justify-between gap-4">
-        <dt class="text-muted-foreground">Versand</dt>
+        <dt class="text-muted-foreground">
+            Versand{summary.shipping_method
+                ? ` – ${summary.shipping_method}`
+                : ''}
+        </dt>
         <dd class="font-medium">{formatPrice(summary.shipping_total)}*</dd>
     </div>
     <div class="flex items-center justify-between gap-4">

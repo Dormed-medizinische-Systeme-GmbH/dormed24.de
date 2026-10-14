@@ -11,7 +11,7 @@ Das Dokument zum Thema vor der Änderung lesen, danach nachziehen.
 | eine Migration oder ein Model änderst | `database/SCHEMA.md` (jede Schemaänderung dort mitpflegen) |
 | einen Flow änderst (Warenkorb, Checkout, PayPal, Verifikation, Varianten) | `README.md`, Kern-Flows (Änderung dort mitpflegen) |
 | einen Fachbegriff brauchst oder benennst | `GLOSSARY.md` |
-| eine Architekturfrage entscheidest | `.docs/adr/` (Namespaces, kein Fulfillment-Status, später Capture, keine Admin-Konfiguration); Umbauplan `.todo/architektur-plan.md` |
+| eine Architekturfrage entscheidest | `.docs/adr/` (Namespaces, kein Fulfillment-Status, später Capture, keine Admin-Konfiguration, Admin nur Inhaltspflege); Umbauplan `.todo/architektur-plan.md` |
 | Workflows, Deploy, Server, SSR oder Sandbox-Reset anfasst | `.docs/deployment.md` |
 | Offenes suchst | `TODO.md`, `ANALYSE.md` |
 
@@ -49,6 +49,7 @@ Die vier Kategorien aus `config/categories.php` sind die Einstiegsseiten; es gib
 
 - Session-State: `items[lineKey => quantity]`. Line-Key = `productId` oder `productId:variantId`; jede Variante ist eine eigene Zeile, das Frontend adressiert sie über `item.line_key` und `/cart/items/{product}/{variant?}`.
 - Preise und Namen kommen bei jedem Aufruf live aus der DB; der Snapshot entsteht erst in `OrderManager::createFromCart`.
+- Versandarten kommen aus `config/shipping.php` über `App\Support\Cart\ShippingMethods`, nie aus der DB oder dem Admin (`.docs/adr/0006`). Preise sind ganzzahlige Brutto-Cents; die Session und `shipping_method` im Request tragen den Key. Eine ungültige Config wirft eine Exception, `tests/Feature/Config/ShippingConfigTest` prüft die echte Datei vor jedem Deploy. Die Bestellung hält Key und Name als Snapshot (`orders.shipping_method_key`/`_name`); Bestellansichten und Mails lesen nur den Snapshot (`OrderSummary['shipping_method']`). In Tests Versandarten per `config(['shipping' => [...]])` setzen.
 - Varianten haben einen absoluten Endpreis (`product_variants.price`); Produkte mit Varianten sind nur als Variante bestellbar, das Label wird Teil des Zeilennamens.
 - Die Zahlart gehört nicht zum Warenkorb: der Klick auf einen Zahlungs-Button bestimmt sie.
 
@@ -137,7 +138,7 @@ Regeln:
   - `PayPalController` macht nur HTTP (Eigentum prüfen, Antwort bauen, Warenkorb leeren). Tests für Abgleich-Regeln nutzen `Tests\Support\FakePaymentGateway`, Tests für PayPal-JSON die Fixtures (`PayPalGatewayTest`).
 - **Webhooks** (`/paypal/webhook`, signaturverifiziert): `CAPTURE.COMPLETED` → `markPaid`; `REFUNDED`/`DENIED`/`REVERSED` setzen Payment und Order. Beim Refund ist `resource.id` die Refund-ID, die Capture-ID steckt im `up`-Link (löst `PayPalGateway`).
 - **Modus:** `App\Support\PaymentMode` — live nur bei `APP_ENV=production` und `APP_DEBUG=false`, sonst sandbox; kein Admin-Override. Zugangsdaten nur aus der Env (`PAYPAL_SANDBOX_*`/`PAYPAL_LIVE_*`, `MAIL_SANDBOX_*`/`MAIL_LIVE_*`, angewendet durch `ModeMailConfiguration`).
-- **Keine Konfiguration im Admin** (`.docs/adr/0004`): Kontakt und Bankverbindung stehen in `config/shop.php` und werden nur über `App\Support\ShopContact` gelesen; Shopname = `APP_NAME`. Empfänger der Betreibermails ist `config('shop.contact.email')`; beide Bestellmails laufen synchron im Request.
+- **Keine Konfiguration im Admin** (`.docs/adr/0004`, `0006`): Der Admin pflegt nur Inhalte und bearbeitet Bestellungen. Versandarten stehen in `config/shipping.php`, Kontakt und Bankverbindung in `config/shop.php` und werden nur über `App\Support\ShopContact` gelesen; Shopname = `APP_NAME`. Empfänger der Betreibermails ist `config('shop.contact.email')`; beide Bestellmails laufen synchron im Request.
 
 ### Betriebsmodell
 

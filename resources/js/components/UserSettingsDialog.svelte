@@ -68,6 +68,7 @@
         }[];
         summary: {
             subtotal: string;
+            shipping_method: string | null;
             shipping_total: string;
             vat_rate: number;
             vat_amount: string;
@@ -572,7 +573,10 @@
                                             <div class="flex justify-between">
                                                 <span
                                                     class="text-muted-foreground"
-                                                    >Versand</span
+                                                    >Versand{selectedOrder
+                                                        .summary.shipping_method
+                                                        ? ` – ${selectedOrder.summary.shipping_method}`
+                                                        : ''}</span
                                                 >
                                                 <span
                                                     >{formatPrice(

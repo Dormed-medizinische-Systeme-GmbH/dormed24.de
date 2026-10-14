@@ -8,8 +8,8 @@ use App\Mail\PaymentConfirmationMail;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Product;
-use App\Models\ShippingMethod;
 use App\Support\Orders\OrderStatus;
+use App\Support\Orders\OrderSummary;
 use App\Support\Orders\PaymentMethod;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
@@ -31,12 +31,15 @@ class InvoicePurchaseLifecycleTest extends TestCase
 
         $customer = Customer::factory()->create(['email' => 'praxis@example.com']);
         $product = Product::factory()->create(['price' => '595.00']);
-        $shipping = ShippingMethod::factory()->create(['price' => '5.90']);
+        config(['shipping' => [
+            ['key' => 'selbstabholung', 'name' => 'Selbstabholung', 'price_cents' => 0],
+            ['key' => 'paket', 'name' => 'Paketversand', 'price_cents' => 590],
+        ]]);
 
         $this->actingAs($customer)
             ->post(route('cart.items.store'), ['product_id' => $product->id, 'quantity' => 2])
             ->assertSessionHasNoErrors();
-        $this->patch(route('cart.shipping.update'), ['shipping_method' => (string) $shipping->id])
+        $this->patch(route('cart.shipping.update'), ['shipping_method' => 'paket'])
             ->assertSessionHasNoErrors();
         $this->patch(route('checkout.address.update'), ['shipping_address' => [
             'first_name' => 'Erika',
@@ -57,6 +60,8 @@ class InvoicePurchaseLifecycleTest extends TestCase
         $this->assertSame(PaymentMethod::Invoice, $order->payment_method);
         $this->assertSame('1195.90', $order->total_amount);
         $this->assertSame('5.90', $order->shipping_amount);
+        $this->assertSame('paket', $order->shipping_method_key);
+        $this->assertSame('Paketversand', $order->shipping_method_name);
         $this->assertSame(2, $order->items()->sole()->quantity);
         $this->assertSame('Berlin', $order->shipping_address['city']);
         $this->assertSame([], session('cart.items', []), 'Der Warenkorb ist nach der Bestellung leer.');
@@ -65,7 +70,23 @@ class InvoicePurchaseLifecycleTest extends TestCase
         Mail::assertSent(NewOrderMail::class, fn ($mail): bool => $mail->hasTo('shop@dormed.example'));
         Mail::assertNotSent(PaymentConfirmationMail::class);
 
-        $this->get(route('checkout.success', ['order_id' => $order->id]))->assertOk();
+        // Der Snapshot bleibt, auch wenn die Versandart später umbenannt,
+        // verteuert oder entfernt wird.
+        config(['shipping' => [
+            ['key' => 'dpd', 'name' => 'DPD Standard', 'price_cents' => 990],
+        ]]);
+
+        $order->refresh();
+        $this->assertSame('paket', $order->shipping_method_key);
+        $this->assertSame('Paketversand', $order->shipping_method_name);
+        $this->assertSame('5.90', $order->shipping_amount);
+        $this->assertSame('Paketversand', OrderSummary::fromOrder($order)['shipping_method']);
+
+        $this->get(route('checkout.success', ['order_id' => $order->id]))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('shipping_method', 'Paketversand')
+                ->where('shipping_total', '5.90'));
 
         $this->actingAsAdmin()
             ->patchJson(route('admin.orders.confirm-payment', $order), ['notify' => true])

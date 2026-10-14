@@ -21,12 +21,14 @@ use Illuminate\Support\Carbon;
  * @property bool $is_test
  * @property string $total_amount
  * @property string $shipping_amount
+ * @property string|null $shipping_method_key
+ * @property string|null $shipping_method_name
  * @property array<string, string|null>|null $shipping_address
  * @property array<string, string|null>|null $billing_address
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['customer_id', 'status', 'payment_method', 'total_amount', 'shipping_amount', 'shipping_address', 'billing_address', 'is_test'])]
+#[Fillable(['customer_id', 'status', 'payment_method', 'total_amount', 'shipping_amount', 'shipping_method_key', 'shipping_method_name', 'shipping_address', 'billing_address', 'is_test'])]
 class Order extends Model
 {
     /** @use HasFactory<OrderFactory> */

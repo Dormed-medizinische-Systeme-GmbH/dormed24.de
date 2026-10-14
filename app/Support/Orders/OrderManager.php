@@ -29,7 +29,9 @@ class OrderManager
      */
     public function createFromCart(Customer $customer, Cart $cart, PaymentMethod $paymentMethod): Order
     {
-        return DB::transaction(function () use ($customer, $cart, $paymentMethod): Order {
+        $shippingMethod = $cart->selectedShippingMethod();
+
+        return DB::transaction(function () use ($customer, $cart, $paymentMethod, $shippingMethod): Order {
             /** @var Order $order */
             $order = Order::query()->create([
                 'customer_id' => $customer->id,
@@ -38,6 +40,8 @@ class OrderManager
                 'is_test' => ! PaymentMode::isLive(),
                 'total_amount' => Money::format($cart->totalCents()),
                 'shipping_amount' => Money::format($cart->shippingCents()),
+                'shipping_method_key' => $shippingMethod?->id,
+                'shipping_method_name' => $shippingMethod?->label,
                 'shipping_address' => $cart->shippingAddress->toArray(),
                 'billing_address' => $cart->billingAddress?->toArray(),
             ]);

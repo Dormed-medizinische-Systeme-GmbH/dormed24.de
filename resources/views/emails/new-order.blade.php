@@ -82,7 +82,7 @@
                                 <td align="right" style="padding:4px 0;font-size:14px;color:#374151;">{{ number_format((float) $cart['subtotal'], 2, ',', '.') }} €</td>
                             </tr>
                             <tr>
-                                <td style="padding:4px 0;font-size:14px;color:#6b7280;">Versandkosten</td>
+                                <td style="padding:4px 0;font-size:14px;color:#6b7280;">Versandkosten{{ filled($cart['shipping_method']) ? ' – '.$cart['shipping_method'] : '' }}</td>
                                 <td align="right" style="padding:4px 0;font-size:14px;color:#374151;">{{ number_format((float) $cart['shipping_total'], 2, ',', '.') }} €</td>
                             </tr>
                             <tr>

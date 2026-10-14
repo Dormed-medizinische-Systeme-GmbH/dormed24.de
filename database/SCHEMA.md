@@ -15,7 +15,6 @@ Engine: **SQLite** (Entwicklung) — Produktionsumgebung: MySQL/MariaDB-kompatib
 | `products`            | Produkte                                   |
 | `product_variants`    | Produktvarianten mit absolutem Endpreis    |
 | `product_images`      | Produktbilder (max. 5, sortiert)           |
-| `shipping_methods`    | Versandarten mit Bezeichnung und Preis     |
 | `addresses`           | Adressen (Customer-Profil)                 |
 | `manufacturers`       | Hersteller (FK von `products`)             |
 | `payments`            | PayPal-Transaktionen (FK zu `orders`)      |
@@ -175,22 +174,6 @@ Indexe:
 
 ---
 
-## shipping_methods
-
-Versandarten für den Shop. Preis nullable = "auf Anfrage".
-
-| Spalte       | Typ              | Nullable | Default | Hinweis           |
-|--------------|------------------|----------|---------|-------------------|
-| `id`         | integer          | NO       | —       | PK, autoincrement |
-| `name`        | varchar           | NO       | —       | Bezeichnung        |
-| `description` | varchar           | YES      | —       | Kurzbeschreibung   |
-| `price`       | decimal(8,2)      | YES      | —       | null = auf Anfrage |
-| `sort_order`  | smallint unsigned | NO       | `0`     |                    |
-| `created_at`  | datetime          | YES      | —       |                    |
-| `updated_at`  | datetime          | YES      | —       |                    |
-
----
-
 ## orders
 
 Bestellungen mit JSON-Adress-Snapshots (immutable zum Zeitpunkt der Bestellung).
@@ -204,6 +187,8 @@ Bestellungen mit JSON-Adress-Snapshots (immutable zum Zeitpunkt der Bestellung).
 | `is_test`                   | boolean  | NO       | `false`     | true = Sandbox-/Testbestellung      |
 | `total_amount`              | numeric  | NO       | —           | decimal(10,2)                       |
 | `shipping_amount`           | numeric  | NO       | `0.00`      | decimal(10,2), Versandkosten        |
+| `shipping_method_key`       | varchar(64) | YES   | —           | Snapshot: Key aus `config/shipping.php` |
+| `shipping_method_name`      | varchar  | YES      | —           | Snapshot: Name der Versandart       |
 | `shipping_address`          | JSON     | YES      | —           | Snapshot der Lieferadresse          |
 | `billing_address`           | JSON     | YES      | —           | Snapshot der Rechnungsadresse       |
 | `created_at`                | datetime | YES      | —           |                                     |
@@ -211,6 +196,11 @@ Bestellungen mit JSON-Adress-Snapshots (immutable zum Zeitpunkt der Bestellung).
 
 > `customer_id` ist seit Migration `2026_07_07_175921` nullable mit
 > `ON DELETE SET NULL` (Bestellhistorie überlebt die Kontolöschung).
+
+> Versandarten stehen in `config/shipping.php`, nicht in der Datenbank
+> (`.docs/adr/0006-admin-nur-inhaltspflege.md`). `shipping_method_key` und
+> `shipping_method_name` sind bei Bestellungen vor Migration `2026_10_14_090000`
+> leer; angezeigt wird immer der Snapshot, nie die aktuelle Config.
 
 JSON-Struktur (shipping_address / billing_address):
 ```json

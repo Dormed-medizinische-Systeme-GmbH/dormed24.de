@@ -4,7 +4,6 @@ namespace Tests\Feature\Support;
 
 use App\Models\Product;
 use App\Models\ProductVariant;
-use App\Models\ShippingMethod;
 use App\Support\Cart\CartService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -20,10 +19,12 @@ class CartServiceQueryCountTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_cart_loads_shipping_methods_and_products_in_one_query_each(): void
+    public function test_cart_loads_products_in_one_query_each(): void
     {
-        ShippingMethod::factory()->count(2)->create(['price' => '4.90']);
-        ShippingMethod::factory()->create(['price' => null]);
+        config(['shipping' => [
+            ['key' => 'standard', 'name' => 'Standard', 'price_cents' => 490],
+            ['key' => 'express', 'name' => 'Express', 'price_cents' => 490],
+        ]]);
 
         $lines = [];
 
@@ -45,30 +46,28 @@ class CartServiceQueryCountTest extends TestCase
 
         $this->assertCount(4, $cart->items);
         $this->assertSame(10, $cart->count());
-        // NULL-Preis = "auf Anfrage": taucht im Checkout nicht auf.
         $this->assertCount(2, $cart->shippingMethods);
 
-        $this->assertCount(1, $this->queriesTo($queries, 'shipping_methods'));
         $this->assertCount(1, $this->queriesTo($queries, 'products'));
         $this->assertCount(1, $this->queriesTo($queries, 'product_variants'));
     }
 
-    public function test_repeated_cart_calls_reuse_the_loaded_shipping_methods(): void
+    public function test_shipping_methods_come_from_the_config_without_queries(): void
     {
-        ShippingMethod::factory()->count(2)->create(['price' => '4.90']);
-
         $service = app(CartService::class);
 
         DB::enableQueryLog();
         DB::flushQueryLog();
 
-        $service->cart();
-        $service->cart();
+        $first = $service->cart();
+        $second = $service->cart();
 
         $queries = DB::getQueryLog();
         DB::disableQueryLog();
 
-        $this->assertCount(1, $this->queriesTo($queries, 'shipping_methods'));
+        $this->assertNotSame([], $first->shippingMethods);
+        $this->assertEquals($first->shippingMethods, $second->shippingMethods);
+        $this->assertSame([], $queries);
     }
 
     /**

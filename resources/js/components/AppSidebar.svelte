@@ -7,7 +7,6 @@
     import Package from '@lucide/svelte/icons/package';
     import Share2 from '@lucide/svelte/icons/share-2';
     import ShoppingCart from '@lucide/svelte/icons/shopping-cart';
-    import Truck from '@lucide/svelte/icons/truck';
     import Users from '@lucide/svelte/icons/users';
     import type { Snippet } from 'svelte';
     import AppLogo from '@/components/AppLogo.svelte';
@@ -46,14 +45,6 @@
         { title: 'Social-Media', href: '/admin/social-posts', icon: Share2 },
         { title: 'Magazin', href: '/admin/articles', icon: Newspaper },
     ];
-
-    const settingsItems: NavItem[] = [
-        {
-            title: 'Versandarten',
-            href: '/admin/settings/shipping',
-            icon: Truck,
-        },
-    ];
 </script>
 
 <Sidebar collapsible="icon" variant="inset">
@@ -75,7 +66,6 @@
         <NavMain items={mainNavItems} />
         <NavMain title="Katalog" items={catalogItems} />
         <NavMain title="Marketing" items={marketingItems} />
-        <NavMain title="Einstellungen" items={settingsItems} />
     </SidebarContent>
 
     <SidebarFooter>

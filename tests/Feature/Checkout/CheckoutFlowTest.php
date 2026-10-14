@@ -5,7 +5,7 @@ namespace Tests\Feature\Checkout;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Product;
-use App\Models\ShippingMethod;
+use App\Support\Cart\ShippingMethods;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -92,7 +92,6 @@ class CheckoutFlowTest extends TestCase
     public function test_confirm_renders_when_cart_has_items(): void
     {
         $customer = Customer::factory()->create();
-        $shipping = ShippingMethod::factory()->create(['price' => '0.00']);
         $product = Product::factory()->create(['price' => '10.00']);
 
         $this->actingAs($customer)
@@ -106,7 +105,7 @@ class CheckoutFlowTest extends TestCase
                             'product_number' => (string) $product->id,
                         ],
                     ],
-                    'shipping_method' => (string) $shipping->id,
+                    'shipping_method' => ShippingMethods::default()->key,
                     'shipping_address' => $this->completeAddress(),
                 ],
             ])
@@ -127,7 +126,6 @@ class CheckoutFlowTest extends TestCase
     public function test_submit_requires_accepting_terms(): void
     {
         $customer = Customer::factory()->create();
-        $shipping = ShippingMethod::factory()->create(['price' => '0.00']);
         $product = Product::factory()->create(['price' => '10.00']);
 
         $this->actingAs($customer)
@@ -141,7 +139,7 @@ class CheckoutFlowTest extends TestCase
                             'product_number' => (string) $product->id,
                         ],
                     ],
-                    'shipping_method' => (string) $shipping->id,
+                    'shipping_method' => ShippingMethods::default()->key,
                     'shipping_address' => $this->completeAddress(),
                 ],
             ])
@@ -154,7 +152,6 @@ class CheckoutFlowTest extends TestCase
     public function test_confirm_exposes_paypal_client_id(): void
     {
         $customer = Customer::factory()->create();
-        $shipping = ShippingMethod::factory()->create(['price' => '0.00']);
         $product = Product::factory()->create(['price' => '10.00']);
 
         config(['paypal.sandbox.client_id' => 'sandbox-client-id']);
@@ -170,7 +167,7 @@ class CheckoutFlowTest extends TestCase
                             'product_number' => (string) $product->id,
                         ],
                     ],
-                    'shipping_method' => (string) $shipping->id,
+                    'shipping_method' => ShippingMethods::default()->key,
                     'shipping_address' => $this->completeAddress(),
                 ],
             ])

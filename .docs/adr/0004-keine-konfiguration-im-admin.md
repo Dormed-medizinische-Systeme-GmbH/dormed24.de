@@ -1,6 +1,6 @@
 # Keine Konfiguration im Admin
 
-Status: accepted (Oktober 2026)
+Status: accepted (Oktober 2026), für Versandarten abgelöst durch `0006-admin-nur-inhaltspflege.md`
 
 Der Admin pflegt nur Geschäftsdaten (Produkte, Hersteller, Versandarten, Bestellungen, Marketing-Inhalte), aber keine Konfiguration. Kontaktdaten und Bankverbindung stehen in `config/shop.php`, Zugangsdaten (PayPal, SMTP, Admin) in der Env, der Shopname ist `APP_NAME`. Die frühere Seite „Einstellungen → Allgemein“ und die Tabelle `settings` sind entfernt.
 

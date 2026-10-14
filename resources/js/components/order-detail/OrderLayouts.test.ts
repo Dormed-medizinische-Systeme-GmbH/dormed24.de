@@ -76,6 +76,7 @@ const order: OrderDetail = {
     ],
     summary: {
         subtotal: '219.00',
+        shipping_method: 'Standardversand (DPD)',
         shipping_total: '4.90',
         vat_rate: 19,
         vat_amount: '35.78',
@@ -102,6 +103,7 @@ const ALWAYS_VISIBLE = [
     '189,00 €*',
     '30,00 €*',
     'Zwischensumme',
+    'Versand – Standardversand (DPD)',
     'MwSt. (19 %)',
     'Gesamt',
     'Erika Muster, Hauptstr. 5, 10115 Berlin',
@@ -167,12 +169,14 @@ describe('Bestelldetail – Layout-Varianten', () => {
                         items: [],
                         payments: [],
                         shipping_address: null,
+                        summary: { ...order.summary, shipping_method: null },
                     },
                 },
             });
             const text = container.textContent ?? '';
 
             expect(text).toContain('Kunde nicht verfügbar');
+            expect(text).not.toContain('Standardversand');
             expect(text).toContain('Keine Positionen vorhanden');
             expect(text).toContain('—');
         },

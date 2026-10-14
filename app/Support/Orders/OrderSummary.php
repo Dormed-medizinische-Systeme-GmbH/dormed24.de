@@ -10,7 +10,7 @@ use App\Support\Cart\Money;
  * der Warenkorb. Genutzt von Betreiber-Mail, Erfolgsseite, Kundenkonto und
  * Admin, damit die MwSt.-Rechnung an einer Stelle steht.
  *
- * @phpstan-type OrderSummaryArray array{items: array<int, array<string, mixed>>, subtotal: string, shipping_total: string, vat_rate: int, vat_amount: string, total: string}
+ * @phpstan-type OrderSummaryArray array{items: array<int, array<string, mixed>>, subtotal: string, shipping_method: string|null, shipping_total: string, vat_rate: int, vat_amount: string, total: string}
  */
 final class OrderSummary
 {
@@ -35,6 +35,8 @@ final class OrderSummary
                 'line_total' => number_format((float) $item->unit_price * $item->quantity, 2, '.', ''),
             ])->all(),
             'subtotal' => Money::format($totalCents - $shippingCents),
+            // Snapshot aus der Bestellung, nie aus config/shipping.php.
+            'shipping_method' => $order->shipping_method_name,
             'shipping_total' => Money::format($shippingCents),
             'vat_rate' => $vatRate,
             'vat_amount' => Money::format($vatAmountCents),

@@ -148,6 +148,7 @@ class CheckoutController extends Controller
             'order_id' => $order->id,
             'items' => $summary['items'],
             'subtotal' => $summary['subtotal'],
+            'shipping_method' => $summary['shipping_method'],
             'shipping_total' => $summary['shipping_total'],
             'vat_rate' => $summary['vat_rate'],
             'vat_amount' => $summary['vat_amount'],

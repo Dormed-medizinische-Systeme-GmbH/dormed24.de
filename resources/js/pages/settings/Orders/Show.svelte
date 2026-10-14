@@ -20,6 +20,7 @@
 
     type OrderSummary = {
         subtotal: string;
+        shipping_method: string | null;
         shipping_total: string;
         vat_rate: number;
         vat_amount: string;
@@ -202,7 +203,11 @@
                 >
             </div>
             <div class="flex items-center justify-between gap-4">
-                <span class="text-muted-foreground">Versand</span>
+                <span class="text-muted-foreground"
+                    >Versand{order.summary.shipping_method
+                        ? ` – ${order.summary.shipping_method}`
+                        : ''}</span
+                >
                 <span class="font-medium text-gray-950"
                     >{formatPrice(order.summary.shipping_total)}*</span
                 >

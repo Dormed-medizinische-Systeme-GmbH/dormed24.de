@@ -12,6 +12,10 @@ _Avoid_: Order (im Text), Auftrag, Kauf
 Der Stand einer Bestellung aus Sicht des Shops: offen, bezahlt, fehlgeschlagen, storniert oder erstattet. Es gibt bewusst keinen Versand- oder Bearbeitungsstatus.
 _Avoid_: Fulfillment-Status, Auftragsstatus
 
+**Versandart**:
+Wie eine Bestellung zum Kunden kommt (Selbstabholung oder Paketversand), mit festem Bruttopreis. Fest im Code definiert, an der Bestellung als Snapshot gespeichert.
+_Avoid_: Lieferart, Versandoption, Shipping Method (im Text)
+
 **Bezahlart**:
 Der Weg, auf dem eine Bestellung bezahlt wird: Rechnung, PayPal, Lastschrift oder Kreditkarte (die letzten drei laufen über PayPal).
 _Avoid_: Zahlungsmethode, Zahlungsanbieter

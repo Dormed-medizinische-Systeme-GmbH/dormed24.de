@@ -20,6 +20,7 @@
         order_id,
         items,
         subtotal,
+        shipping_method,
         shipping_total,
         vat_rate,
         vat_amount,
@@ -29,6 +30,7 @@
         order_id: number;
         items: Item[];
         subtotal: string | number;
+        shipping_method: string | null;
         shipping_total: string | number;
         vat_rate: number;
         vat_amount: string | number;
@@ -118,7 +120,11 @@
                     <span>{formatPrice(subtotal)}</span>
                 </div>
                 <div class="flex justify-between text-muted-foreground">
-                    <span>Versandkosten</span>
+                    <span
+                        >Versandkosten{shipping_method
+                            ? ` – ${shipping_method}`
+                            : ''}</span
+                    >
                     <span>{formatPrice(shipping_total)}</span>
                 </div>
                 <div class="flex justify-between text-muted-foreground">

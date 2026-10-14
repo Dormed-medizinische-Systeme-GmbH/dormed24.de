@@ -87,7 +87,7 @@
                                 <td align="right" style="padding:4px 0;font-size:14px;color:#374151;">{{ number_format($subtotal, 2, ',', '.') }} €*</td>
                             </tr>
                             <tr>
-                                <td style="padding:4px 0;font-size:14px;color:#6b7280;">Versandkosten</td>
+                                <td style="padding:4px 0;font-size:14px;color:#6b7280;">Versandkosten{{ filled($order->shipping_method_name) ? ' – '.$order->shipping_method_name : '' }}</td>
                                 <td align="right" style="padding:4px 0;font-size:14px;color:#374151;">{{ number_format($shipping, 2, ',', '.') }} €*</td>
                             </tr>
                             <tr>

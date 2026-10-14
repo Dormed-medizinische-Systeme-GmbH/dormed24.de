@@ -6,7 +6,7 @@
 
 Eine Applikation, zwei vollständig getrennte Instanzen auf Datenbankebene:
 
-- **Schema `live`** und **Schema `sandbox`** sind eine **1:1-Spiegelung** derselben Struktur. *Jede* Tabelle existiert in beiden: Kunden, Adressen, Passkeys, Produkte, Bilder, Varianten, Hersteller, Versandarten, Settings, Bestellungen, Zahlungen, Bewertungen, Sessions, Cache, Jobs und die Migrations-Tabelle.
+- **Schema `live`** und **Schema `sandbox`** sind eine **1:1-Spiegelung** derselben Struktur. *Jede* Tabelle existiert in beiden: Kunden, Adressen, Passkeys, Produkte, Bilder, Varianten, Hersteller, Settings, Bestellungen, Zahlungen, Bewertungen, Sessions, Cache, Jobs und die Migrations-Tabelle.
 - Kein gemeinsames Schema, keine gemeinsamen Daten. Wer sich in der Sandbox registriert, existiert in Live nicht und umgekehrt. Die Sandbox hat ihren **eigenen Katalog**.
 - Shop **und** Admin arbeiten immer nur im Schema des aktiven Modus. Nach dem Zurückschalten auf Live ist nichts aus der Sandbox zu sehen.
 - Gemeinsam bleibt nur, was ohnehin nicht in der Datenbank liegt: der Code, `config/categories.php` und der Admin-Zugang aus der Env (`ADMIN_EMAIL`/`ADMIN_PASSWORD`). Der Admin-Umzug in die Env zahlt sich hier aus, denn es gibt keine Admin-Tabelle, die man spiegeln oder synchronisieren müsste.
@@ -98,7 +98,7 @@ Weil alles am Modus hängt, ist das Umschalten (`.env` ändern, dann `php artisa
 
 Die Sandbox startet leer. Damit man realistisch testen kann:
 
-- Befehl `php artisan sandbox:copy-catalog` kopiert Hersteller, Produkte, Varianten, Bilder (Dateien mit), Versandarten und unkritische Settings **von Live nach Sandbox**.
+- Befehl `php artisan sandbox:copy-catalog` kopiert Hersteller, Produkte, Varianten, Bilder (Dateien mit) und unkritische Settings (Versandarten stehen inzwischen in `config/shipping.php` und gelten für beide Schemas) **von Live nach Sandbox**.
   - **Nur in diese Richtung.** Eine Gegenrichtung gibt es bewusst nicht.
   - Ein vorhandener Sandbox-Katalog wird vorher geleert, nur nach Bestätigung.
 - Befehl `php artisan sandbox:reset` leert das komplette Sandbox-Schema (`DROP SCHEMA sandbox CASCADE` + `CREATE SCHEMA` + Migrationen) und das Sandbox-Bilderverzeichnis. Danach optional `sandbox:copy-catalog`.
