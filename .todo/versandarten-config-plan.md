@@ -4,14 +4,26 @@
 
 Versandarten sind fest im Code definiert, nicht mehr in der Tabelle `shipping_methods` und nicht mehr im Admin pflegbar. Änderungen laufen über Commit und Deployment, wie bei Kategorien (`config/categories.php`) und Kontaktdaten (`config/shop.php`).
 
+Grundsatz (entschieden): **Der Admin pflegt nur Inhalte** (Produkte, Hersteller, Magazin, Newsletter, Social-Media) und bearbeitet Bestellungen. Alles Administrative steht im Code. Mit diesem Umbau fällt der letzte Konfigurationspunkt im Admin („Einstellungen → Versandarten“) weg.
+
 Gehärtet wird, indem alles Dynamische entfällt:
 
 - keine Admin-CRUD-Routen, mit denen sich Preise ändern oder Versandarten löschen lassen
 - kein `NULL`-Preis („auf Anfrage“) mehr, den `CartService` heute wegfiltern muss, damit er nicht als 0,00 € durchgeht
-- keine Auto-Increment-IDs in Session und Request, stattdessen stabile String-Keys
+- keine Auto-Increment-IDs in Session und Request, stattdessen String-Keys aus der Config
 - kein `sort_order`, die Reihenfolge ergibt sich aus der Config
 - Preise als Integer-Cents statt `decimal`/Float
-- keine DB-Abfrage pro Warenkorb-Aufruf (`CartServiceQueryCountTest` wird einfacher)
+- keine DB-Abfrage pro Warenkorb-Aufruf
+- die Bestellung hält einen vollständigen Snapshot der Versandart, unabhängig davon, was später in der Config steht
+
+## Entscheidungen
+
+| Frage | Entscheidung |
+| --- | --- |
+| Preise | Übernahme des aktuellen Stands: Selbstabholung 0,00 €, Standardversand (DPD) 9,00 €, Premium-Versand (DPD) 25,00 € (brutto, pauschal) |
+| Keys | dürfen sich später ändern; Versandarten kommen hinzu. Deshalb hängt nichts Dauerhaftes am Key: Die Bestellung speichert Key **und** Name **und** Betrag als Snapshot. |
+| Versandart an der Bestellung | ja, als Snapshot in diesem Umbau |
+| `/admin/settings` | Route und Navigationsgruppe „Einstellungen“ entfallen (404) |
 
 ## Ist-Stand
 
@@ -19,13 +31,13 @@ Gehärtet wird, indem alles Dynamische entfällt:
 | --- | --- |
 | `app/Models/ShippingMethod.php`, `database/factories/ShippingMethodFactory.php` | Model (`name`, `description`, `price` nullable, `sort_order`) |
 | Migrationen `2026_06_25_000002_create_shipping_methods_table`, `2026_06_28_134035_add_description_…` | Tabelle |
-| `database/seeders/ShippingMethodSeeder.php` (+ Aufruf in `DatabaseSeeder`) | drei Versandarten: Selbstabholung 0 €, Standard DPD 9 €, Premium DPD 25 € |
-| `app/Http/Controllers/Admin/ShippingMethodController.php`, `routes/admin.php:76-80` | Admin-CRUD unter `/admin/settings/shipping`, `/admin/settings` leitet dorthin |
-| `resources/js/pages/Admin/Settings/Shipping.svelte`, `components/AppSidebar.svelte:50-56` | Admin-Maske und Navigationspunkt „Einstellungen“ |
+| `database/seeders/ShippingMethodSeeder.php` (+ Aufruf in `DatabaseSeeder`) | die drei Versandarten |
+| `app/Http/Controllers/Admin/ShippingMethodController.php`, `routes/admin.php:75-80` | Admin-CRUD unter `/admin/settings/shipping`, `/admin/settings` leitet dorthin |
+| `resources/js/pages/Admin/Settings/Shipping.svelte`, `components/AppSidebar.svelte:50-56, 78` | Admin-Maske, Navigationsgruppe „Einstellungen“ |
 | `app/Support/Cart/CartService.php` | lädt Models (`whereNotNull('price')`), validiert die Session-Auswahl, Default = erste |
 | `app/Http/Requests/Cart/UpdateCartShippingMethodRequest.php` | `Rule::in(ShippingMethod::pluck('id'))` |
 | `app/Support/Cart/ShippingOption.php`, `Cart.php` | DTO fürs Frontend (`id` als String) |
-| Bestellung (`OrderManager::createFromCart`) | speichert nur `shipping_amount`, **nicht** welche Versandart gewählt wurde |
+| `OrderManager::createFromCart` | speichert nur `shipping_amount`, **nicht** welche Versandart |
 
 Das Frontend (`types/cart.ts`, `Checkout/Index.svelte`) kennt nur `id` als String und ist von der Umstellung kaum betroffen.
 
@@ -41,34 +53,76 @@ return [
 ];
 ```
 
-Mit Kopfkommentar im Stil von `config/categories.php`: Reihenfolge = Anzeige, die erste Versandart ist der Default, `key` darf nach dem Live-Gang nicht mehr geändert werden, die Preise sind brutto.
+Mit Kopfkommentar im Stil von `config/categories.php`:
+
+- Reihenfolge = Anzeige, die erste Versandart ist der Default
+- Preise sind Brutto-Cents
+- Neue Versandart: Eintrag ergänzen.
+- Key ändern oder Versandart entfernen: erlaubt. Warenkörbe mit dem alten Key springen auf den Default, bestehende Bestellungen behalten ihren Snapshot.
 
 ### `App\Support\Cart\ShippingMethods` (analog `App\Support\Catalog\Categories`)
 
 - `all(): list<ShippingMethod>`, `find(?string $key): ?ShippingMethod`, `keys(): list<string>`, `default(): ShippingMethod`
-- `ShippingMethod` als `final readonly` Value Object (`key`, `name`, `description`, `priceCents`). Der Name wird erst frei, wenn das Eloquent-Model weg ist; alternativ `ShippingRate` verwenden.
-- Strenge Prüfung beim Lesen: `key` nicht leer und eindeutig, `price_cents` ist ein `int >= 0`, mindestens ein Eintrag. Ist die Config ungültig, wird eine Exception geworfen, damit eine kaputte Config nicht still als 0,00 € durchgeht.
+- `ShippingMethod` als `final readonly` Value Object (`key`, `name`, `description`, `priceCents`). Der Name wird erst frei, wenn das Eloquent-Model gelöscht ist.
+- Strenge Prüfung beim Lesen, damit eine kaputte Config nicht still als 0,00 € durchgeht. Bei Fehlern wird eine Exception geworfen. Geprüft wird:
+  - `key` ist nicht leer, eindeutig und folgt dem Muster `[a-z0-9-]+`
+  - `name` ist nicht leer
+  - `price_cents` ist ein `int >= 0`
+  - die Liste hat mindestens einen Eintrag
+
+### Snapshot an der Bestellung
+
+Neue Spalten in `orders` (nullable, weil Altbestellungen keine Versandart haben):
+
+| Spalte | Typ | Inhalt |
+| --- | --- | --- |
+| `shipping_method_key` | varchar | Key zum Zeitpunkt der Bestellung |
+| `shipping_method_name` | varchar | Anzeigename zum Zeitpunkt der Bestellung |
+
+Der Betrag steht bereits in `shipping_amount`. Für die Anzeige liest jede Stelle nur den Snapshot, nie die Config. Das betrifft:
+
+- Admin-Bestellansicht
+- Kundenbereich „Bestellungen“
+- Bestätigungsseite
+- `NewOrderMail`
 
 ## Schritte
 
-1. **Config und Support-Klasse**: `config/shipping.php`, `ShippingMethods`, `ShippingMethod`-VO. Unit-Tests für `all/find/keys/default` und die Validierung: doppelter Key, negativer Preis, Float-Preis und leere Liste werfen eine Exception.
-2. **CartService umstellen**: `shippingMethodModels()` und den Cache entfernen, `ShippingMethods::all()` verwenden. In `state()` und `clear()` ist der Default `ShippingMethods::default()->key`. Unbekannte Werte aus der Session, darunter alte numerische IDs wie `"2"`, fallen automatisch auf den Default zurück. Es braucht keine Session-Migration, der Kunde sieht nach dem Deploy aber einmal wieder die Standardauswahl.
+1. **Config und Support-Klasse**: `config/shipping.php`, `ShippingMethods`, `ShippingMethod`-VO. Unit-Tests für `all/find/keys/default` und die Validierung: doppelter Key, ungültiger Key, leerer Name, negativer Preis, Float- oder String-Preis und leere Liste werfen jeweils eine Exception.
+2. **Cart**:
+   - `CartService`: `shippingMethodModels()` und den Cache entfernen, `ShippingMethods::all()` verwenden.
+   - `state()` und `clear()`: Default ist `ShippingMethods::default()->key`. Unbekannte Werte aus der Session, darunter alte numerische IDs wie `"2"` und umbenannte Keys, fallen auf den Default zurück. Es braucht keine Session-Migration.
+   - `Cart` bekommt Zugriff auf die gewählte Versandart (Key und Name) für den Snapshot.
 3. **Request-Validierung**: `UpdateCartShippingMethodRequest` prüft gegen `Rule::in(ShippingMethods::keys())`.
-4. **Admin entfernen**: `ShippingMethodController`, die vier Routen, `Admin/Settings/Shipping.svelte` und den Sidebar-Eintrag „Einstellungen“ löschen (es ist der einzige Eintrag dort). Für `/admin/settings` gibt es zwei Möglichkeiten: Route löschen (404) oder auf `/admin` umleiten. Empfehlung: löschen. `AdminAccessTest` anpassen.
-5. **DB entfernen**: neue Migration `drop_shipping_methods_table`, deren `down()` die Tabelle mit allen Spalten wieder anlegt. Model, Factory und Seeder samt Aufruf in `DatabaseSeeder` löschen. Bestehende Bestellungen sind nicht betroffen, weil es keinen FK gibt und `orders.shipping_amount` erhalten bleibt.
-6. **Optional, als Härtung empfohlen: Versandart an der Bestellung festhalten**. Neue Spalte `orders.shipping_method` (string, nullable für Altbestellungen), im `OrderManager` den Key als Snapshot setzen und in Admin-Bestellansicht und Mail den Namen anzeigen. Heute lässt sich bei einer Bestellung nicht nachvollziehen, ob abgeholt oder versendet wird.
-7. **Tests umbauen**: Die acht Testdateien mit `ShippingMethod::factory()` (`CartFlowTest`, `CheckoutFlowTest`, `CheckoutVerificationTest`, `InvoicePurchaseLifecycleTest`, `CartServiceQueryCountTest`, `CartShapeTest`, `CartValueObjectsTest`, `ShippingMethodControllerTest`) bekommen ihre Versandarten über `config(['shipping' => [...]])`. `ShippingMethodControllerTest` entfällt mit dem Controller; der Wegfall der Routen wird mit einem 404-Test abgesichert (Löschen der Testdatei mit Freigabe). Die Vitest-Fixtures (`Checkout/Index.test.ts`, `Confirm.test.ts`) bekommen String-Keys statt `"1"`.
+4. **Snapshot**:
+   - Migration `add_shipping_method_snapshot_to_orders_table`
+   - `Order` erweitern (Fillable, PHPDoc)
+   - `OrderManager::createFromCart` setzt Key und Name
+   - Anzeige an den vier Stellen oben, mit Fallback „—“ für Altbestellungen
+   - Frontend-Typ `types/order.ts` erweitern
+5. **Admin entfernen**:
+   - `ShippingMethodController`
+   - die fünf `settings`-Routen inklusive `/admin/settings`
+   - `Admin/Settings/Shipping.svelte`
+   - in `AppSidebar.svelte` die Gruppe „Einstellungen“ samt `settingsItems`
+   - `AdminAccessTest` anpassen
+   - ein Test, dass `/admin/settings` und `/admin/settings/shipping` 404 liefern
+6. **DB entfernen**: Migration `drop_shipping_methods_table`, deren `down()` die Tabelle mit allen Spalten wieder anlegt. Model, Factory und Seeder samt Aufruf in `DatabaseSeeder` löschen. Bestehende Bestellungen sind nicht betroffen, weil es keinen FK gibt.
+7. **Tests umbauen**:
+   - Die PHP-Tests mit `ShippingMethod::factory()` setzen ihre Versandarten über `config(['shipping' => [...]])`: `CartFlowTest`, `CheckoutFlowTest`, `CheckoutVerificationTest`, `InvoicePurchaseLifecycleTest`, `CartServiceQueryCountTest`, `CartShapeTest`, `CartValueObjectsTest`.
+   - Neu ist ein Test, dass der Snapshot in der Bestellung landet und eine spätere Config-Änderung ihn nicht verändert.
+   - `ShippingMethodControllerTest` entfällt mit dem Controller (Löschen mit Freigabe).
+   - Die Vitest-Fixtures (`Checkout/Index.test.ts`, `Confirm.test.ts`, Order-Layout-Tests) bekommen String-Keys und die neuen Snapshot-Felder.
 8. **Doku nachziehen**:
-   - neue ADR `0006-versandarten-in-der-config.md`, die ADR 0004 in diesem Punkt ablöst (0004 nennt Versandarten ausdrücklich als Geschäftsdaten im Admin). In 0004 einen Verweis ergänzen.
-   - `database/SCHEMA.md`: `shipping_methods` streichen, ggf. `orders.shipping_method` ergänzen
-   - `AGENTS.md`, Abschnitt Warenkorb: Versandarten kommen aus `config/shipping.php`
-   - `README.md` (Zeile zu `CartService`), `GLOSSARY.md` (Begriff „Versandart“), `.todo/architektur-plan.md:249` („Versandarten bleiben im Admin“), `.todo/sandbox-live-schema-trennung.md` (Versandarten werden nicht mehr kopiert)
+   - neue ADR `0006-admin-nur-inhaltspflege.md`: Versandarten in der Config und der Grundsatz „Admin = Inhalte, Administratives = Code“. Sie löst ADR 0004 in dem Punkt ab, dass Versandarten Geschäftsdaten im Admin seien; in 0004 einen Verweis ergänzen.
+   - `database/SCHEMA.md`: `shipping_methods` streichen, `orders.shipping_method_key`/`_name` ergänzen
+   - `AGENTS.md`, Abschnitt Warenkorb: Versandarten kommen aus `config/shipping.php`, die Bestellung hält einen Snapshot
+   - `README.md` (Zeile zu `CartService`, Kern-Flow Bestellung)
+   - `GLOSSARY.md` (Begriff „Versandart“)
+   - `.todo/architektur-plan.md:249` („Versandarten bleiben im Admin“)
+   - `.todo/sandbox-live-schema-trennung.md` (Versandarten werden nicht mehr kopiert)
 9. **Prüfen**: lokal Pint, Prettier, ESLint, `npm run types:check` und Vitest; PHP-Tests und PHPStan in der CI über einen PR gegen `main`.
 
-## Offene Fragen
+## Offen
 
-1. **Preise stimmen nicht mit der Infoseite überein.** `Informationen/VersandUndZahlung.svelte` zeigt DPD-Staffelpreise nach Warenwert (bis 149,99 € netto 9,52 € netto bzw. 11,33 € brutto, ab 150 € 16,07 € netto …). Der Seeder hat pauschal 9,00 €. Welche Preise gelten? Falls die Staffel gilt, braucht die Config Preisstufen nach Warenwert. Das wäre zwar wieder etwas Logik, aber statisch und testbar. Die Infoseite sollte dann ihre Werte aus derselben Config beziehen statt sie doppelt hart zu codieren.
-2. **Keys**: `selbstabholung` / `standard` / `premium` oder sprechender, etwa `dpd-standard`?
-3. **Schritt 6** (Versandart an der Bestellung) in diesem PR oder separat?
-4. **`/admin/settings`**: 404 oder Weiterleitung?
-5. Sollen bestimmte Versandarten nur für bestimmte Fälle gelten (z. B. Selbstabholung nicht bei Sonden)? Vorschlag: nein. Wenn doch, dann als statische Regel in der Config.
+- **Infoseite `Informationen/VersandUndZahlung.svelte`** zeigt eine DPD-Staffel nach Warenwert (z. B. 11,33 € brutto bis 178,49 €, darüber mehr). Das widerspricht den Pauschalpreisen 9,00 € und 25,00 €. Vorschlag: Die Seite rendert die Versandarten aus derselben Config (über ein Inertia-Prop), statt Preise doppelt hart zu codieren. Ob die Staffel inhaltlich noch gilt, muss fachlich geklärt werden. Mit diesem Umbau oder separat?
