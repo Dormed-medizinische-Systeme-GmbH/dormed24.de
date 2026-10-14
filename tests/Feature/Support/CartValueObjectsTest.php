@@ -75,7 +75,7 @@ class CartValueObjectsTest extends TestCase
         $cart = new Cart(
             items: [$this->item(quantity: 3, unitPriceCents: 1000, isAvailable: false)],
             vatRate: 19,
-            shippingMethods: [new ShippingOption('1', 'Standard', null, 490, false)],
+            shippingMethods: [new ShippingOption('standard', 'Standard', null, 490, false)],
             shippingAddress: CartAddress::fromArray([]),
             billingAddress: null,
         );

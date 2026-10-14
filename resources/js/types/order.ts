@@ -8,6 +8,7 @@ export type OrderItem = {
 
 export type OrderSummary = {
     subtotal: string;
+    shipping_method: string | null;
     shipping_total: string;
     vat_rate: number;
     vat_amount: string;

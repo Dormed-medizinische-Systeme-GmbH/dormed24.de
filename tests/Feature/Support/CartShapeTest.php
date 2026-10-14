@@ -6,7 +6,6 @@ use App\Models\Manufacturer;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ProductVariant;
-use App\Models\ShippingMethod;
 use App\Support\Cart\CartService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -21,9 +20,10 @@ class CartShapeTest extends TestCase
 
     public function test_cart_array_has_the_expected_shape(): void
     {
-        $standard = ShippingMethod::factory()->create(['name' => 'Standard', 'description' => 'DHL', 'price' => '4.90', 'sort_order' => 1]);
-        $express = ShippingMethod::factory()->create(['name' => 'Express', 'description' => null, 'price' => '12.00', 'sort_order' => 2]);
-        ShippingMethod::factory()->create(['name' => 'Spedition', 'price' => null, 'sort_order' => 3]);
+        config(['shipping' => [
+            ['key' => 'standard', 'name' => 'Standard', 'description' => 'DHL', 'price_cents' => 490],
+            ['key' => 'express', 'name' => 'Express', 'price_cents' => 1200],
+        ]]);
 
         $manufacturer = Manufacturer::factory()->create(['name' => 'Mindray']);
         $couch = Product::factory()->create([
@@ -63,7 +63,7 @@ class CartShapeTest extends TestCase
                     "{$couch->id}:{$wide->id}" => 2,
                     (string) $gel->id => 3,
                 ],
-                'shipping_method' => (string) $express->id,
+                'shipping_method' => 'express',
                 'shipping_address' => $shippingAddress,
                 'billing_address' => ['city' => 'Hamburg'],
             ],
@@ -72,7 +72,7 @@ class CartShapeTest extends TestCase
         $cart = app(CartService::class)->cart()->toArray();
 
         $standardOption = [
-            'id' => (string) $standard->id,
+            'id' => 'standard',
             'label' => 'Standard',
             'description' => 'DHL',
             'price' => '4.90',
@@ -80,7 +80,7 @@ class CartShapeTest extends TestCase
             'selected' => false,
         ];
         $expressOption = [
-            'id' => (string) $express->id,
+            'id' => 'express',
             'label' => 'Express',
             'description' => null,
             'price' => '12.00',
@@ -143,13 +143,26 @@ class CartShapeTest extends TestCase
 
     public function test_empty_cart_has_the_expected_shape(): void
     {
+        config(['shipping' => [
+            ['key' => 'selbstabholung', 'name' => 'Selbstabholung', 'price_cents' => 0],
+        ]]);
+
+        $selfPickupOption = [
+            'id' => 'selbstabholung',
+            'label' => 'Selbstabholung',
+            'description' => null,
+            'price' => '0.00',
+            'price_cents' => 0,
+            'selected' => true,
+        ];
+
         $cart = app(CartService::class)->cart()->toArray();
 
         $this->assertSame([], $cart['items']);
         $this->assertSame(0, $cart['count']);
         $this->assertTrue($cart['is_empty']);
-        $this->assertSame([], $cart['shipping_methods']);
-        $this->assertNull($cart['selected_shipping_method']);
+        $this->assertSame([$selfPickupOption], $cart['shipping_methods']);
+        $this->assertSame($selfPickupOption, $cart['selected_shipping_method']);
         $this->assertSame('0.00', $cart['subtotal']);
         $this->assertSame('0.00', $cart['shipping_total']);
         $this->assertSame('0.00', $cart['total']);

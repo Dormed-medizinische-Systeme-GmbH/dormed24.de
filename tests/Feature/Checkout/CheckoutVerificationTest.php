@@ -5,7 +5,6 @@ namespace Tests\Feature\Checkout;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Product;
-use App\Models\ShippingMethod;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
@@ -30,7 +29,6 @@ class CheckoutVerificationTest extends TestCase
 
     public function test_unverified_customer_cannot_submit_an_order(): void
     {
-        ShippingMethod::factory()->create(['price' => '0.00']);
         $customer = Customer::factory()->unverified()->create();
         $product = Product::factory()->create(['price' => '10.00']);
 
@@ -77,7 +75,6 @@ class CheckoutVerificationTest extends TestCase
 
     public function test_verified_customer_reaches_checkout_confirm(): void
     {
-        ShippingMethod::factory()->create(['price' => '0.00']);
         $customer = Customer::factory()->create();
         $product = Product::factory()->create(['price' => '10.00']);
 

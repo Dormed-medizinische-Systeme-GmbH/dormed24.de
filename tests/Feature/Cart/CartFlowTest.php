@@ -8,16 +8,14 @@ use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductVariant;
-use App\Models\ShippingMethod;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
+use UnexpectedValueException;
 
 class CartFlowTest extends TestCase
 {
     use RefreshDatabase;
-
-    private ShippingMethod $freeShipping;
 
     /**
      * A complete shipping address that satisfies the checkout address guard.
@@ -41,12 +39,11 @@ class CartFlowTest extends TestCase
     {
         parent::setUp();
 
-        // Create a free (Selbstabholung) shipping method as default so totals are predictable
-        $this->freeShipping = ShippingMethod::factory()->create([
-            'name' => 'Selbstabholung',
-            'price' => '0.00',
-            'sort_order' => 1,
-        ]);
+        // Kostenlose Selbstabholung als Standard, damit die Summen vorhersagbar sind.
+        config(['shipping' => [
+            ['key' => 'selbstabholung', 'name' => 'Selbstabholung', 'price_cents' => 0],
+            ['key' => 'express', 'name' => 'Express', 'price_cents' => 1500],
+        ]]);
     }
 
     public function test_product_can_be_added_to_the_cart(): void
@@ -109,7 +106,7 @@ class CartFlowTest extends TestCase
                         'product_number' => (string) $product->id,
                     ],
                 ],
-                'shipping_method' => (string) $this->freeShipping->id,
+                'shipping_method' => 'selbstabholung',
             ],
         ])->patch(route('cart.items.update', $product), [
             'quantity' => 3,
@@ -120,22 +117,44 @@ class CartFlowTest extends TestCase
 
     public function test_shipping_method_can_be_updated(): void
     {
-        $expressShipping = ShippingMethod::factory()->create([
-            'name' => 'Express',
-            'price' => '15.00',
-            'sort_order' => 2,
-        ]);
-
         $this->withSession([
             'cart' => [
                 'items' => [],
-                'shipping_method' => (string) $this->freeShipping->id,
+                'shipping_method' => 'selbstabholung',
             ],
         ])->patch(route('cart.shipping.update'), [
-            'shipping_method' => (string) $expressShipping->id,
+            'shipping_method' => 'express',
         ])
             ->assertRedirect()
-            ->assertSessionHas('cart.shipping_method', (string) $expressShipping->id);
+            ->assertSessionHas('cart.shipping_method', 'express');
+    }
+
+    public function test_unknown_shipping_method_is_rejected(): void
+    {
+        $this->withSession([
+            'cart' => [
+                'items' => [],
+                'shipping_method' => 'selbstabholung',
+            ],
+        ])->patch(route('cart.shipping.update'), [
+            'shipping_method' => 'gratis',
+        ])
+            ->assertSessionHasErrors('shipping_method')
+            ->assertSessionHas('cart.shipping_method', 'selbstabholung');
+    }
+
+    public function test_outdated_shipping_selection_falls_back_to_the_default(): void
+    {
+        // Alte Sessions enthalten noch die numerische ID aus der früheren
+        // Tabelle, umbenannte Keys verhalten sich genauso.
+        $this->withSession([
+            'cart' => [
+                'items' => [],
+                'shipping_method' => '2',
+            ],
+        ])->get(route('checkout.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->where('cart.selected_shipping_method.id', 'selbstabholung'));
     }
 
     public function test_checkout_confirm_redirects_when_cart_is_empty(): void
@@ -165,7 +184,7 @@ class CartFlowTest extends TestCase
                             'product_number' => (string) $product->id,
                         ],
                     ],
-                    'shipping_method' => (string) $this->freeShipping->id,
+                    'shipping_method' => 'selbstabholung',
                     'shipping_address' => $this->completeAddress(),
                 ],
             ])->post(route('checkout.submit'), [
@@ -180,6 +199,8 @@ class CartFlowTest extends TestCase
             'customer_id' => $customer->id,
             'status' => 'pending',
             'total_amount' => '20.00',
+            'shipping_method_key' => 'selbstabholung',
+            'shipping_method_name' => 'Selbstabholung',
         ]);
 
         $this->assertSame(1, Order::query()->count());
@@ -207,7 +228,7 @@ class CartFlowTest extends TestCase
                             'product_number' => (string) $product->id,
                         ],
                     ],
-                    'shipping_method' => (string) $this->freeShipping->id,
+                    'shipping_method' => 'selbstabholung',
                     'shipping_address' => $this->completeAddress(),
                 ],
             ]);
@@ -239,7 +260,7 @@ class CartFlowTest extends TestCase
                             'product_number' => (string) $product->id,
                         ],
                     ],
-                    'shipping_method' => (string) $this->freeShipping->id,
+                    'shipping_method' => 'selbstabholung',
                 ],
             ])->post(route('checkout.submit'), [
                 'agreed_to_terms' => true,
@@ -323,7 +344,7 @@ class CartFlowTest extends TestCase
         $this->withSession([
             'cart' => [
                 'items' => [$lineKey => 1],
-                'shipping_method' => (string) $this->freeShipping->id,
+                'shipping_method' => 'selbstabholung',
             ],
         ])->patch(route('cart.items.update', [$product, $variant]), ['quantity' => 3])
             ->assertRedirect()
@@ -356,7 +377,7 @@ class CartFlowTest extends TestCase
             ->withSession([
                 'cart' => [
                     'items' => ["{$product->id}:{$variant->id}" => 2],
-                    'shipping_method' => (string) $this->freeShipping->id,
+                    'shipping_method' => 'selbstabholung',
                     'shipping_address' => $this->completeAddress(),
                 ],
             ])->post(route('checkout.submit'), [
@@ -390,7 +411,7 @@ class CartFlowTest extends TestCase
             ->withSession([
                 'cart' => [
                     'items' => [$lineKey => 1],
-                    'shipping_method' => (string) $this->freeShipping->id,
+                    'shipping_method' => 'selbstabholung',
                     'shipping_address' => $this->completeAddress(),
                 ],
             ])->post(route('checkout.submit'), [
@@ -414,7 +435,7 @@ class CartFlowTest extends TestCase
             ->withSession([
                 'cart' => [
                     'items' => [(string) $product->id => 1],
-                    'shipping_method' => (string) $this->freeShipping->id,
+                    'shipping_method' => 'selbstabholung',
                     'shipping_address' => $this->completeAddress(),
                 ],
             ]);
@@ -434,21 +455,17 @@ class CartFlowTest extends TestCase
         Mail::assertNothingSent();
     }
 
-    public function test_shipping_method_without_price_is_not_offered(): void
+    public function test_shipping_method_without_price_is_never_offered_as_free(): void
     {
-        $onRequest = ShippingMethod::factory()->create([
-            'name' => 'Spedition auf Anfrage',
-            'price' => null,
-            'sort_order' => 5,
-        ]);
+        // "Preis auf Anfrage" (null) gibt es nicht mehr. Ein solcher Eintrag
+        // darf nie als 0,00 € durchgehen, der Checkout bricht stattdessen ab.
+        config(['shipping' => [
+            ['key' => 'spedition', 'name' => 'Spedition auf Anfrage', 'price_cents' => null],
+        ]]);
 
-        // "Preis auf Anfrage" (NULL) darf im Self-Service-Checkout nicht als
-        // 0,00 € auswählbar sein — die Methode taucht gar nicht erst auf.
-        $this->get(route('checkout.index'))
-            ->assertOk()
-            ->assertInertia(fn ($page) => $page->where(
-                'cart.shipping_methods',
-                fn ($methods) => collect($methods)->pluck('id')->doesntContain((string) $onRequest->id)
-            ));
+        $this->withoutExceptionHandling();
+        $this->expectException(UnexpectedValueException::class);
+
+        $this->get(route('checkout.index'));
     }
 }

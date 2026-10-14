@@ -1,5 +1,9 @@
 # Versandarten aus der Datenbank in `config/shipping.php`
 
+## Stand
+
+Umgesetzt (Schritte 1–8). Eine fehlerhafte `config/shipping.php` darf nie live gehen. Deshalb prüft `tests/Feature/Config/ShippingConfigTest` die echte Datei mit denselben Regeln wie `ShippingMethods::errors()`. Der Deploy auf `main` hängt an den Tests (`deploy.yml`: `needs: [tests, lint]`). Dieselbe Klasse testet jeden Fehlertyp einzeln, damit die Prüfung nicht ins Leere läuft. Die Exception zur Laufzeit ist nur die zweite Absicherung. Offen ist nur noch die Infoseite (siehe unten).
+
 ## Ziel
 
 Versandarten sind fest im Code definiert, nicht mehr in der Tabelle `shipping_methods` und nicht mehr im Admin pflegbar. Änderungen laufen über Commit und Deployment, wie bei Kategorien (`config/categories.php`) und Kontaktdaten (`config/shop.php`).

@@ -24,7 +24,6 @@ class AdminAccessTest extends TestCase
             'manufacturers index' => ['admin.manufacturers.index'],
             'social posts index' => ['admin.social-posts.index'],
             'articles index' => ['admin.articles.index'],
-            'settings shipping' => ['admin.settings.shipping'],
         ];
     }
 
@@ -42,16 +41,10 @@ class AdminAccessTest extends TestCase
             ->assertOk();
     }
 
-    public function test_settings_index_redirects_to_shipping(): void
-    {
-        $this->actingAsAdmin()
-            ->get(route('admin.settings.index'))
-            ->assertRedirect('/admin/settings/shipping');
-    }
-
     /**
      * Kategorien (config/categories.php), PayPal-/SMTP-Zugangsdaten (Env) sowie
-     * Kontakt und Bankverbindung (config/shop.php) werden nicht mehr im Admin
+     * Kontakt und Bankverbindung (config/shop.php) und Versandarten
+     * (config/shipping.php) werden nicht mehr im Admin
      * gepflegt — die Seiten dafür gibt es nicht mehr.
      *
      * @return array<string, array{string}>
@@ -64,6 +57,8 @@ class AdminAccessTest extends TestCase
             'mailversand' => ['/admin/settings/mail'],
             'zahlungsarten' => ['/admin/settings/payment'],
             'allgemein' => ['/admin/settings/general'],
+            'einstellungen' => ['/admin/settings'],
+            'versandarten' => ['/admin/settings/shipping'],
         ];
     }
 
@@ -71,6 +66,25 @@ class AdminAccessTest extends TestCase
     public function test_removed_admin_pages_no_longer_exist(string $path): void
     {
         $this->actingAsAdmin()->get($path)->assertNotFound();
+    }
+
+    /**
+     * Versandarten stehen in config/shipping.php
+     * (.docs/adr/0006-admin-nur-inhaltspflege.md).
+     */
+    public function test_shipping_methods_can_no_longer_be_changed_in_admin(): void
+    {
+        $this->actingAsAdmin()
+            ->post('/admin/settings/shipping', ['name' => 'Gratis', 'price' => '0'])
+            ->assertNotFound();
+
+        $this->actingAsAdmin()
+            ->put('/admin/settings/shipping/1', ['name' => 'Gratis', 'price' => '0'])
+            ->assertNotFound();
+
+        $this->actingAsAdmin()
+            ->delete('/admin/settings/shipping/1')
+            ->assertNotFound();
     }
 
     public function test_general_settings_can_no_longer_be_saved(): void

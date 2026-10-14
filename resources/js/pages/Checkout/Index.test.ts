@@ -56,7 +56,7 @@ const filledCart: Cart = {
     ],
     shipping_methods: [
         {
-            id: '1',
+            id: 'standard',
             provider: 'shipping',
             label: 'Standard',
             description: 'DHL',

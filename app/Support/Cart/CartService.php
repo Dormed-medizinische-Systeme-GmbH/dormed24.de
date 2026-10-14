@@ -5,8 +5,6 @@ namespace App\Support\Cart;
 use App\Contracts\CartStore;
 use App\Models\Product;
 use App\Models\ProductVariant;
-use App\Models\ShippingMethod;
-use Illuminate\Support\Collection;
 
 /**
  * Liest und schreibt den Warenkorb. In der Session liegt nur der schlanke
@@ -17,15 +15,6 @@ use Illuminate\Support\Collection;
 class CartService
 {
     public const DEFAULT_ADDRESS = CartAddress::DEFAULTS;
-
-    /**
-     * Lazily loaded and reused for the lifetime of this instance, so a
-     * single cart() call doesn't query shipping methods twice (once via
-     * state() for the selected id, once via shippingMethods() for the list).
-     *
-     * @var Collection<int, ShippingMethod>|null
-     */
-    private ?Collection $shippingMethodModelsCache = null;
 
     public function __construct(
         private readonly CartStore $store,
@@ -132,7 +121,7 @@ class CartService
     {
         $this->persist([
             'items' => [],
-            'shipping_method' => (string) ($this->shippingMethodModels()->first()->id ?? ''),
+            'shipping_method' => ShippingMethods::default()->key,
             'shipping_address' => self::DEFAULT_ADDRESS,
             'billing_address' => null,
         ]);
@@ -215,41 +204,20 @@ class CartService
     }
 
     /**
-     * @return Collection<int, ShippingMethod>
-     */
-    private function shippingMethodModels(): Collection
-    {
-        // Nur Versandarten mit gesetztem Preis sind im Self-Service-Checkout
-        // wählbar. Ein NULL-Preis heißt "auf Anfrage" und darf NICHT als 0,00 €
-        // durchgehen (sonst kostenloser Versand als stille Umsatz-Falle) —
-        // solche Methoden werden hier komplett ausgeblendet, damit sie weder
-        // auswählbar noch Default noch summierbar sind. Ein echter
-        // "Preis auf Anfrage"-Flow (Kontaktaufnahme) wäre ein eigenes Feature.
-        return $this->shippingMethodModelsCache ??= ShippingMethod::query()
-            ->whereNotNull('price')
-            ->orderBy('sort_order')
-            ->get();
-    }
-
-    /**
      * @return list<ShippingOption>
      */
-    private function shippingMethods(string $selectedId): array
+    private function shippingMethods(string $selectedKey): array
     {
-        return array_values($this->shippingMethodModels()
-            ->values()
-            ->map(function (ShippingMethod $method, int $index) use ($selectedId): ShippingOption {
-                $methodId = (string) $method->id;
-
-                return new ShippingOption(
-                    id: $methodId,
-                    label: $method->name,
-                    description: $method->description,
-                    priceCents: Money::toCents($method->price),
-                    selected: $methodId === $selectedId || ($selectedId === '' && $index === 0),
-                );
-            })
-            ->all());
+        return array_map(
+            fn (ShippingMethod $method): ShippingOption => new ShippingOption(
+                id: $method->key,
+                label: $method->name,
+                description: $method->description,
+                priceCents: $method->priceCents,
+                selected: $method->key === $selectedKey,
+            ),
+            ShippingMethods::all(),
+        );
     }
 
     public function hasUnavailableItems(): bool
@@ -276,7 +244,7 @@ class CartService
     private function state(): array
     {
         $rawState = $this->store->get();
-        $shippingMethodIds = $this->shippingMethodModels()->pluck('id')->map(fn ($id) => (string) $id)->all();
+        $shippingMethodKeys = ShippingMethods::keys();
 
         $items = [];
         $rawItems = is_array($rawState['items'] ?? null) ? $rawState['items'] : [];
@@ -296,9 +264,11 @@ class CartService
 
         return [
             'items' => $items,
-            'shipping_method' => in_array(($rawState['shipping_method'] ?? null), $shippingMethodIds, true)
+            // Unbekannte Keys (umbenannt, entfernt oder alte numerische IDs
+            // aus der früheren Tabelle) fallen auf die Standard-Versandart.
+            'shipping_method' => in_array(($rawState['shipping_method'] ?? null), $shippingMethodKeys, true)
                 ? (string) $rawState['shipping_method']
-                : (string) ($shippingMethodIds[0] ?? ''),
+                : $shippingMethodKeys[0],
             'shipping_address' => array_merge(
                 self::DEFAULT_ADDRESS,
                 $rawState['shipping_address'] ?? []

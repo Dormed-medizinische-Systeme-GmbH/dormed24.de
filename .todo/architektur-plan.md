@@ -246,10 +246,10 @@ Die Begriffe stammen aus `.claude/skills/codebase-design`:
 
 **Ziel:** Jede Einstellung hat einen Namen, einen Standardwert und eine Stelle.
 
-**Entschieden (anders als ursprünglich geplant):** Keine Konfiguration mehr im Admin (`.docs/adr/0004-keine-konfiguration-im-admin.md`). Kontakt und Bankverbindung stehen direkt in `config/shop.php`, der Shopname ist `APP_NAME`. Telefon und Fax als Vorwahl + Rufnummer, weil sich aus `02301188600` allein nicht ablesen lässt, wo die Vorwahl endet. Versandarten bleiben im Admin (Geschäftsdaten). Die Tabelle `settings` wird per Migration gelöscht.
+**Entschieden (anders als ursprünglich geplant):** Keine Konfiguration mehr im Admin (`.docs/adr/0004-keine-konfiguration-im-admin.md`). Kontakt und Bankverbindung stehen direkt in `config/shop.php`, der Shopname ist `APP_NAME`. Telefon und Fax als Vorwahl + Rufnummer, weil sich aus `02301188600` allein nicht ablesen lässt, wo die Vorwahl endet. Die Tabelle `settings` wird per Migration gelöscht. Nachtrag: Auch Versandarten sind aus dem Admin raus und stehen in `config/shipping.php` (`.docs/adr/0006-admin-nur-inhaltspflege.md`, `.todo/versandarten-config-plan.md`).
 
 - [x] `App\Support\ShopContact` mit benannten Zugriffen (`email()`, `phone()`, `fax()`, `bank()`, `name()`, `toArray()` für die geteilte Prop) und `App\Support\PhoneNumber` (`display()` „02301 / 188-600“, `href()` „tel:+492301188600“).
-- [x] `Admin/SettingController`, Seite „Einstellungen → Allgemein“, `Setting`-Model, `ContactsSeeder` entfernt; `/admin/settings` leitet auf Versandarten.
+- [x] `Admin/SettingController`, Seite „Einstellungen → Allgemein“, `Setting`-Model, `ContactsSeeder` entfernt; `/admin/settings` leitete auf Versandarten (inzwischen ebenfalls entfernt, 404).
 - [x] Standardwerte an einer Stelle; der Widerspruch zwischen `HandleInertiaRequests` und den Mails ist weg.
 - [x] Aufrufer umgestellt: `OrderManager`, `PaymentReconciliation`, `NewsletterController`, `ModeMailConfiguration`, `HandleInertiaRequests`; die Mails bekommen `ShopContact` übergeben.
 - [x] Tests: Anzeige und Link der Nummern, geteilte Prop, Mails mit Kontakt und Bankverbindung, alte Admin-Seite liefert 404/405.

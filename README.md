@@ -36,6 +36,7 @@ Zentrale Klassen (die „Geschäftslogik-Ecke"):
 | Klasse | Verantwortung |
 | --- | --- |
 | `app/Support/Cart/CartService.php` | Warenkorb: Session-State, Live-Preise, Varianten, Versandarten; liefert das `Cart`-DTO (Summen in Cents, `toArray()` fürs Frontend) |
+| `app/Support/Cart/ShippingMethods.php` | Versandarten aus `config/shipping.php`, prüft die Config bei jedem Zugriff (`errors()`), Deploy-Gate `tests/Feature/Config/ShippingConfigTest` |
 | `app/Support/Orders/OrderManager.php` | Cart → Order (transaktional), alle Statusübergänge (`transitionTo`, `markPaid()` idempotent), Bestätigungsmails |
 | `app/Support/Orders/OrderStatus.php` | Bestellstatus + erlaubte Übergänge (`PaymentStatus`, `PaymentMethod` daneben) |
 | `app/Support/Orders/OrderSummary.php` | Positionen und Summen einer Bestellung (MwSt. über `Money::netCents`) |
@@ -69,6 +70,13 @@ Zentrale Klassen (die „Geschäftslogik-Ecke"):
   entsprechen (Listen zeigen den Produktpreis).
 - Nicht verfügbare/gelöschte Produkte und gelöschte Varianten machen die Zeile
   `is_available = false` → Checkout blockiert serverseitig.
+- **Versandarten** stehen in `config/shipping.php` (Key, Name, Beschreibung,
+  `price_cents`), nicht in der DB und nicht im Admin. Die Session hält den Key;
+  ein unbekannter Key fällt auf die erste Versandart. Eine fehlerhafte Config
+  wirft eine Exception und lässt die CI scheitern (`ShippingConfigTest`).
+  Die Order speichert Key, Name und Betrag als Snapshot
+  (`shipping_method_key`, `shipping_method_name`, `shipping_amount`); Anzeigen
+  und Mails lesen nur den Snapshot.
 
 ### 2. Bestellen — Voraussetzung: bestätigte E-Mail
 
@@ -86,7 +94,7 @@ Zentrale Klassen (die „Geschäftslogik-Ecke"):
 ```
 /checkout (Cart) → /checkout/confirm (Adresse, AGB, Buttons je Zahlart)
   → POST /checkout/submit (Button „Kaufen auf Rechnung“, normaler Klick)
-  → Order status=pending + Items (Snapshot, DB-Transaktion)
+  → Order status=pending + Items + Versandart (Snapshot, DB-Transaktion)
   → Bestätigungsmail an Kunde (inkl. Bankverbindung) + Admin-Benachrichtigung
   → Cart wird geleert → /checkout/success
 ```
