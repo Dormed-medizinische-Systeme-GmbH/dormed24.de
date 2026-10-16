@@ -267,7 +267,7 @@
                             {method.label}
                         </span>
                         <span class="block text-muted-foreground">
-                            {formatPrice(method.price ?? 0)}*
+                            {formatPrice(method.price)}*
                         </span>
                         {#if method.description}
                             <span class="mt-1 block text-muted-foreground">
@@ -295,7 +295,7 @@
                             {method.label}
                         </span>
                         <span class="text-muted-foreground">
-                            — {formatPrice(method.price ?? 0)}*
+                            — {formatPrice(method.price)}*
                         </span>
                         {#if method.description}
                             <br />
