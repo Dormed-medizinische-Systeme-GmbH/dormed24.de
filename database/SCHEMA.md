@@ -199,8 +199,10 @@ Bestellungen mit JSON-Adress-Snapshots (immutable zum Zeitpunkt der Bestellung).
 
 > Versandarten stehen in `config/shipping.php`, nicht in der Datenbank
 > (`.docs/adr/0006-admin-nur-inhaltspflege.md`). `shipping_method_key` und
-> `shipping_method_name` sind bei Bestellungen vor Migration `2026_10_14_090000`
-> leer; angezeigt wird immer der Snapshot, nie die aktuelle Config.
+> `shipping_method_name` wurden für Bestellungen vor Migration `2026_10_14_090000`
+> per `2026_10_16_090000` aus `shipping_amount` nachgetragen (0,00 € / 9,00 € /
+> 25,00 €); nur Bestellungen mit anderem Betrag bleiben leer. Angezeigt wird
+> immer der Snapshot, nie die aktuelle Config.
 
 JSON-Struktur (shipping_address / billing_address):
 ```json

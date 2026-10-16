@@ -131,14 +131,14 @@ final class ShippingMethods
 
             $name = $entry['name'] ?? null;
 
-            if (! is_string($name) || trim($name) === '' || mb_strlen($name) > self::MAX_NAME_LENGTH) {
-                $errors[] = "{$position}: name muss ein nicht leerer Text sein (max. ".self::MAX_NAME_LENGTH.' Zeichen).';
+            if (! is_string($name) || trim($name) === '' || trim($name) !== $name || mb_strlen($name) > self::MAX_NAME_LENGTH) {
+                $errors[] = "{$position}: name muss ein nicht leerer Text ohne Leerzeichen am Anfang oder Ende sein (max. ".self::MAX_NAME_LENGTH.' Zeichen).';
             }
 
             $description = $entry['description'] ?? null;
 
-            if ($description !== null && (! is_string($description) || mb_strlen($description) > self::MAX_DESCRIPTION_LENGTH)) {
-                $errors[] = "{$position}: description muss null oder ein Text sein (max. ".self::MAX_DESCRIPTION_LENGTH.' Zeichen).';
+            if ($description !== null && (! is_string($description) || trim($description) === '' || trim($description) !== $description || mb_strlen($description) > self::MAX_DESCRIPTION_LENGTH)) {
+                $errors[] = "{$position}: description muss null oder ein nicht leerer Text ohne Leerzeichen am Anfang oder Ende sein (max. ".self::MAX_DESCRIPTION_LENGTH.' Zeichen).';
             }
 
             $priceCents = $entry['price_cents'] ?? null;

@@ -15,13 +15,14 @@ export type CartItem = {
     is_available: boolean;
 };
 
+/** Eine Versandart, wie `App\Support\Cart\ShippingOption::toArray()` sie liefert. */
 export type CartMethod = {
     id: string;
-    provider: string;
     label: string;
     description: string | null;
+    price: string;
+    price_cents: number;
     selected: boolean;
-    price?: string;
 };
 
 export type AddressData = {

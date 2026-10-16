@@ -57,10 +57,10 @@ const filledCart: Cart = {
     shipping_methods: [
         {
             id: 'standard',
-            provider: 'shipping',
             label: 'Standard',
             description: 'DHL',
             price: '4.90',
+            price_cents: 490,
             selected: true,
         },
     ],
